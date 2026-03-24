@@ -2,10 +2,10 @@ import { NavLink } from 'react-router-dom';
 import { 
   SquaresFour, 
   CalendarBlank, 
-  Path, 
+  Signpost, 
   CircleNotch, 
   ArrowClockwise, 
-  History, 
+  ClockCounterClockwise, 
   Trophy, 
   ChartLineUp, 
   GearSix,
@@ -15,10 +15,10 @@ import Logo from '../atoms/Logo';
 const navItems = [
   { path: '/dashboard', label: 'Visão Geral', icon: SquaresFour },
   { path: '/calendario', label: 'Calendário', icon: CalendarBlank },
-  { path: '/trilha', label: 'Trilha Semanal', icon: Path },
+  { path: '/trilha', label: 'Trilha Semanal', icon: Signpost },
   { path: '/ciclo', label: 'Ciclo de Estudos', icon: CircleNotch },
   { path: '/revisoes', label: 'Revisões', icon: ArrowClockwise },
-  { path: '/historico', label: 'Histórico de Ações', icon: History },
+  { path: '/historico', label: 'Histórico de Ações', icon: ClockCounterClockwise },
   { path: '/conquistas', label: 'Conquistas', icon: Trophy },
   { path: '/estatisticas', label: 'Estatísticas', icon: ChartLineUp },
 ];
