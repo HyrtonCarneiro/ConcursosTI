@@ -1,6 +1,7 @@
 window.materialController = {
     init: function() {
         this.container = document.getElementById('container-materiais');
+        this.emptyState = document.getElementById('materiais-empty-state');
         this.searchInput = document.getElementById('input-search-materiais');
         
         if (this.searchInput) {
@@ -15,34 +16,47 @@ window.materialController = {
         
         this.container.innerHTML = "";
         
-        state.conteudos.forEach(c => {
-            if (search && !c.nome.toLowerCase().includes(search)) return;
-            
+        const contents = state.conteudos.filter(c => !search || c.nome.toLowerCase().includes(search));
+        
+        if (state.conteudos.length === 0) {
+            this.emptyState.classList.remove('hidden');
+            this.container.classList.add('hidden');
+            return;
+        } else {
+            this.emptyState.classList.add('hidden');
+            this.container.classList.remove('hidden');
+        }
+
+        contents.forEach(c => {
             const materia = state.materias.find(m => m.id === c.materiaId);
             const material = window.store.getMaterial(c.id);
             
             const card = document.createElement('div');
-            card.className = 'bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:border-primary-300 transition-all';
+            card.className = 'bg-white p-6 rounded-3xl border border-gray-100 hover:border-primary-500 transition-all shadow-sm';
             card.id = 'mat-card-' + c.id;
             
             card.innerHTML = ' \
-                <div class="flex flex-col gap-4"> \
-                    <div> \
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-primary-500">' + (materia ? materia.nome : 'Sem Matéria') + '</span> \
-                        <h3 class="font-bold text-gray-800">' + c.nome + '</h3> \
+                <div class="flex flex-col h-full"> \
+                    <div class="mb-4"> \
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-primary-500 bg-primary-50 px-2 py-1 rounded-lg mb-2 inline-block">' + (materia ? materia.nome : 'Matéria') + '</span> \
+                        <h3 class="font-black text-gray-800 text-lg leading-tight">' + c.nome + '</h3> \
                     </div> \
-                    <div> \
-                        <label class="block text-xs font-semibold text-gray-400 mb-2 uppercase">Links Úteis</label> \
-                        <div class="flex flex-wrap gap-2 mb-3" id="links-' + c.id + '"> \
-                            ' + this.renderLinks(material.links) + ' \
-                            <button onclick="window.materialController.addLink(\'' + c.id + '\')" class="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:bg-primary-50 hover:text-primary-600 flex items-center justify-center transition-all"> \
-                                <i class="ph ph-plus text-sm"></i> \
-                            </button> \
+                    <div class="flex-1 space-y-4"> \
+                        <div> \
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Links de Estudo</label> \
+                            <div class="flex flex-wrap gap-2 mb-2" id="links-' + c.id + '"> \
+                                ' + this.renderLinks(material.links) + ' \
+                                <button onclick="window.materialController.addLink(\'' + c.id + '\')" class="w-8 h-8 rounded-xl bg-gray-50 text-gray-400 hover:bg-primary-600 hover:text-white flex items-center justify-center transition-all"> \
+                                    <i class="ph ph-plus-bold"></i> \
+                                </button> \
+                            </div> \
                         </div> \
-                        <label class="block text-xs font-semibold text-gray-400 mb-1 uppercase">Anotações</label> \
-                        <textarea class="w-full text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border-none focus:ring-2 focus:ring-primary-500 min-h-[100px]" \
-                                  placeholder="Suas notas aqui..." \
-                                  onblur="window.materialController.saveNotes(\'' + c.id + '\', this.value)">' + material.notas + '</textarea> \
+                        <div> \
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Minhas Anotações</label> \
+                            <textarea class="w-full text-sm text-gray-600 bg-gray-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-primary-500 min-h-[140px] resize-none" \
+                                      placeholder="Escreva seus resumos, fórmulas e pontos importantes..." \
+                                      onblur="window.materialController.saveNotes(\'' + c.id + '\', this.value)">' + material.notas + '</textarea> \
+                        </div> \
                     </div> \
                 </div>';
             

@@ -10,9 +10,13 @@ window.gamificationController = {
         
         if (elStreak) elStreak.textContent = stats.streak + ' dias';
         
-        if (elMedia && simulados.length > 0) {
-            const sum = simulados.reduce((acc, curr) => acc + curr.nota, 0);
-            elMedia.textContent = Math.round(sum / simulados.length) + '%';
+        if (elMedia) {
+            if (simulados.length > 0) {
+                const sum = simulados.reduce((acc, curr) => acc + curr.nota, 0);
+                elMedia.textContent = Math.round(sum / simulados.length) + '%';
+            } else {
+                elMedia.textContent = '--';
+            }
         }
         
         if (elHoras) elHoras.textContent = stats.totalHorasEstudo + 'h';
