@@ -169,49 +169,58 @@ window.store = {
 
     // --- Persistence (Firestore Cloud) ---
     save: function() {
-        // Always save to both local and cloud for resilience
-        try {
-            localStorage.setItem('concursos_ti_state', JSON.stringify(this.state));
-        } catch(e) {}
-
-        if (!window.db) return; // Firebase not initialized
+        if (!window.db) return;
 
         window.db.collection('users').doc('hyrton').set({
             state: this.state,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }).catch(err => console.error("Erro cloud save:", err));
+        
+        // Local fallback
+        try {
+            localStorage.setItem('concursos_ti_state', JSON.stringify(this.state));
+        } catch(e) {}
     },
 
-    load: async function() {
-        // 1. Try local first for speed
+    init: function() {
+        // 1. Quick local load
         const saved = localStorage.getItem('concursos_ti_state');
         if (saved) {
             this.state = { ...this.state, ...JSON.parse(saved) };
         }
 
-        // 2. Sync with cloud
+        // 2. Real-time Cloud Sync
         if (window.db) {
-            try {
-                const doc = await window.db.collection('users').doc('hyrton').get();
+            window.db.collection('users').doc('hyrton').onSnapshot((doc) => {
                 if (doc.exists) {
                     const cloudData = doc.data().state;
-                    this.state = { ...this.state, ...cloudData };
-                    localStorage.setItem('concursos_ti_state', JSON.stringify(this.state));
+                    console.log("Cloud sync received:", cloudData);
+                    
+                    // Update state (only if authenticated to avoid showing data on login screen)
+                    if (this.state.isAuthenticated) {
+                        this.state = { ...this.state, ...cloudData };
+                        // Persist to local for offline
+                        localStorage.setItem('concursos_ti_state', JSON.stringify(this.state));
+                        
+                        // Re-render current page
+                        if (window.appControllers) {
+                            window.appControllers.updateDashboard();
+                            // Optional: re-render specific controllers if active
+                            if (window.editaisController) window.editaisController.render();
+                            if (window.cronogramaController) window.cronogramaController.renderTable();
+                        }
+                    }
                 }
-            } catch (err) {
-                console.error("Erro cloud load:", err);
-            }
+            }, (err) => {
+                console.error("Erro no listener do Firestore:", err);
+            });
         }
-    },
 
-    init: function() {
-        // Initial load
-        this.load().then(() => {
-            if (window.appControllers) {
-                window.appControllers.checkAuth();
-                window.appControllers.updateDashboard();
-            }
-        });
+        // Final UI check
+        if (window.appControllers) {
+            window.appControllers.checkAuth();
+            window.appControllers.updateDashboard();
+        }
     }
 };
 

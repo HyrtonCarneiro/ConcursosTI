@@ -26,7 +26,6 @@ window.appControllers = {
                 try {
                     if (window.authLogic.login(user, pass)) {
                         window.store.setAuth(true);
-                        await window.store.load(); // Load from cloud
                         window.utils.showToast("Login realizado! Sincronizando com a nuvem...", "success");
                         this.checkAuth();
                     }
