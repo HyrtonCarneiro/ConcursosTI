@@ -22,10 +22,6 @@ window.store = {
         return this.state;
     },
 
-    setAuth: function(val) {
-        this.state.isAuthenticated = val;
-        this.save();
-    },
 
     addMateria: function(nome) {
         if (!nome) throw new Error("Nome da matéria é obrigatório");
@@ -62,6 +58,7 @@ window.store = {
             semana, 
             materiaId, 
             conteudoId, 
+            paginas: Number(paginas),
             concluido: false,
             dataConclusao: null
         };
@@ -69,11 +66,13 @@ window.store = {
         
         // Sort by semana ascending
         this.state.cronograma.sort((a,b) => a.semana.localeCompare(b.semana));
+        this.save();
         return item;
     },
     
     removeCronogramaItem: function(id) {
         this.state.cronograma = this.state.cronograma.filter(i => i.id !== id);
+        this.save();
     },
 
     concluirItemCronograma: function(id) {
@@ -84,8 +83,9 @@ window.store = {
         item.dataConclusao = new Date().toISOString();
         
         // Update stats
-        this.state.estatisticas.totalPaginasLidas += item.paginas;
+        this.state.estatisticas.totalPaginasLidas += (item.paginas || 0);
         this.updateStreak();
+        this.save();
 
         // Trigger spaced repetition logic (called from controller)
         return item;
@@ -162,28 +162,66 @@ window.store = {
         this.save();
     },
 
-    // --- Persistence ---
+    // --- Persistence (Firestore) ---
     save: function() {
-        try {
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            // Fallback to localstorage if not logged in yet
             localStorage.setItem('concursos_ti_state', JSON.stringify(this.state));
-        } catch (e) {
-            console.error("Erro ao salvar no LocalStorage", e);
+            return;
         }
+
+        const db = firebase.firestore();
+        db.collection('users').doc(user.uid).set({
+            state: this.state,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(err => console.error("Erro ao salvar no Firestore:", err));
     },
 
-    load: function() {
-        try {
+    load: async function() {
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            // Try localstorage fallback
             const saved = localStorage.getItem('concursos_ti_state');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                // Merge with default state to avoid missing properties on updates
                 this.state = { ...this.state, ...parsed };
             }
-        } catch (e) {
-            console.error("Erro ao carregar do LocalStorage", e);
+            return;
         }
+
+        const db = firebase.firestore();
+        try {
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.state) {
+                    this.state = { ...this.state, ...data.state };
+                }
+            }
+        } catch (err) {
+            console.error("Erro ao carregar do Firestore:", err);
+        }
+    },
+
+    init: function() {
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (user) {
+                this.state.isAuthenticated = true;
+                await this.load();
+                console.log("Dados carregados do Firebase para:", user.email);
+            } else {
+                this.state.isAuthenticated = false;
+            }
+            
+            // Re-render everything once auth/data is ready
+            if (window.appControllers) {
+                window.appControllers.checkAuth();
+                window.appControllers.updateDashboard();
+            }
+        });
     }
 };
 
-// Auto-load on script execution
-window.store.load();
+// Initialized via main.js or index.html
+window.store.init();

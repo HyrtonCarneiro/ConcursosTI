@@ -1,11 +1,18 @@
 window.authLogic = {
-    login: function(username, password) {
-        if (!username || !password) {
-            throw new Error("Usuário e senha são obrigatórios.");
+    login: function(email, password) {
+        if (!email || !password) {
+            return Promise.reject(new Error("E-mail e senha são obrigatórios."));
         }
-        if (username === 'Hyrton' && password === 'hyrtinho') {
-            return true;
+        // Normalize email if use just typed "hyrton"
+        let normalizedEmail = email;
+        if (!email.includes('@')) {
+            normalizedEmail = `${email.toLowerCase()}@concursosti.com`;
         }
-        throw new Error("Credenciais inválidas. Tente novamente.");
+        
+        return firebase.auth().signInWithEmailAndPassword(normalizedEmail, password);
+    },
+    
+    logout: function() {
+        return firebase.auth().signOut();
     }
 };

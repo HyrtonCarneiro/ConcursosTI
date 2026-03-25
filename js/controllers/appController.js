@@ -18,30 +18,38 @@ window.appControllers = {
     bindEvents: function() {
         const formLogin = document.getElementById('form-login');
         if (formLogin) {
-            formLogin.addEventListener('submit', (e) => {
+            formLogin.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const user = document.getElementById('input-username').value;
                 const pass = document.getElementById('input-password').value;
                 
+                const btn = formLogin.querySelector('button[type="submit"]');
+                const originalText = btn.textContent;
+                
                 try {
-                    if (window.authLogic.login(user, pass)) {
-                        window.store.setAuth(true);
-                        window.utils.showToast("Login realizado com sucesso!", "success");
-                        this.checkAuth();
-                    }
+                    btn.disabled = true;
+                    btn.textContent = "Autenticando...";
+                    
+                    await window.authLogic.login(user, pass);
+                    // store.setAuth will be called by onAuthStateChanged in store.js
+                    window.utils.showToast("Login realizado com sucesso!", "success");
                 } catch (err) {
                     window.utils.showToast("Erro no login: " + err.message, "error");
+                    btn.disabled = false;
+                    btn.textContent = originalText;
                 }
             });
         }
 
         const btnLogout = document.getElementById('btn-logout');
         if (btnLogout) {
-            btnLogout.addEventListener('click', () => {
-                window.store.setAuth(false);
-                document.getElementById('input-password').value = '';
-                this.checkAuth();
-                window.utils.showToast("Você saiu da conta.", "info");
+            btnLogout.addEventListener('click', async () => {
+                try {
+                    await window.authLogic.logout();
+                    window.utils.showToast("Você saiu da conta.", "info");
+                } catch (err) {
+                    window.utils.showToast("Erro ao sair: " + err.message, "error");
+                }
             });
         }
     },
