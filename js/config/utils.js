@@ -28,17 +28,26 @@ window.utils = {
         }, 3000);
     },
 
-    getWeekMonday: function(dateString) {
-        // Given an ISO date YYYY-MM-DD, return the Monday of that week
-        const date = new Date(dateString + 'T12:00:00'); // avoid timezone issues
+    getWeekMonday: function(dateInput) {
+        if (!dateInput) return new Date().toISOString().split('T')[0];
+        const date = new Date(dateInput);
         const day = date.getDay();
-        const diff = date.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
-        const monday = new Date(date.setDate(diff));
-        
-        const yyyy = monday.getFullYear();
-        const mm = String(monday.getMonth() + 1).padStart(2, '0');
-        const dd = String(monday.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1); 
+        return new Date(date.setDate(diff)).toISOString().split('T')[0];
+    },
+
+    calculateCountdown: function(targetDateStr) {
+        const now = new Date();
+        const target = new Date(targetDateStr);
+        const diff = target - now;
+
+        if (diff <= 0) return "Encerrado";
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        return days + "d " + hours + "h " + minutes + "m";
     },
     
     formatDateBR: function(dateString) {

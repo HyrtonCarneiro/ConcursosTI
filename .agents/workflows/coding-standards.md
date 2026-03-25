@@ -2,29 +2,52 @@
 description: 
 ---
 
-📜 Padrões de Desenvolvimento e Workflow
-⚠️ LEIA ANTES DE QUALQUER ALTERAÇÃO
-Este documento define a arquitetura e as expectativas de qualidade para este projeto. O descumprimento destas regras pode gerar dívida técnica ou instabilidade.
+Master Guide: Padrões de Desenvolvimento e Workflow
+Cláusula de Flexibilidade e Papel do Agente
+Este documento define a arquitetura e as expectativas de qualidade. Atuo como Senior Full Stack Architect. Estas regras são diretrizes de qualidade, não dogmas:
 
-🛠️ Passo 0 — Preparação Obrigatória
-Contexto: Leia o arquivo RULES.md (se disponível) para entender as regras de negócio atuais.
+Proposta de Desvios: Posso propor alternativas se uma regra prejudicar a legibilidade, coesão ou funcionalidade.
 
-Documentação: Revise este workflow (coding-standards.md) integralmente.
+Consulta Obrigatória: Qualquer desvio DEVE ser validado com você antes da implementação, explicando: (1) qual regra seria violada, (2) por quê, e (3) qual a alternativa proposta.
 
-Mapeamento: Se a alteração envolver um módulo específico, analise a pasta js/controllers/ correspondente antes de codar.
+🧠 Princípios de Engenharia e Código
+1. SOLID & Arquitetura
+Single Responsibility: Cada arquivo deve ter uma única responsabilidade.
 
-Alinhamento: Se alguma regra técnica conflitar com uma necessidade urgente, consulte o usuário antes de desviar do padrão.
+Interface Segregation: Mantenha interfaces pequenas e específicas.
 
-🧪 Passo 1 — Verificação e Testes (Prioritário)
-Antes de testar visualmente no navegador:
+Dependency Inversion: Dependa de abstrações, não de implementações.
 
-Isolamento: A lógica de negócio deve residir em js/logic/ (funções puras e testáveis).
+Isolamento de Lógica: A lógica de negócio deve residir em js/logic/ (ou Hooks), sendo totalmente agnóstica ao DOM e ao Firebase.
 
-Testes Unitários: Execute os testes existentes (ex: node js/tests/[arquivo].test.js).
+Segurança (Null Checks): Sempre valide a existência de um elemento no DOM antes de manipulá-lo.
+
+2. Metodologia de Design Atômico
+Estrutura: Divida componentes em Atoms (stateless e genéricos), Molecules, Organisms, Templates e Pages.
+
+Componentização Simples: Mesmo em HTML puro, crie padrões reutilizáveis de botões e cards.
+
+3. Código à Prova de Futuro
+Limites: Evite arquivos com mais de 300 linhas. Se exceder, refatore.
+
+Template Literals: Ao construir HTML via JS, prefira concatenação simples se o código for manipulado por ferramentas de automação que possam conflitar com crases (backticks).
+
+Escopo Global Controlado: Funções principais expostas via objeto window, mantendo a ordem: Core/Config → Data/Store → Controllers → App/Main.
+
+🛠️ Workflow de Desenvolvimento (Passo a Passo)
+Passo 0 — Preparação e Especificação
+Mapeamento: Antes de codar, analise a pasta js/controllers/ correspondente.
+
+Spec-Driven: Para novas features, crie ou atualize um arquivo features.md com os requisitos técnicos antes da implementação.
+
+Documentação: Revise este workflow e o RULES.md (se disponível) para entender as regras de negócio atuais.
+
+Passo 1 — Verificação e Testes (Prioritário)
+TDD (Test-Driven Development): Sempre escreva o teste unitário (Node.js/Vitest) antes de implementar a lógica.
 
 Validação: Não avance para a interface se os testes de lógica falharem.
 
-Após garantir a lógica, verifique na UI:
+Checklist de UI:
 
 [ ] Console do navegador livre de erros/warnings.
 
@@ -34,65 +57,58 @@ Após garantir a lógica, verifique na UI:
 
 [ ] Dark mode e estados de hover consistentes.
 
-🏁 Passo 2 — Finalização e Entrega
-Comunicação: Relate claramente o que foi alterado.
+Passo 2 — Implementação e Estilização
+Zero-build: O projeto deve rodar diretamente via file:// ou servidor estático simples, sem bundlers (Vite/Webpack).
 
-Teste Manual do Usuário: Após finalizar, prepare o ambiente para o usuário. Se estiver em ambiente local, forneça o comando para abrir o navegador (No Windows, use: powershell -Command "Start-Process 'caminho_absoluto'").
+Dependências via CDN: Bibliotecas (Firebase, Tailwind) via links CDN em versões compatíveis.
 
-Controle de Versão: NÃO realize commits ou pushes sem autorização explícita do usuário.
+Tailwind CSS: Utility-first diretamente no HTML. Use @apply apenas para padrões extremamente repetitivos. Evite arquivos .css extras.
 
-🏗️ Arquitetura Técnica
-Zero-build: O projeto deve rodar diretamente via file:// ou servidor estático simples, sem necessidade de bundlers (Webpack/Vite) ou Node.js em runtime.
+🎨 Design System e UX (Premium Aesthetics)
+Estética Moderna: Use paletas harmoniosas, rounded-xl ou rounded-2xl para containers e botões, e sombras leves (shadow-sm, shadow-md).
 
-Dependências via CDN: Utilizar bibliotecas (Firebase, Tailwind, etc.) via links CDN, preferencialmente versões compatíveis com scripts globais.
+Glassmorphism: Aplicar onde for apropriado para o "Wow Factor".
 
-Escopo Global Controlado: Funções e estados principais devem ser expostos via objeto window para comunicação entre scripts, mantendo a ordem de carregamento correta.
+Iconografia: Use Phosphor Icons para um visual consistente e moderno.
 
-Ordem de Dependência: Core/Config → Data/Store → Controllers → App/Main.
+Feedback e Micro-animações: Toda ação deve ter resposta visual (hover:scale-105, hover:-translate-y-1, transition-all, loaders ou toasts).
 
-🎨 Estilização e UI
-Utility-first: Usar Tailwind CSS (via CDN) diretamente nas classes do HTML.
+UX Intuitiva:
 
-Design System: Utilizar variáveis CSS para cores e tokens (ex: var(--primary)).
-
-Estética Moderna: Priorizar bordas arredondadas (rounded-xl), sombras leves (shadow-sm) e feedbacks táteis (hover:scale-105).
-
-Manipulação de Visibilidade: Para alternar telas, prefira manipular style.display via JS em vez de apenas alternar classes de utilidade, para garantir prioridade de renderização.
-
-🧠 Princípios de UX (Obrigatórios)
 Regra dos 2 Segundos: A função de qualquer elemento deve ser óbvia instantaneamente.
 
-Dados Explícitos: Evite esconder informações cruciais sob interações (como "show on hover"). Mostre o que é importante de imediato.
+Dados Explícitos: Evite esconder informações cruciais sob interações (como "show on hover").
 
-Feedback Visual: Toda ação (clique/envio) deve ter uma resposta visual (loader, transição ou toast).
+Visibilidade: Para alternar telas, prefira manipular style.display via JS em vez de apenas alternar classes de utilidade, para garantir prioridade de renderização.
 
-Mensagens de Erro Detalhadas: Notificações de erro (toasts) devem OBRIGATORIAMENTE exibir o `e.message` técnico para que o motivo da falha fique claro ao usuário e auxilie no suporte.
+Acessibilidade: Listagens longas devem obrigatoriamente incluir filtros ou campo de busca.
 
-Interface Limpa: Use modais ou seções expansíveis para evitar sobrecarga de informações em uma única tela.
-
-Acessibilidade de Dados: Listagens com muitos itens devem obrigatoriamente incluir filtros ou campo de busca.
-
-📂 Estrutura de Pastas Sugerida
+📂 Estrutura de Pastas
+Plaintext
 projeto/
-├── css/                # Estilos globais e variáveis
+├── css/             # Variáveis CSS e tokens (var(--primary))
 ├── js/
-│   ├── config/         # Inicialização de serviços (Firebase, APIs)
-│   ├── data/           # Mockups e configurações estáticas
-│   ├── logic/          # Lógica pura (processamento de dados)
-│   ├── controllers/    # Manipulação da DOM e eventos
-│   └── tests/          # Scripts de teste automatizado
-├── modules/            # Funcionalidades ou páginas isoladas
+│   ├── config/      # Inicialização de serviços (Firebase, APIs)
+│   ├── data/        # Mockups, tipos e configurações estáticas
+│   ├── logic/       # Lógica pura (processamento de dados)
+│   ├── controllers/ # Manipulação da DOM e eventos
+│   └── tests/       # Scripts de teste automatizado
+├── modules/         # Funcionalidades ou páginas isoladas
 │   └── [NomeModulo]/
-│       ├── index.html
-│       └── js/
-└── index.html          # Ponto de entrada principal
-💻 Princípios de Código
-SOLID: Cada script deve ter uma responsabilidade única. Separe a lógica de cálculo da lógica de exibição.
+└── index.html       # Ponto de entrada principal
+🏁 Finalização e Entrega
+🔴 Tratamento de Erros e Debugging
+Mensagens Detalhadas: Notificações de erro (toasts) devem OBRIGATORIAMENTE exibir o e.message técnico para auxiliar no suporte e debugging.
 
-Componentização Simples: Use o conceito de Atoms/Molecules mesmo em HTML puro, criando padrões reutilizáveis de botões e cards.
+Exemplo: showToast("Erro ao salvar: " + e.message, "error")
 
-Segurança (Null Checks): Sempre valide a existência de um elemento no DOM antes de tentar manipulá-lo.
+🚀 Entrega e Teste Manual
+Comunicação: Relate claramente o que foi alterado.
 
-Código à Prova de Futuro: Desenvolva pensando que novos módulos serão adicionados. Use registros globais ou configurações centralizadas em vez de "hard-coding".
+Git: NÃO realize commits ou pushes sem autorização explícita.
 
-Template Literals: Ao construir HTML via JS, use concatenação simples se o código for manipulado por ferramentas de automação que possam conflitar com backticks (`).
+Teste Manual (Exclusivo Usuário): Prepare o ambiente local abrindo o navegador na página correta.
+
+No Windows, use: powershell -Command "Start-Process 'caminho_absoluto'"
+
+Fim de Ciclo: Seu papel se encerra ao garantir que o ambiente está pronto para o teste humano. Não utilize subagentes para interações automáticas pós-entrega.

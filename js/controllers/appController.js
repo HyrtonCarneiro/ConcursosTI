@@ -61,13 +61,13 @@ window.appControllers = {
         }
         
         // Update nav buttons styling
-        const navs = ['dashboard', 'editais', 'cadastros', 'cronograma'];
+        const navs = ['dashboard', 'editais', 'cadastros', 'cronograma', 'materiais', 'simulados', 'metas'];
         navs.forEach(nav => {
             const btn = document.getElementById('nav-' + nav);
             if (btn) {
                 if (nav === pageId) {
                     btn.classList.add('bg-primary-50', 'text-primary-600');
-                    btn.classList.remove('bg-gray-100', 'text-gray-600');
+                    btn.classList.remove('text-gray-600');
                 } else {
                     btn.classList.remove('bg-primary-50', 'text-primary-600');
                     btn.classList.add('text-gray-600');
@@ -85,20 +85,49 @@ window.appControllers = {
         if (pageId === 'cronograma') {
             if (window.cronogramaController) window.cronogramaController.renderTable();
         }
+        if (pageId === 'materiais') {
+            if (window.materialController) window.materialController.render();
+        }
+        if (pageId === 'simulados') {
+            if (window.simuladosController) window.simuladosController.init();
+        }
+        if (pageId === 'metas') {
+            if (window.gamificationController) window.gamificationController.updateUI();
+        }
     },
 
     updateDashboard: function() {
-        const state = window.store.getState();
-        const totalMaterias = state.materias.length;
-        const totalPlan = state.cronograma.length;
-        const totalPaginas = state.cronograma.reduce((acc, curr) => acc + curr.paginas, 0);
+        if (window.dashboardController) {
+            window.dashboardController.update();
+        } else {
+            // Fallback to basic if not loaded
+            const state = window.store.getState();
+            const totalMaterias = state.materias.length;
+            const totalPlan = state.cronograma.length;
+            const totalPaginas = state.estatisticas.totalPaginasLidas;
 
-        const elMaterias = document.getElementById('dash-total-materias');
-        const elConteudos = document.getElementById('dash-total-conteudos');
-        const elPaginas = document.getElementById('dash-total-paginas');
+            const elMaterias = document.getElementById('dash-total-materias');
+            const elConteudos = document.getElementById('dash-total-conteudos');
+            const elPaginas = document.getElementById('dash-total-paginas');
 
-        if (elMaterias) elMaterias.textContent = totalMaterias;
-        if (elConteudos) elConteudos.textContent = totalPlan;
-        if (elPaginas) elPaginas.textContent = totalPaginas;
+            if (elMaterias) elMaterias.textContent = totalMaterias;
+            if (elConteudos) elConteudos.textContent = totalPlan;
+            if (elPaginas) elPaginas.textContent = totalPaginas;
+        }
+    },
+
+    startCountdownTimer: function() {
+        this.updateCountdowns();
+        setInterval(() => this.updateCountdowns(), 60000); // every minute
+    },
+
+    updateCountdowns: function() {
+        const els = document.querySelectorAll('.edital-countdown');
+        els.forEach(el => {
+            const target = el.getAttribute('data-date');
+            if (target) {
+                el.textContent = window.utils.calculateCountdown(target);
+            }
+        });
     }
 };

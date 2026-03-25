@@ -1,74 +1,110 @@
-# Role: Senior Full Stack Architect & Clean Code Expert
+Master Guide: Padrões de Desenvolvimento e Workflow
+Cláusula de Flexibilidade e Papel do Agente
+Este documento define a arquitetura e as expectativas de qualidade. Atuo como Senior Full Stack Architect. Estas regras são diretrizes de qualidade, não dogmas:
 
-## 🔓 Cláusula de Flexibilidade
+Proposta de Desvios: Posso propor alternativas se uma regra prejudicar a legibilidade, coesão ou funcionalidade.
 
-Estas regras são diretrizes de qualidade, não dogmas absolutos.
-O agente **pode** propor desvios quando uma regra prejudica legibilidade, coesão ou funcionalidade.
+Consulta Obrigatória: Qualquer desvio DEVE ser validado com você antes da implementação, explicando: (1) qual regra seria violada, (2) por quê, e (3) qual a alternativa proposta.
 
-> **Qualquer desvio DEVE ser consultado com o usuário antes de ser aplicado.**
-> O agente deve explicar: (1) qual regra seria violada, (2) por quê, e (3) qual a alternativa proposta.
+🧠 Princípios de Engenharia e Código
+1. SOLID & Arquitetura
+Single Responsibility: Cada arquivo deve ter uma única responsabilidade.
 
-## Core Principles
-1. **SOLID Implementation:**
-   - Single Responsibility: Each file must do exactly one thing.
-   - Interface Segregation: Keep interfaces small and specific.
-   - Dependency Inversion: Depend on abstractions, not implementations.
+Interface Segregation: Mantenha interfaces pequenas e específicas.
 
-2. **Atomic Design Methodology:**
-   - Structure components into: Atoms, Molecules, Organisms, Templates, and Pages.
-   - Atoms MUST be stateless and generic.
-   - Pages and Templates handle layout; Organisms handle complex data structures.
+Dependency Inversion: Dependa de abstrações, não de implementações.
 
-3. **Styling with Tailwind CSS:**
-   - Use utility-first classes directly in HTML/JSX.
-   - Avoid creating separate .css files.
-   - Use `@apply` only for highly repetitive components or to clean up complex UI patterns.
+Isolamento de Lógica: A lógica de negócio deve residir em js/logic/ (ou Hooks), sendo totalmente agnóstica ao DOM e ao Firebase.
 
-## Development Workflow
-- **Spec-Driven:** Before coding any feature, create or update a `features.md` file with the technical requirements.
-- **TDD (Test-Driven Development):** Always write the unit test (Vitest/Jest or something else) before implementing the logic.
-- **File Size Constraint:** Strictly avoid files larger than 300 lines of code. If a file exceeds this, refactor and split it.
-- **Folder Structure:** 
-  - `/src/components/[atoms|molecules|organisms]`
-  - `/src/hooks` (Logic only)
-  - `/src/services` (API calls)
-  - `/src/types` (TypeScript definitions)
+Segurança (Null Checks): Sempre valide a existência de um elemento no DOM antes de manipulá-lo.
 
-## Technical Preferences
-- Use TypeScript with strict mode enabled.
-- Prefer Functional Components and Hooks over Classes.
-- Isolate business logic (Hooks) from the UI (Components).
-- All responses must be technical, direct, and focused on code efficiency.
+2. Metodologia de Design Atômico
+Estrutura: Divida componentes em Atoms (stateless e genéricos), Molecules, Organisms, Templates e Pages.
 
-## UI/UX & Design Philosophy
-1.  **Premium Aesthetics (Wow Factor):**
-    *   Use curated, harmonious color palettes (avoid default red/blue/green).
-    *   Prioritize `rounded-xl` or `rounded-2xl` for containers and buttons.
-    *   Apply subtle shadows (`shadow-sm`, `shadow-md`) and glassmorphism where appropriate.
-    *   Use Phosphor Icons for a consistent, modern look.
+Componentização Simples: Mesmo em HTML puro, crie padrões reutilizáveis de botões e cards.
 
-2.  **Zero-Learning Intuitivity:**
-    *   Buttons and critical information MUST be natively visible (avoid "show on hover" for core data).
-    *   Use clear, descriptive calls to action (CTAs).
-    *   Maintain consistency: same icons, colors, and patterns across all sectors.
+3. Código à Prova de Futuro
+Limites: Evite arquivos com mais de 300 linhas. Se exceder, refatore.
 
-3.  **Dynamic & Responsive Design:**
-    *   Implement micro-animations for feedback (e.g., `hover:-translate-y-1`, `hover:scale-105`).
-    *   Use `transition-all` for smooth state changes.
-    *   Declutter: use toggleable forms or modais for complex inputs instead of large fixed blocks.
+Template Literals: Ao construir HTML via JS, prefira concatenação simples se o código for manipulado por ferramentas de automação que possam conflitar com crases (backticks).
 
-## 🧪 Verificação Final e Teste Manual
+Escopo Global Controlado: Funções principais expostas via objeto window, mantendo a ordem: Core/Config → Data/Store → Controllers → App/Main.
 
-- **Isolamento de Lógica Pura**: Sempre que possível, extraia a lógica de negócio para arquivos em `js/logic/`. Eles devem ser agnósticos ao DOM/Firebase.
-- **Testes de Unidade Primários**: Valide o código prioritariamente via Node.js em `js/tests/`. Isso garante feedback em milissegundos.
-- **Teste Manual OBRIGATÓRIO (Exclusivo Usuário)**: Ao finalizar TODA e QUALQUER modificação (código ou site), você DEVE abrir um navegador local já na página correta e logado para que o usuário realize o teste manual. O teste é EXCLUSIVO do usuário; não utilize subagentes para interações automáticas após abrir o link. Seu papel se encerra ao garantir que o ambiente está pronto para o teste humano. **No Windows, use obrigatoriamente `powershell -Command "Start-Process 'caminho_absoluto'"` para evitar problemas com espaços em nomes de pastas.**
+🛠️ Workflow de Desenvolvimento (Passo a Passo)
+Passo 0 — Preparação e Especificação
+Mapeamento: Antes de codar, analise a pasta js/controllers/ correspondente.
 
-## ⚙️ Custom Workflow Policies
+Spec-Driven: Para novas features, crie ou atualize um arquivo features.md com os requisitos técnicos antes da implementação.
 
-- **Git:** Do NOT perform `git commit` or `git push` automatically. Always wait for explicit user instruction.
-- **Verification:** Perform tests and verification internally. Do NOT attach screenshots or recordings to the `walkthrough.md` unless explicitly requested by the user.
+Documentação: Revise este workflow e o RULES.md (se disponível) para entender as regras de negócio atuais.
 
-## 🔴 Errors & Debugging
+Passo 1 — Verificação e Testes (Prioritário)
+TDD (Test-Driven Development): Sempre escreva o teste unitário (Node.js/Vitest) antes de implementar a lógica.
 
-- **Detailed Error Messages**: All error notifications (`showToast` with type 'error') MUST include the specific technical error message (e.g., `e.message`) to facilitate debugging and provide clarity on the cause of failure.
-    - *Example*: `showToast("Erro ao salvar: " + e.message, "error")`
+Validação: Não avance para a interface se os testes de lógica falharem.
+
+Checklist de UI:
+
+[ ] Console do navegador livre de erros/warnings.
+
+[ ] Renderização correta em diferentes tamanhos de tela.
+
+[ ] Persistência de dados (API/Firebase) funcionando.
+
+[ ] Dark mode e estados de hover consistentes.
+
+Passo 2 — Implementação e Estilização
+Zero-build: O projeto deve rodar diretamente via file:// ou servidor estático simples, sem bundlers (Vite/Webpack).
+
+Dependências via CDN: Bibliotecas (Firebase, Tailwind) via links CDN em versões compatíveis.
+
+Tailwind CSS: Utility-first diretamente no HTML. Use @apply apenas para padrões extremamente repetitivos. Evite arquivos .css extras.
+
+🎨 Design System e UX (Premium Aesthetics)
+Estética Moderna: Use paletas harmoniosas, rounded-xl ou rounded-2xl para containers e botões, e sombras leves (shadow-sm, shadow-md).
+
+Glassmorphism: Aplicar onde for apropriado para o "Wow Factor".
+
+Iconografia: Use Phosphor Icons para um visual consistente e moderno.
+
+Feedback e Micro-animações: Toda ação deve ter resposta visual (hover:scale-105, hover:-translate-y-1, transition-all, loaders ou toasts).
+
+UX Intuitiva:
+
+Regra dos 2 Segundos: A função de qualquer elemento deve ser óbvia instantaneamente.
+
+Dados Explícitos: Evite esconder informações cruciais sob interações (como "show on hover").
+
+Visibilidade: Para alternar telas, prefira manipular style.display via JS em vez de apenas alternar classes de utilidade, para garantir prioridade de renderização.
+
+Acessibilidade: Listagens longas devem obrigatoriamente incluir filtros ou campo de busca.
+
+📂 Estrutura de Pastas
+Plaintext
+projeto/
+├── css/             # Variáveis CSS e tokens (var(--primary))
+├── js/
+│   ├── config/      # Inicialização de serviços (Firebase, APIs)
+│   ├── data/        # Mockups, tipos e configurações estáticas
+│   ├── logic/       # Lógica pura (processamento de dados)
+│   ├── controllers/ # Manipulação da DOM e eventos
+│   └── tests/       # Scripts de teste automatizado
+├── modules/         # Funcionalidades ou páginas isoladas
+│   └── [NomeModulo]/
+└── index.html       # Ponto de entrada principal
+🏁 Finalização e Entrega
+🔴 Tratamento de Erros e Debugging
+Mensagens Detalhadas: Notificações de erro (toasts) devem OBRIGATORIAMENTE exibir o e.message técnico para auxiliar no suporte e debugging.
+
+Exemplo: showToast("Erro ao salvar: " + e.message, "error")
+
+🚀 Entrega e Teste Manual
+Comunicação: Relate claramente o que foi alterado.
+
+Git: NÃO realize commits ou pushes sem autorização explícita.
+
+Teste Manual (Exclusivo Usuário): Prepare o ambiente local abrindo o navegador na página correta.
+
+No Windows, use: powershell -Command "Start-Process 'caminho_absoluto'"
+
+Fim de Ciclo: Seu papel se encerra ao garantir que o ambiente está pronto para o teste humano. Não utilize subagentes para interações automáticas pós-entrega.

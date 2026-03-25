@@ -123,20 +123,72 @@ window.cronogramaController = {
             const conteudo = window.store.getState().conteudos.find(c => c.id === item.conteudoId);
             
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50 transition-colors group';
-            tr.innerHTML = `
-                <td class="p-4 text-sm font-medium text-gray-900">${window.utils.formatDateBR(item.semana)}</td>
-                <td class="p-4 text-sm text-gray-700">${materia ? materia.nome : '-'}</td>
-                <td class="p-4 text-sm text-gray-700">${conteudo ? conteudo.nome : '-'}</td>
-                <td class="p-4 text-sm font-semibold text-primary-600 text-center">${item.paginas}</td>
-                <td class="p-4 text-sm text-center">
-                    <button class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all font-medium flex items-center gap-1 mx-auto" onclick="window.cronogramaController.removerItem('${item.id}')">
-                        <i class="ph ph-trash"></i> Remover
-                    </button>
-                </td>
-            `;
+            tr.className = 'hover:bg-gray-50 transition-colors group ' + (item.concluido ? 'opacity-60 bg-gray-50' : '');
+            
+            const contentHTML = ' \
+                <td class="p-4 text-sm font-medium text-gray-900">' + window.utils.formatDateBR(item.semana) + '</td> \
+                <td class="p-4 text-sm text-gray-700">' + (materia ? materia.nome : '-') + '</td> \
+                <td class="p-4 text-sm text-gray-700"> \
+                    <div class="flex flex-col"> \
+                        <span class="' + (item.concluido ? 'line-through text-gray-400' : 'font-medium') + '">' + (conteudo ? conteudo.nome : '-') + '</span> \
+                        <button onclick="window.cronogramaController.goMaterial(\'' + item.conteudoId + '\')" class="text-xs text-primary-500 hover:underline flex items-center gap-1 mt-1"> \
+                            <i class="ph ph-notebook"></i> Notas/Links \
+                        </button> \
+                    </div> \
+                </td> \
+                <td class="p-4 text-sm font-semibold text-primary-600 text-center">' + item.paginas + '</td> \
+                <td class="p-4 text-sm"> \
+                    <div class="flex items-center justify-center gap-3"> \
+                        <button onclick="window.cronogramaController.toggleConcluido(\'' + item.id + '\')" class="w-8 h-8 rounded-full border-2 ' + (item.concluido ? 'bg-green-500 border-green-500 text-white' : 'border-gray-200 text-transparent hover:border-green-500') + ' flex items-center justify-center transition-all"> \
+                            <i class="ph ph-check-bold scale-75"></i> \
+                        </button> \
+                        <button onclick="window.cronogramaController.startFocus(\'' + item.id + '\')" class="w-8 h-8 rounded-xl bg-primary-100 text-primary-600 hover:bg-primary-600 hover:text-white flex items-center justify-center transition-all" title="Iniciar Pomodoro"> \
+                            <i class="ph ph-timer"></i> \
+                        </button> \
+                        <button class="w-8 h-8 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" onclick="window.cronogramaController.removerItem(\'' + item.id + '\')" title="Remover"> \
+                            <i class="ph ph-trash"></i> \
+                        </button> \
+                    </div> \
+                </td>';
+            
+            tr.innerHTML = contentHTML;
             this.tbody.appendChild(tr);
         });
+    },
+
+    toggleConcluido: function(id) {
+        try {
+            const item = window.store.getState().cronograma.find(i => i.id === id);
+            if (item.concluido) {
+                item.concluido = false;
+                item.dataConclusao = null;
+                // Note: reverting stats is complex, leaving for now as user just asked to mark.
+            } else {
+                window.store.concluirItemCronograma(id);
+                window.spacedRepetition.gerarRevisoesParaConteudo(item.conteudoId, item.dataConclusao);
+                window.utils.showToast("Estudo concluído! Revisões agendadas.", "success");
+            }
+            this.renderTable();
+        } catch (e) {
+            window.utils.showToast("Erro: " + e.message, "error");
+        }
+    },
+
+    startFocus: function(id) {
+        const item = window.store.getState().cronograma.find(i => i.id === id);
+        const materia = window.store.getState().materias.find(m => m.id === item.materiaId);
+        const conteudo = window.store.getState().conteudos.find(c => c.id === item.conteudoId);
+        
+        if (window.pomodoroController) {
+            window.pomodoroController.openWithContext(materia.nome + ": " + conteudo.nome);
+        }
+    },
+
+    goMaterial: function(conteudoId) {
+        window.appControllers.navigate('materiais');
+        if (window.materialController) {
+            window.materialController.focusOn(conteudoId);
+        }
     },
 
     removerItem: function(id) {

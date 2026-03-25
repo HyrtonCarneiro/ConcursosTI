@@ -33,6 +33,8 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Global CSS -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-background text-gray-800 font-sans min-h-screen">
     <!-- Toasts Container -->
@@ -69,10 +71,13 @@
                 <span class="text-xl font-bold text-gray-800">ConcursosTI</span>
             </div>
             <div class="flex gap-4">
-                <button onclick="window.appControllers.navigate('dashboard')" id="nav-dashboard" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors bg-gray-100">Dashboard</button>
+                <button onclick="window.appControllers.navigate('dashboard')" id="nav-dashboard" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Dashboard</button>
                 <button onclick="window.appControllers.navigate('editais')" id="nav-editais" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Editais</button>
                 <button onclick="window.appControllers.navigate('cadastros')" id="nav-cadastros" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cadastros</button>
-                <button onclick="window.appControllers.navigate('cronograma')" id="nav-cronograma" class="px-4 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">Cronograma</button>
+                <button onclick="window.appControllers.navigate('cronograma')" id="nav-cronograma" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cronograma</button>
+                <button onclick="window.appControllers.navigate('materiais')" id="nav-materiais" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Materiais</button>
+                <button onclick="window.appControllers.navigate('simulados')" id="nav-simulados" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Simulados</button>
+                <button onclick="window.appControllers.navigate('metas')" id="nav-metas" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Metas</button>
             </div>
             <div>
                 <button id="btn-logout" class="text-sm font-medium text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
@@ -140,6 +145,7 @@
                             <div>
                                 <h3 class="font-bold text-gray-800">Concurso Público Federal - TI</h3>
                                 <p class="text-sm text-gray-500">Status: Inscrições Abertas</p>
+                                <p class="text-xs text-primary-500 font-bold mt-1">Prova em: <span class="edital-countdown" data-date="2026-06-20">Calculando...</span></p>
                             </div>
                         </div>
                         <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">ATIVO</span>
@@ -153,6 +159,7 @@
                             <div>
                                 <h3 class="font-bold text-gray-800">Analista de Sistemas - Prefeitura</h3>
                                 <p class="text-sm text-gray-500">Status: Finalizado</p>
+                                <p class="text-xs text-gray-400 mt-1">Realizada em: 15/02/2026</p>
                             </div>
                         </div>
                         <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">ENCERRADO</span>
@@ -278,7 +285,91 @@
                 </div>
 
             </section>
+
+            <!-- Materiais Page -->
+            <section id="page-materiais" class="page-section hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Meu Material (Knowledge Base)</h2>
+                    <div class="relative w-64">
+                        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="input-search-materiais" class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all text-sm" placeholder="Buscar material...">
+                    </div>
+                </div>
+                <div id="container-materiais" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards de materiais injetados via JS -->
+                </div>
+            </section>
+
+            <!-- Simulados Page -->
+            <section id="page-simulados" class="page-section hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Histórico de Simulados</h2>
+                    <button id="btn-novo-simulado" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2">
+                        <i class="ph ph-plus-circle"></i> Novo Simulado
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-gray-800 mb-4">Evolução de Desempenho</h3>
+                        <canvas id="chart-simulados" height="200"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="font-bold text-gray-800 mb-4">Últimas Provas</h3>
+                        <div id="list-simulados" class="flex flex-col gap-3">
+                            <!-- Lista de simulados via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Metas Page -->
+            <section id="page-metas" class="page-section hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Metas e Recompensas</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-gradient-to-br from-orange-400 to-red-500 p-6 rounded-2xl shadow-lg text-white">
+                        <p class="text-sm opacity-80">Estudando há</p>
+                        <p id="stat-streak" class="text-4xl font-black">5 dias</p>
+                        <p class="text-xs mt-2 italic">Não quebre a corrente!</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Média de Acertos</p>
+                        <p id="stat-media-acertos" class="text-3xl font-bold text-gray-800">82%</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Maratona</p>
+                        <p id="stat-total-horas" class="text-3xl font-bold text-gray-800">42h 30m</p>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-800 mb-6">Suas Medalhas</h3>
+                    <div id="container-badges" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                        <!-- Badges via JS -->
+                    </div>
+                </div>
+            </section>
         </main>
+
+        <!-- Pomodoro Floating Widget -->
+        <div id="pomodoro-widget" class="fixed bottom-6 right-6 z-50 pointer-events-none">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 transition-all duration-300 translate-y-20 opacity-0 pointer-events-auto w-64" id="pomodoro-content">
+                <div class="flex items-center justify-between mb-3">
+                    <span id="pomo-label" class="text-xs font-bold uppercase tracking-wider text-primary-600">Modo Foco</span>
+                    <button id="btn-pomo-close" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x"></i></button>
+                </div>
+                <div class="text-center mb-4">
+                    <p id="pomo-timer" class="text-4xl font-black text-gray-800 tabular-nums">25:00</p>
+                    <p id="pomo-materia" class="text-xs text-gray-500 truncate mt-1">Nenhuma matéria ativa</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-pomo-toggle" class="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-xl font-medium transition-all">Iniciar</button>
+                    <button id="btn-pomo-reset" class="px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-all"><i class="ph ph-arrow-counter-clockwise"></i></button>
+                </div>
+            </div>
+            <!-- FAB (Floating Action Button) to toggle widget -->
+            <button id="btn-pomo-fab" class="bg-primary-600 hover:bg-primary-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 pointer-events-auto ml-auto mt-4">
+                <i class="ph ph-timer text-2xl"></i>
+            </button>
+        </div>
     </div>
 
     <!-- Scripts (Zero Build Import System) -->
@@ -290,10 +381,16 @@
     <!-- 3. Logic -->
     <script src="js/logic/auth.js"></script>
     <script src="js/logic/cronogramaLogic.js"></script>
+    <script src="js/logic/spacedRepetition.js"></script>
+    <script src="js/logic/pomodoro.js"></script>
     <!-- 4. Controllers -->
     <script src="js/controllers/appController.js"></script>
     <script src="js/controllers/cronogramaController.js"></script>
     <script src="js/controllers/cadastrosController.js"></script>
+    <script src="js/controllers/pomodoroController.js"></script>
+    <script src="js/controllers/materialController.js"></script>
+    <script src="js/controllers/simuladosController.js"></script>
+    <script src="js/controllers/gamificationController.js"></script>
     <script src="js/controllers/main.js"></script>
 </body>
 </html>
