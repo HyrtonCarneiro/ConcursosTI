@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estudos TI</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#f8fafc',
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Firebase SDK (CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-background text-gray-800 font-sans min-h-screen">
+    <!-- Toasts Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- Login View -->
+    <div id="view-login" class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-lg shadow-gray-200/50 w-full max-w-md border border-gray-100">
+            <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">Estudos TI</h1>
+            <p class="text-center text-gray-500 mb-8">Organize seu cronograma</p>
+            
+            <form id="form-login" class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Usuário</label>
+                    <input type="text" id="input-username" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="Hyrton" autocomplete="username">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                    <input type="password" id="input-password" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button type="submit" class="mt-4 w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                    Entrar
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App View (Hidden purely by display: none to allow init mapping) -->
+    <div id="view-app" class="hidden min-h-screen bg-background">
+        <!-- Sidebar / Navigation -->
+        <nav class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+            <div class="flex items-center gap-2">
+                <i class="ph ph-books text-primary-600 text-3xl"></i>
+                <span class="text-xl font-bold text-gray-800">Estudos TI</span>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="window.appControllers.navigate('dashboard')" id="nav-dashboard" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors bg-gray-100">Dashboard</button>
+                <button onclick="window.appControllers.navigate('editais')" id="nav-editais" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Editais</button>
+                <button onclick="window.appControllers.navigate('cadastros')" id="nav-cadastros" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cadastros</button>
+                <button onclick="window.appControllers.navigate('cronograma')" id="nav-cronograma" class="px-4 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">Cronograma</button>
+            </div>
+            <div>
+                <button id="btn-logout" class="text-sm font-medium text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                    <i class="ph ph-sign-out"></i> Sair
+                </button>
+            </div>
+        </nav>
+
+        <!-- Pages Content -->
+        <main class="max-w-7xl mx-auto p-6">
+            
+            <!-- Dashboard Page -->
+            <section id="page-dashboard" class="page-section hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Sua Evolução</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                                <i class="ph ph-book-open text-2xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Total Matérias</p>
+                                <p id="dash-total-materias" class="text-2xl font-bold text-gray-800">2</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
+                                <i class="ph ph-graduation-cap text-2xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Conteúdos no Plano</p>
+                                <p id="dash-total-conteudos" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
+                                <i class="ph ph-pages text-2xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Páginas Lidas</p>
+                                <p id="dash-total-paginas" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-800 mb-4">Próximos Passos</h3>
+                    <p class="text-gray-600">Você ainda não completou estudos esta semana. Acesse a aba **Cronograma** para planejar sua rotina.</p>
+                </div>
+            </section>
+
+            <!-- Editais Page -->
+            <section id="page-editais" class="page-section hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Acompanhamento de Editais</h2>
+                <div class="flex flex-col gap-4">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center group hover:border-primary-500 transition-all cursor-pointer">
+                        <div class="flex gap-4">
+                            <div class="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-primary-50 group-hover:text-primary-600 transition-colors">
+                                <i class="ph ph-file-text text-3xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Concurso Público Federal - TI</h3>
+                                <p class="text-sm text-gray-500">Status: Inscrições Abertas</p>
+                            </div>
+                        </div>
+                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">ATIVO</span>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center opacity-70">
+                        <div class="flex gap-4">
+                            <div class="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400">
+                                <i class="ph ph-file-text text-3xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800">Analista de Sistemas - Prefeitura</h3>
+                                <p class="text-sm text-gray-500">Status: Finalizado</p>
+                            </div>
+                        </div>
+                        <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">ENCERRADO</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cadastros Page (Materias e Conteudos) -->
+            <section id="page-cadastros" class="page-section hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Cadastrar Materiais</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Cadastro de Materias -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">Nova Matéria</h3>
+                        <form id="form-materia" class="flex flex-col gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Matéria</label>
+                                <input type="text" id="input-materia-nome" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="Ex: Banco de Dados">
+                            </div>
+                            <button type="submit" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 rounded-xl transition-all shadow-sm hover:shadow-md">
+                                Salvar Matéria
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Cadastro de Conteudos -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">Novo Conteúdo</h3>
+                        <form id="form-conteudo" class="flex flex-col gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Vincular Matéria</label>
+                                <select id="select-materia" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all bg-white">
+                                    <option value="" disabled selected>Carregando matérias...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Conteúdo/Aula</label>
+                                <input type="text" id="input-conteudo-nome" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="Ex: Modelagem Entidade-Relacionamento">
+                            </div>
+                            <button type="submit" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 rounded-xl transition-all shadow-sm hover:shadow-md">
+                                Salvar Conteúdo
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cronograma Page -->
+            <section id="page-cronograma" class="page-section hidden block">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Cronograma Semanal</h2>
+                    <button id="btn-novo-cronograma" class="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl font-medium shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                        <i class="ph ph-plus-circle text-lg"></i> Adicionar Estudo
+                    </button>
+                </div>
+
+                <!-- Tabela do Cronograma -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-100">
+                                    <th class="p-4 text-sm font-semibold text-gray-600">SEMANA</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">MATÉRIA</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600">CONTEÚDO</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600 text-center">NÚMERO DE PÁGINAS</th>
+                                    <th class="p-4 text-sm font-semibold text-gray-600 text-center">AÇÕES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-cronograma" class="divide-y divide-gray-100 bg-white">
+                                <!-- Linhas injetadas via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Modal Cronograma (Oculto inicialmente) -->
+                <div id="modal-cronograma" class="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-sm shadow-xl hidden flex-col items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden scale-95 opacity-0 transition-all duration-200" id="modal-cronograma-content">
+                        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <i class="ph ph-calendar-plus text-primary-600"></i> Adicionar ao Cronograma
+                            </h3>
+                            <button id="btn-fechar-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="ph ph-x text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <form id="form-item-cronograma" class="flex flex-col gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Semana (Segunda-feira)</label>
+                                    <!-- Using type="date" and validating via JS to ensure it's a Monday -->
+                                    <input type="date" id="input-cronograma-semana" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all text-gray-700">
+                                    <p class="text-xs text-gray-400 mt-1">Selecione uma data. Será ajustada para a Segunda-feira da semana correspondente.</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Matéria</label>
+                                    <select id="select-cronograma-materia" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all bg-white">
+                                        <option value="" disabled selected>Selecione uma matéria</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Conteúdos Multiplos</label>
+                                    <div id="container-conteudos-checkboxes" class="max-h-40 overflow-y-auto border border-gray-200 p-3 rounded-xl bg-gray-50 flex flex-col gap-2">
+                                        <span class="text-sm text-gray-400 italic">Selecione a matéria primeiro...</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Número de Páginas (por Conteúdo)</label>
+                                    <input type="number" min="1" id="input-cronograma-paginas" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="Ex: 10">
+                                </div>
+
+                                <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end gap-3">
+                                    <button type="button" id="btn-cancelar-modal" class="px-4 py-2 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors">Cancelar</button>
+                                    <button type="submit" class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium shadow-sm transition-all">Salvar Item</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts (Zero Build Import System) -->
+    <!-- 1. Config / Utils -->
+    <script src="js/config/firebase.js"></script>
+    <script src="js/config/utils.js"></script>
+    <!-- 2. Data / Store -->
+    <script src="js/data/store.js"></script>
+    <!-- 3. Logic -->
+    <script src="js/logic/auth.js"></script>
+    <script src="js/logic/cronogramaLogic.js"></script>
+    <!-- 4. Controllers -->
+    <script src="js/controllers/appController.js"></script>
+    <script src="js/controllers/cronogramaController.js"></script>
+    <script src="js/controllers/cadastrosController.js"></script>
+    <script src="js/controllers/main.js"></script>
+</body>
+</html>
