@@ -167,20 +167,22 @@
                     <!-- Cadastro de Conteudos -->
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h3 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">Novo Conteúdo</h3>
-                        <form id="form-conteudo" class="flex flex-col gap-4">
+                        <form id="form-conteudo" class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Vincular Matéria</label>
-                                <select id="select-materia" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all bg-white">
-                                    <option value="" disabled selected>Carregando matérias...</option>
+                                <select id="select-materia" class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
+                                    <option value="" disabled selected>Selecione uma matéria</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nome do Conteúdo/Aula</label>
-                                <input type="text" id="input-conteudo-nome" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="Ex: Modelagem Entidade-Relacionamento">
+                                <input type="text" id="input-conteudo-nome" placeholder="Ex: Modelagem Entidade-Relacionamento" class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
                             </div>
-                            <button type="submit" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 rounded-xl transition-all shadow-sm hover:shadow-md">
-                                Salvar Conteúdo
-                            </button>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Total de Páginas</label>
+                                <input type="number" id="input-conteudo-paginas" placeholder="Ex: 50" class="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
+                            </div>
+                            <button type="submit" class="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 rounded-xl font-bold transition-all shadow-sm">Salvar Conteúdo</button>
                         </form>
                     </div>
                 </div>
@@ -247,11 +249,6 @@
                                     <div id="container-conteudos-checkboxes" class="max-h-40 overflow-y-auto border border-gray-200 p-3 rounded-xl bg-gray-50 flex flex-col gap-2">
                                         <span class="text-sm text-gray-400 italic">Selecione a matéria primeiro...</span>
                                     </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Número de Páginas (por Conteúdo)</label>
-                                    <input type="number" min="1" id="input-cronograma-paginas" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="Ex: 10">
                                 </div>
 
                                 <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end gap-3">

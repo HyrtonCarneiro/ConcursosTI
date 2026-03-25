@@ -7,32 +7,42 @@ window.cronogramaController = {
     cacheDOM: function() {
         this.modal = document.getElementById('modal-cronograma');
         this.modalContent = document.getElementById('modal-cronograma-content');
-        this.btnNovo = document.getElementById('btn-novo-cronograma');
-        this.btnFechar = document.getElementById('btn-fechar-modal');
-        this.btnCancelar = document.getElementById('btn-cancelar-modal');
-        this.form = document.getElementById('form-item-cronograma');
+        this.btnAdicionarEstudo = document.getElementById('btn-novo-cronograma');
+        this.btnFecharModal = document.getElementById('btn-fechar-modal');
+        this.btnCancelarModal = document.getElementById('btn-cancelar-modal');
+        this.formItem = document.getElementById('form-item-cronograma');
         this.tbody = document.getElementById('tbody-cronograma');
-        this.selectMateria = document.getElementById('select-cronograma-materia');
-        this.containerConteudos = document.getElementById('container-conteudos-checkboxes');
+        this.selectMateriaModal = document.getElementById('select-cronograma-materia');
+        this.containerCheckboxes = document.getElementById('container-conteudos-checkboxes');
+        this.inputSemana = document.getElementById('input-cronograma-semana');
     },
 
     bindEvents: function() {
-        if (!this.btnNovo) return;
+        if (this.btnAdicionarEstudo) {
+            this.btnAdicionarEstudo.addEventListener('click', () => this.openModal());
+        }
 
-        this.btnNovo.addEventListener('click', () => this.openModal());
-        this.btnFechar.addEventListener('click', () => this.closeModal());
-        this.btnCancelar.addEventListener('click', () => this.closeModal());
+        if (this.btnFecharModal) {
+            this.btnFecharModal.addEventListener('click', () => this.closeModal());
+        }
+
+        if (this.btnCancelarModal) {
+            this.btnCancelarModal.addEventListener('click', () => this.closeModal());
+        }
         
         // Mudar matéria no modal
-        this.selectMateria.addEventListener('change', (e) => {
-            this.renderConteudosCheckboxes(e.target.value);
-        });
+        if (this.selectMateriaModal) {
+            this.selectMateriaModal.addEventListener('change', (e) => {
+                this.renderConteudosCheckboxes(e.target.value);
+            });
+        }
 
         // Submit form
-        this.form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleSave();
-        });
+        if (this.formItem) {
+            this.formItem.addEventListener('submit', (e) => {
+                this.handleSalvarItem(e);
+            });
+        }
     },
 
     openModal: function() {
@@ -40,16 +50,15 @@ window.cronogramaController = {
         this.modal.classList.add('flex');
         
         // Populate Materias
-        this.selectMateria.innerHTML = '<option value="" disabled selected>Selecione uma matéria</option>';
+        this.selectMateriaModal.innerHTML = '<option value="" disabled selected>Selecione uma matéria</option>';
         window.store.getState().materias.forEach(m => {
             const opt = document.createElement('option');
             opt.value = m.id;
             opt.textContent = m.nome;
-            this.selectMateria.appendChild(opt);
+            this.selectMateriaModal.appendChild(opt);
         });
 
         requestAnimationFrame(() => {
-            this.modal.classList.remove('bg-gray-900/0');
             this.modalContent.classList.remove('scale-95', 'opacity-0');
         });
     },
@@ -59,17 +68,17 @@ window.cronogramaController = {
         setTimeout(() => {
             this.modal.classList.add('hidden');
             this.modal.classList.remove('flex');
-            this.form.reset();
-            this.containerConteudos.innerHTML = '<span class="text-sm text-gray-400 italic">Selecione a matéria primeiro...</span>';
+            this.formItem.reset();
+            this.containerCheckboxes.innerHTML = '<span class="text-sm text-gray-400 italic">Selecione a matéria primeiro...</span>';
         }, 200);
     },
 
     renderConteudosCheckboxes: function(materiaId) {
         const conteudos = window.store.getConteudosPorMateria(materiaId);
-        this.containerConteudos.innerHTML = '';
+        this.containerCheckboxes.innerHTML = '';
         
         if (conteudos.length === 0) {
-            this.containerConteudos.innerHTML = '<span class="text-sm text-gray-500">Nenhum conteúdo cadastrado para esta matéria.</span>';
+            this.containerCheckboxes.innerHTML = '<span class="text-sm text-gray-500">Nenhum conteúdo cadastrado para esta matéria.</span>';
             return;
         }
 
@@ -78,26 +87,32 @@ window.cronogramaController = {
             label.className = 'flex items-center gap-2 cursor-pointer bg-white p-2 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors';
             label.innerHTML = `
                 <input type="checkbox" name="conteudoCheckbox" value="${c.id}" class="rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
-                <span class="text-sm text-gray-700 font-medium">${c.nome}</span>
+                <span class="text-sm text-gray-700 font-medium">${c.nome} <span class="text-xs text-gray-400 font-normal">(${c.paginas || 0} pág.)</span></span>
             `;
-            this.containerConteudos.appendChild(label);
+            this.containerCheckboxes.appendChild(label);
         });
     },
 
-    handleSave: function() {
-        const dateInput = document.getElementById('input-cronograma-semana').value;
-        const materiaId = this.selectMateria.value;
-        const checkboxes = document.querySelectorAll('input[name="conteudoCheckbox"]:checked');
+    handleSalvarItem: function(e) {
+        if (e) e.preventDefault();
+        
+        const dateInput = this.inputSemana.value;
+        const materiaId = this.selectMateriaModal.value;
+        const checkboxes = this.containerCheckboxes.querySelectorAll('input[name="conteudoCheckbox"]:checked');
         const conteudosList = Array.from(checkboxes).map(cb => cb.value);
-        const paginas = document.getElementById('input-cronograma-paginas').value;
+
+        if (!dateInput || !materiaId || conteudosList.length === 0) {
+            window.utils.showToast("Preencha todos os campos obrigatórios", "error");
+            return;
+        }
 
         try {
             const semana = window.utils.getWeekMonday(dateInput);
-            window.cronogramaLogic.validateItem(semana, materiaId, conteudosList, paginas);
+            window.cronogramaLogic.validateItem(semana, materiaId, conteudosList);
             
             // Salvar para cada conteudo selecionado
             conteudosList.forEach(conteudoId => {
-                window.store.addCronogramaItem(semana, materiaId, conteudoId, paginas);
+                window.store.addCronogramaItem(semana, materiaId, conteudoId);
             });
             
             window.utils.showToast("Estudo(s) adicionado(s) com sucesso", "success");

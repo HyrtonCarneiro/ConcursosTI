@@ -10,6 +10,7 @@ window.cadastrosController = {
         this.formConteudo = document.getElementById('form-conteudo');
         this.inputMateriaNome = document.getElementById('input-materia-nome');
         this.inputConteudoNome = document.getElementById('input-conteudo-nome');
+        this.inputConteudoPaginas = document.getElementById('input-conteudo-paginas');
         this.selectMateria = document.getElementById('select-materia');
     },
 
@@ -32,9 +33,12 @@ window.cadastrosController = {
             this.formConteudo.addEventListener('submit', (e) => {
                 e.preventDefault();
                 try {
-                    window.store.addConteudo(this.selectMateria.value, this.inputConteudoNome.value.trim());
+                    const nome = this.inputConteudoNome.value.trim();
+                    const paginas = this.inputConteudoPaginas.value;
+                    window.store.addConteudo(this.selectMateria.value, nome, paginas);
                     window.utils.showToast("Conteúdo salvo com sucesso!", "success");
                     this.inputConteudoNome.value = '';
+                    this.inputConteudoPaginas.value = '';
                 } catch(e) {
                     window.utils.showToast("Erro ao salvar: " + e.message, "error");
                 }

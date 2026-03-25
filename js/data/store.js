@@ -35,10 +35,10 @@ window.store = {
         return id;
     },
 
-    addConteudo: function(materiaId, nome) {
+    addConteudo: function(materiaId, nome, paginas) {
         if (!materiaId || !nome) throw new Error("Matéria e conteúdo são obrigatórios");
         const id = 'c' + Date.now();
-        this.state.conteudos.push({ id, materiaId, nome });
+        this.state.conteudos.push({ id, materiaId, nome, paginas: Number(paginas) || 0 });
         this.save();
         return id;
     },
@@ -47,15 +47,21 @@ window.store = {
         return this.state.conteudos.filter(c => c.materiaId === materiaId);
     },
 
-    addCronogramaItem: function(semana, materiaId, conteudoId, paginas) {
-        if (!semana || !materiaId || !conteudoId || !paginas) throw new Error("Todos os campos do cronograma são obrigatórios");
-        const id = 'cron_' + Date.now() + Math.random().toString(16).slice(2);
+    addCronogramaItem: function(semana, materiaId, conteudoId, paginasOverride) {
+        const id = 'cri' + Date.now();
+        
+        // If paginas not provided, fetch from content
+        let paginas = paginasOverride;
+        if (!paginas) {
+            const conteudo = this.state.conteudos.find(c => c.id === conteudoId);
+            paginas = conteudo ? (conteudo.paginas || 0) : 0;
+        }
+
         const item = { 
             id, 
             semana, 
             materiaId, 
             conteudoId, 
-            paginas: parseInt(paginas, 10),
             concluido: false,
             dataConclusao: null
         };

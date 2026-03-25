@@ -4,10 +4,9 @@ window.cronogramaLogic = {
         return true;
     },
     
-    validateItem: function(semana, materiaId, conteudosList, paginas) {
+    validateItem: function(semana, materiaId, conteudosList) {
         if (!this.isValidWeek(semana)) throw new Error("Semana inválida");
         if (!materiaId) throw new Error("Selecione uma matéria");
         if (!conteudosList || conteudosList.length === 0) throw new Error("Selecione no mínimo um conteúdo");
-        if (!paginas || parseInt(paginas, 10) < 1) throw new Error("O número de páginas é obrigatório (mínimo 1)");
     }
 };
