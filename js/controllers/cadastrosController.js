@@ -15,8 +15,8 @@ window.cadastrosController = {
         this.selectMateria = document.getElementById('select-materia');
 
         // Management Lists
-        this.listMaterias = document.getElementById('list-materias');
-        this.listConteudos = document.getElementById('list-conteudos');
+        this.materiasListEl = document.getElementById('list-materias');
+        this.conteudosListEl = document.getElementById('list-conteudos');
 
         // Edit Materia Modal
         this.modalEditMateria = document.getElementById('modal-edit-materia');
@@ -186,7 +186,7 @@ window.cadastrosController = {
         }
     },
 
-    abrirEditConteudo: function(id) {
+    abrirModalEditarConteudo: function(id) {
         const conteudo = window.store.getState().conteudos.find(c => c.id === id);
         if (conteudo) {
             this.inputEditConteudoId.value = conteudo.id;

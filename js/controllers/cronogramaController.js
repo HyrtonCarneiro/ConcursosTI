@@ -160,6 +160,10 @@ window.cronogramaController = {
                 lastRenderedSemana = item.semana;
             }
 
+            const state = window.store.getState();
+            const materia = state.materias.find(m => m.id === item.materiaId) || { nome: 'Matéria' };
+            const conteudo = state.conteudos.find(c => c.id === item.conteudoId) || { nome: 'Conteúdo' };
+
             const tr = document.createElement('tr');
             tr.className = 'group hover:bg-primary-50/50 transition-colors';
             
@@ -177,8 +181,8 @@ window.cronogramaController = {
                 </td>
                 <td class="px-8 py-5">
                     <div class="flex flex-col">
-                        <span class="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1">${item.materiaNome || 'Matéria'}</span>
-                        <span class="${textClass} tracking-tight line-clamp-1">${item.conteudoNome || 'Conteúdo'}</span>
+                        <span class="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1">${materia.nome}</span>
+                        <span class="${textClass} tracking-tight line-clamp-1">${conteudo.nome}</span>
                     </div>
                 </td>
                 <td class="px-8 py-5">
@@ -186,6 +190,9 @@ window.cronogramaController = {
                         <i class="${statusIcon} text-2xl transition-transform group-hover/btn:scale-110"></i>
                         <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest ${item.concluido ? 'text-green-600' : ''}">${item.concluido ? 'Concluído' : 'Pendente'}</span>
                     </button>
+                </td>
+                <td class="px-8 py-5 text-center">
+                    <span class="px-3 py-1.5 bg-gray-50 text-[10px] font-black text-gray-500 rounded-xl uppercase tracking-widest">${item.paginas || '--'} Pág.</span>
                 </td>
                 <td class="px-8 py-5 text-right">
                     <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

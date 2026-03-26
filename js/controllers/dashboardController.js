@@ -71,7 +71,9 @@ window.dashboardController = {
         const cronograma = state.cronograma || [];
         const counts = {};
         cronograma.filter(i => i.concluido).forEach(i => {
-            counts[i.materiaNome] = (counts[i.materiaNome] || 0) + 1;
+            const materia = state.materias.find(m => m.id === i.materiaId);
+            const nome = materia ? materia.nome : 'Matéria';
+            counts[nome] = (counts[nome] || 0) + 1;
         });
 
         const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 4);
