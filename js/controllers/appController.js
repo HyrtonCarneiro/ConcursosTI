@@ -1,4 +1,6 @@
 window.appControllers = {
+    currentPage: null,
+
     init: function() {
         this.checkAuth();
         this.bindEvents();
@@ -8,10 +10,18 @@ window.appControllers = {
         if (window.store.getState().isAuthenticated) {
             document.getElementById('view-login').classList.add('hidden');
             document.getElementById('view-app').classList.remove('hidden');
-            this.navigate('dashboard'); // default route
+            
+            // Navigate to dashboard ONLY if we are starting fresh (no current page)
+            if (!this.currentPage) {
+                this.navigate('dashboard');
+            } else {
+                // Just refresh the current page to reflect new cloud data
+                this.navigate(this.currentPage);
+            }
         } else {
             document.getElementById('view-login').classList.remove('hidden');
             document.getElementById('view-app').classList.add('hidden');
+            this.currentPage = null;
         }
     },
 
@@ -47,6 +57,7 @@ window.appControllers = {
     },
 
     navigate: function(pageId) {
+        this.currentPage = pageId;
         // Hide all pages
         document.querySelectorAll('.page-section').forEach(el => {
             el.classList.add('hidden');
