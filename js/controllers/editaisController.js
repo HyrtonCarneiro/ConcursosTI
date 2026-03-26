@@ -138,6 +138,24 @@ window.editaisController = {
                 (ed.banca && ed.banca.toLowerCase().includes(search))
             );
         }
+
+        // Sorting Logic: Nearest upcoming date (exam or registration)
+        const now = new Date().setHours(0, 0, 0, 0);
+        editais.sort((a, b) => {
+            const getNextEventDate = (ed) => {
+                const dates = [];
+                if (ed.dataProva) dates.push(new Date(ed.dataProva).getTime());
+                if (ed.dataInscricao) dates.push(new Date(ed.dataInscricao).getTime());
+                
+                const upcoming = dates.filter(d => d >= now);
+                if (upcoming.length > 0) return Math.min(...upcoming);
+                
+                // If no upcoming dates but has past dates, put them after upcoming 
+                if (dates.length > 0) return Math.max(...dates) + 8640000000000000 / 2; // Offset for past
+                return 8640000000000000; // Infinity for no dates
+            };
+            return getNextEventDate(a) - getNextEventDate(b);
+        });
         
         if (editais.length === 0 && !search) {
             this.container.innerHTML = ' \
@@ -153,68 +171,66 @@ window.editaisController = {
 
         editais.forEach(ed => {
             const card = document.createElement('div');
-            card.className = 'bg-white p-7 rounded-[2rem] border border-gray-100 hover:border-primary-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden';
+            // Miniaturized card: p-5 instead of p-7, smaller rounding
+            card.className = 'bg-white p-5 rounded-[1.5rem] border border-gray-100 hover:border-primary-500 transition-all shadow-sm hover:shadow-lg hover:-translate-y-1 group relative overflow-hidden flex flex-col';
             
             const provaTxt = ed.dataProva ? window.utils.formatDateBR(ed.dataProva) : 'A definir';
             const countdown = ed.dataProva ? window.utils.calculateCountdown(ed.dataProva) : null;
             const inscTxt = ed.dataInscricao ? window.utils.formatDateBR(ed.dataInscricao) : 'A definir';
             
-            // Status Badge Logic
             let statusClass = 'bg-gray-100 text-gray-500';
             let statusLabel = ed.status;
-            if (ed.status === 'Ativo') { statusClass = 'bg-green-500 text-white shadow-lg shadow-green-100'; statusLabel = 'Inscrições Abertas'; }
-            if (ed.status === 'Previsto') { statusClass = 'bg-blue-500 text-white shadow-lg shadow-blue-100'; statusLabel = 'Previsto'; }
-            if (ed.status === 'Encerrado') { statusClass = 'bg-orange-500 text-white shadow-lg shadow-orange-100'; statusLabel = 'Inscrições Encerradas'; }
-            if (ed.status === 'Finalizado') { statusClass = 'bg-gray-400 text-white'; statusLabel = 'Prova Realizada'; }
+            if (ed.status === 'Ativo') { statusClass = 'bg-green-500 text-white'; statusLabel = 'Inscrições'; }
+            if (ed.status === 'Previsto') { statusClass = 'bg-blue-500 text-white'; statusLabel = 'Previsto'; }
+            if (ed.status === 'Encerrado') { statusClass = 'bg-orange-500 text-white'; statusLabel = 'Encerradas'; }
+            if (ed.status === 'Finalizado') { statusClass = 'bg-gray-400 text-white'; statusLabel = 'Realizada'; }
 
             card.innerHTML = `
-                <div class="flex flex-col h-full">
-                    <!-- Top Info -->
-                    <div class="flex justify-between items-start mb-5">
-                        <div class="flex-1">
-                            <div class="flex flex-wrap items-center gap-2 mb-3">
-                                <span class="bg-primary-50 text-primary-600 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border border-primary-100">${ed.banca || "BANCA A DEFINIR"}</span>
-                                <span class="${statusClass} text-[10px] font-black uppercase px-2.5 py-1 rounded-lg tracking-wider">${statusLabel}</span>
-                            </div>
-                            <h3 class="text-xl font-black text-gray-900 leading-tight mb-2">${ed.nome}</h3>
+                <div class="flex-1 flex flex-col">
+                    <!-- Smaller Header -->
+                    <div class="mb-4">
+                        <div class="flex flex-wrap items-center gap-1.5 mb-2">
+                            <span class="bg-primary-50 text-white mix-blend-multiply bg-primary-600 text-[8px] font-black uppercase px-2 py-0.5 rounded-md border border-primary-100">${ed.banca || "BANCA"}</span>
+                            <span class="${statusClass} text-[8px] font-black uppercase px-2 py-0.5 rounded-md">${statusLabel}</span>
+                        </div>
+                        <h3 class="text-sm font-black text-gray-900 leading-tight line-clamp-2" title="${ed.nome}">${ed.nome}</h3>
+                    </div>
+
+                    <!-- Compact Details Grid -->
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="bg-gray-50/80 p-2 rounded-xl border border-gray-50">
+                            <p class="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Salário</p>
+                            <p class="text-[10px] font-black text-primary-600 truncate">R$ ${ed.salario || "--"}</p>
+                        </div>
+                        <div class="bg-gray-50/80 p-2 rounded-xl border border-gray-50">
+                            <p class="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Vagas</p>
+                            <p class="text-[10px] font-black text-gray-800">${ed.vagas || "--"}</p>
+                        </div>
+                        <div class="bg-gray-50/80 p-2 rounded-xl border border-gray-50">
+                            <p class="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Inscrição</p>
+                            <p class="text-[9px] font-bold text-gray-600">${inscTxt}</p>
+                        </div>
+                        <div class="bg-gray-50/80 p-2 rounded-xl border border-gray-50">
+                            <p class="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Prova</p>
+                            <p class="text-[9px] font-bold text-gray-800">${provaTxt}</p>
+                            ${countdown ? `<p class="text-[8px] font-black text-orange-500 mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataProva}">${countdown}</p>` : ''}
                         </div>
                     </div>
 
-                    <!-- Details Grid -->
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
-                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Remuneração</p>
-                            <p class="text-sm font-black text-primary-600">R$ ${ed.salario || "--"}</p>
-                        </div>
-                        <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
-                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Vagas</p>
-                            <p class="text-sm font-black text-gray-800">${ed.vagas || "--"}</p>
-                        </div>
-                        <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
-                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Inscrição</p>
-                            <p class="text-xs font-bold text-gray-600">${inscTxt}</p>
-                        </div>
-                        <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
-                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Data da Prova</p>
-                            <p class="text-xs font-bold text-gray-800">${provaTxt}</p>
-                            ${countdown ? `<p class="text-[10px] font-black text-orange-500 mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataProva}">${countdown}</p>` : ''}
-                        </div>
-                    </div>
-
-                    <!-- Nuclear Actions -->
-                    <div class="flex items-center gap-2 mt-auto pt-4 border-t border-gray-50 relative z-10">
+                    <!-- Nuclear Actions (Subtle) -->
+                    <div class="flex items-center gap-1.5 mt-auto pt-3 border-t border-gray-50">
                         ${ed.link ? `
-                            <a href="${ed.link}" target="_blank" class="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 text-gray-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95">
-                                <i class="ph ph-link-simple font-bold"></i> LINK
+                            <a href="${ed.link}" target="_blank" class="p-2 bg-gray-50 text-gray-400 rounded-lg hover:text-primary-600 hover:bg-primary-50 transition-all active:scale-95" title="Link">
+                                <i class="ph ph-link-simple-bold"></i>
                             </a>
                         ` : ''}
                         
-                        <button onclick="window.editaisController.editar('${ed.id}')" class="flex-1 flex items-center justify-center gap-2 py-3 bg-primary-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary-200 hover:bg-primary-700 hover:-translate-y-0.5 transition-all active:scale-95">
-                            <i class="ph ph-pencil-simple-line font-bold"></i> EDITAR
+                        <button onclick="window.editaisController.editar('${ed.id}')" class="flex-1 py-2 bg-primary-600 text-white rounded-lg font-black text-[8px] uppercase tracking-widest shadow-sm hover:bg-primary-700 transition-all active:scale-95">
+                            EDITAR
                         </button>
                         
-                        <button onclick="window.editaisController.remover('${ed.id}')" class="flex-1 flex items-center justify-center gap-2 py-3 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-200 hover:bg-red-600 hover:-translate-y-0.5 transition-all active:scale-95">
-                            <i class="ph ph-trash font-bold"></i> EXCLUIR
+                        <button onclick="window.editaisController.remover('${ed.id}')" class="p-2 bg-red-50 text-red-300 rounded-lg hover:text-red-600 hover:bg-red-50 transition-all active:scale-95" title="Excluir">
+                            <i class="ph ph-trash-simple"></i>
                         </button>
                     </div>
                 </div>
