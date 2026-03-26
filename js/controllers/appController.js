@@ -23,22 +23,32 @@ window.appControllers = {
             document.getElementById('view-app').style.display = 'none';
             this.currentPage = null;
         }
+
+        // Toggle Admin Nav
+        const navAdmin = document.getElementById('nav-admin');
+        if (navAdmin) {
+            navAdmin.style.display = window.store.isAdmin() ? 'flex' : 'none';
+        }
     },
 
     bindEvents: function() {
         const formLogin = document.getElementById('form-login');
         if (formLogin) {
-            formLogin.addEventListener('submit', (e) => {
+            formLogin.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const user = document.getElementById('input-username').value;
                 const pass = document.getElementById('input-password').value;
                 
-                if (window.authLogic.login(user, pass)) {
-                    window.store.setAuth(true); // Triggers Sync
-                    window.utils.showToast("Login iniciado!", "success");
-                    // Interface will switch via triggerUIRefresh from store
-                } else {
-                    window.utils.showToast("Usuário ou senha incorretos.", "error");
+                try {
+                    const success = await window.authLogic.login(user, pass);
+                    if (success) {
+                        window.store.setAuth(true, user.toLowerCase()); // Triggers Sync
+                        window.utils.showToast("Login iniciado!", "success");
+                    } else {
+                        window.utils.showToast("Usuário ou senha incorretos.", "error");
+                    }
+                } catch (err) {
+                    window.utils.showToast("Erro no login: " + err.message, "error");
                 }
             });
         }
@@ -72,7 +82,7 @@ window.appControllers = {
         }
         
         // Update nav buttons styling
-        const navs = ['dashboard', 'editais', 'cadastros', 'cronograma', 'materiais', 'simulados', 'metas'];
+        const navs = ['dashboard', 'editais', 'cadastros', 'cronograma', 'materiais', 'simulados', 'metas', 'admin'];
         navs.forEach(nav => {
             const btn = document.getElementById('nav-' + nav);
             if (btn) {
@@ -107,6 +117,9 @@ window.appControllers = {
         }
         if (pageId === 'metas') {
             if (window.gamificationController) window.gamificationController.updateUI();
+        }
+        if (pageId === 'admin') {
+            if (window.adminController) window.adminController.render();
         }
     },
 

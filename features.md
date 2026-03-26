@@ -61,3 +61,11 @@ WebApp para organizar cronogramas de estudos para TI e outros assuntos, hospedad
 - **Testes:** TDD obrigatório (Testes unitários vitest/jest).
 - **Qualidade de Código:** Princípios SOLID, arquivos com tamanho máximo de 300 linhas, separação de UI e lógica de negócio.
 - **Zero-Build:** Uso de CDNs, sem bundlers.
+## 15. Gestão de Usuários (Superadmin)
+- **Superadmin:** Usuário `Hyrton` com senha `hyrtinho`.
+- **Painel de Controle:** Aba exclusiva para o superadmin para gerenciar outros usuários.
+- **Funcionalidades:**
+  - Criar novos usuários (nome de usuário e senha).
+  - Listagem de usuários existentes.
+- **Isolamento de Dados:** Cada usuário possui seu próprio documento no Firestore (`users/{username}`), garantindo total privacidade para seus cronogramas, editais, matérias e estatísticas.
+- **Migração:** O perfil `Hyrton` mantém todos os seus dados atuais de forma isolada.

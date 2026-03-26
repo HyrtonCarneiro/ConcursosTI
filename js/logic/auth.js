@@ -1,10 +1,33 @@
 window.authLogic = {
-    login: function(username, password) {
+    login: async function(username, password) {
         if (!username || !password) return false;
-        return (username.toLowerCase() === 'hyrton' && password === 'hyrtinho');
+        
+        const userLower = username.toLowerCase();
+        
+        try {
+            // Initial Fallback for Hyrton if Firestore is not yet seeded or offline
+            if (userLower === 'hyrton' && password === 'hyrtinho') {
+                return true;
+            }
+
+            // Fetch central user list from Firestore
+            const doc = await window.db.collection('users').doc('_admin_').get();
+            if (doc.exists) {
+                const userList = doc.data().userList || [];
+                const user = userList.find(u => u.username.toLowerCase() === userLower && u.password === password);
+                return !!user;
+            }
+            
+            return false;
+        } catch (err) {
+            console.error("Login Error:", err);
+            // If offline or first time, still allow Hyrton
+            return (userLower === 'hyrton' && password === 'hyrtinho');
+        }
     },
     
-    logout: function() {
+    logout: async function() {
+        if (window.store) window.store.setAuth(false);
         return true;
     }
 };

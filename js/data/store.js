@@ -2,6 +2,8 @@
 window.store = {
     state: {
         isAuthenticated: false,
+        currentUser: null,
+        userList: [], // Only populated for admin
         materias: [],
         conteudos: [],
         cronograma: [], // { id, semana, materiaId, conteudoId, paginas, concluido, dataConclusao }
@@ -245,8 +247,9 @@ window.store = {
 
         // Clean any undefined values (Firestore fails on them)
         const dataToSave = this.cleanData(this.state);
+        delete dataToSave.userList; // Don't save central user list into personal doc
 
-        window.db.collection('users').doc('hyrton').set({
+        window.db.collection('users').doc(this.state.currentUser).set({
             state: dataToSave,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }).catch(err => {
@@ -255,17 +258,41 @@ window.store = {
         });
         
         // Save ONLY session to browser
-        try { localStorage.setItem('auth_session', 'true'); } catch(e) {}
+        try { 
+            localStorage.setItem('auth_session', 'true'); 
+            localStorage.setItem('auth_user', this.state.currentUser);
+        } catch(e) {}
     },
 
-    setAuth: function(val) {
+    setAuth: function(val, username) {
         this.state.isAuthenticated = val;
+        this.state.currentUser = username || null;
         if (val) {
             localStorage.setItem('auth_session', 'true');
+            localStorage.setItem('auth_user', username);
             this.initSync(); // Start syncing once logged in
         } else {
             localStorage.removeItem('auth_session');
-            this.state = JSON.parse(JSON.stringify(window.store.state)); // Reset to defaults
+            localStorage.removeItem('auth_user');
+            // Reset state to defaults
+            this.state = {
+                isAuthenticated: false,
+                currentUser: null,
+                userList: [],
+                materias: [],
+                conteudos: [],
+                cronograma: [],
+                editais: [],
+                revisoes: [],
+                simulados: [],
+                materiais: [],
+                estatisticas: {
+                    streak: 0,
+                    ultimaDataEstudo: null,
+                    totalPaginasLidas: 0,
+                    totalHorasEstudo: 0
+                }
+            };
             this.triggerUIRefresh();
         }
     },
@@ -273,24 +300,33 @@ window.store = {
     init: function() {
         console.log("Store: Initializing direct Firebase sync...");
         
-        // Restore session from browser (to avoid re-typing password)
+        // Restore session from browser
         const isAuth = localStorage.getItem('auth_session') === 'true';
+        const savedUser = localStorage.getItem('auth_user');
+        
         this.state.isAuthenticated = isAuth;
+        this.state.currentUser = savedUser;
 
-        if (isAuth) {
+        if (isAuth && savedUser) {
             this.initSync();
         } else {
             this.hideLoading();
             this.triggerUIRefresh();
         }
+        
+        // Always try to load userList if we are admin
+        if (this.isAdmin()) {
+            this.syncUserList();
+        }
     },
 
     initSync: function() {
-        if (!window.db) return;
+        if (!window.db || !this.state.currentUser) return;
         
+        console.log(`Syncing for user: ${this.state.currentUser}`);
         if (this.unsubscribeFirestore) this.unsubscribeFirestore();
         
-        this.unsubscribeFirestore = window.db.collection('users').doc('hyrton').onSnapshot((doc) => {
+        this.unsubscribeFirestore = window.db.collection('users').doc(this.state.currentUser).onSnapshot((doc) => {
             if (doc.exists) {
                 let cloudData = doc.data().state;
 
@@ -326,6 +362,46 @@ window.store = {
         }
     },
 
+    isAdmin: function() {
+        return this.state.currentUser && this.state.currentUser.toLowerCase() === 'hyrton';
+    },
+
+    syncUserList: function() {
+        if (!window.db) return;
+        window.db.collection('users').doc('_admin_').onSnapshot((doc) => {
+            if (doc.exists) {
+                this.state.userList = doc.data().userList || [];
+            } else {
+                // Seed with Hyrton if list is empty
+                const initialList = [{ username: 'hyrton', password: 'hyrtinho' }];
+                window.db.collection('users').doc('_admin_').set({ userList: initialList });
+                this.state.userList = initialList;
+            }
+            this.triggerUIRefresh();
+        });
+    },
+
+    createUser: function(username, password) {
+        if (!this.isAdmin()) throw new Error("Ação permitida apenas para administradores");
+        if (this.state.userList.find(u => u.username === username)) throw new Error("Usuário já existe");
+        
+        const newList = [...this.state.userList, { username, password }];
+        return window.db.collection('users').doc('_admin_').update({
+            userList: newList
+        });
+    },
+
+    deleteUser: function(username) {
+        if (!this.isAdmin()) throw new Error("Ação permitida apenas para administradores");
+        if (username === 'hyrton') throw new Error("Não é possível deletar o superadmin");
+        
+        const newList = this.state.userList.filter(u => u.username !== username);
+        return window.db.collection('users').doc('_admin_').update({
+            userList: newList
+        });
+    },
+
+    // --- Page Nav Trigger ---
     triggerUIRefresh: function() {
         if (window.appControllers) {
             window.appControllers.checkAuth();
@@ -341,6 +417,7 @@ window.store = {
                 if (window.materialController) try { window.materialController.render(); } catch(e){}
                 if (window.simuladosController) try { window.simuladosController.render(); } catch(e){}
                 if (window.gamificationController) try { window.gamificationController.render(); } catch(e){}
+                if (window.adminController && this.isAdmin()) try { window.adminController.render(); } catch(e){}
             }
         }
     }

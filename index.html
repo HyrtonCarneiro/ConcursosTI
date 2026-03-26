@@ -139,6 +139,7 @@
                     <button onclick="window.appControllers.navigate('materiais')" id="nav-materiais" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-files"></i> Materiais</button>
                     <button onclick="window.appControllers.navigate('simulados')" id="nav-simulados" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-chart-bar"></i> Simulados</button>
                     <button onclick="window.appControllers.navigate('metas')" id="nav-metas" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-trophy"></i> Metas</button>
+                    <button onclick="window.appControllers.navigate('admin')" id="nav-admin" style="display: none;" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph-bold ph-shield-check"></i> Gerenciamento</button>
                 </div>
 
                 <button id="btn-logout" class="group flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors">
@@ -635,6 +636,60 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Admin / User Management Page -->
+            <section id="page-admin" class="page-section hidden page-transition">
+                <div class="mb-10">
+                    <h2 class="text-3xl font-black text-gray-900 tracking-tight">Gerenciamento de Acesso</h2>
+                    <p class="text-gray-400 text-sm font-medium">Controle os usuários da plataforma</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                    <!-- Create User Form -->
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-primary-50 rounded-full -mr-16 -mt-16 group-hover:bg-primary-100 transition-colors"></div>
+                        <div class="relative">
+                            <h3 class="text-lg font-black text-gray-800 mb-6 flex items-center gap-2">
+                                <i class="ph-bold ph-user-plus text-primary-500"></i> Novo Usuário
+                            </h3>
+                            <form id="form-admin-user" class="space-y-6">
+                                <div>
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Username</label>
+                                    <input type="text" id="admin-input-username" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm" placeholder="Ex: joao.estudante">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Senha Inicial</label>
+                                    <input type="text" id="admin-input-password" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm" placeholder="••••••••">
+                                </div>
+                                <button type="submit" class="w-full bg-gray-900 hover:bg-primary-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg hover:shadow-primary-200 active:scale-95 uppercase tracking-widest text-xs">
+                                    CRIAR USUÁRIO
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- User List Table -->
+                    <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100">
+                        <h3 class="text-lg font-black text-gray-800 mb-6 flex items-center gap-2">
+                            <i class="ph-bold ph-users text-primary-500"></i> Usuários Cadastrados
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b border-gray-50">
+                                        <th class="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Usuário</th>
+                                        <th class="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha</th>
+                                        <th class="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-user-list" class="divide-y divide-gray-50">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- Pomodoro Floating Widget -->
@@ -680,6 +735,7 @@
     <script src="js/controllers/materialController.js"></script>
     <script src="js/controllers/simuladosController.js"></script>
     <script src="js/controllers/gamificationController.js"></script>
+    <script src="js/controllers/adminController.js"></script>
     <script src="js/controllers/main.js"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.materialController) window.materialController.init();
     if (window.simuladosController) window.simuladosController.init();
     if (window.editaisController) window.editaisController.init();
+    if (window.adminController) window.adminController.init();
     
     // Initial global state update
     if (window.appControllers) {
