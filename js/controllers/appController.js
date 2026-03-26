@@ -111,14 +111,15 @@ window.appControllers = {
     },
 
     updateDashboard: function() {
+        const state = window.store.getState();
+        const totalPaginas = (state.cronograma || []).filter(i => i.concluido).reduce((sum, i) => sum + (Number(i.paginas) || 0), 0);
+        
         if (window.dashboardController) {
             window.dashboardController.update();
         } else {
             // Fallback to basic if not loaded
-            const state = window.store.getState();
             const totalMaterias = state.materias.length;
-            const totalPlan = state.cronograma.length;
-            const totalPaginas = state.estatisticas.totalPaginasLidas;
+            const totalPlan = (state.cronograma || []).length;
 
             const elMaterias = document.getElementById('dash-total-materias');
             const elConteudos = document.getElementById('dash-total-conteudos');

@@ -71,7 +71,7 @@ window.store = {
     },
 
     addCronogramaItem: function(semana, materiaId, conteudoId, paginasOverride) {
-        const id = 'cri' + Date.now();
+        const id = 'cri' + Date.now() + Math.random().toString(36).substr(2, 5);
         
         // If paginas not provided, fetch from content
         let paginas = paginasOverride;
@@ -229,6 +229,9 @@ window.store = {
     save: function() {
         if (!window.db || !this.state.isAuthenticated) return;
 
+        // Optimistic Refresh
+        this.triggerUIRefresh();
+
         // Clean any undefined values (Firestore fails on them)
         const dataToSave = this.cleanData(this.state);
 
@@ -278,10 +281,22 @@ window.store = {
         
         this.unsubscribeFirestore = window.db.collection('users').doc('hyrton').onSnapshot((doc) => {
             if (doc.exists) {
-                const cloudData = doc.data().state;
+                let cloudData = doc.data().state;
+
+                // Self-heal duplicate IDs in cronograma (common bug with Date.now() IDs)
+                if (cloudData && cloudData.cronograma) {
+                    const seenIds = new Set();
+                    cloudData.cronograma.forEach(item => {
+                        if (!item.id || seenIds.has(item.id)) {
+                            item.id = 'cri' + Date.now() + Math.random().toString(36).substr(2, 5);
+                        }
+                        seenIds.add(item.id);
+                    });
+                }
+
                 // Merge cloud data into state
                 this.state = { ...this.state, ...cloudData, isAuthenticated: true };
-                console.log("Sync: Cloud data received.");
+                console.log("Sync: Cloud data received and sanitized.");
             } else {
                 console.log("Sync: No remote data. Ready for updates.");
             }
