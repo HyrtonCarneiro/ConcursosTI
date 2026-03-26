@@ -153,46 +153,72 @@ window.editaisController = {
 
         editais.forEach(ed => {
             const card = document.createElement('div');
-            card.className = 'bg-white p-6 rounded-3xl border border-gray-100 hover:border-primary-500 transition-all shadow-sm group relative';
+            card.className = 'bg-white p-7 rounded-[2rem] border border-gray-100 hover:border-primary-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden';
             
-            const provaTxt = ed.dataProva ? '<span class="edital-countdown" data-date="' + ed.dataProva + '">...</span>' : 'Data a definir';
+            const provaTxt = ed.dataProva ? window.utils.formatDateBR(ed.dataProva) : 'A definir';
+            const countdown = ed.dataProva ? window.utils.calculateCountdown(ed.dataProva) : null;
             const inscTxt = ed.dataInscricao ? window.utils.formatDateBR(ed.dataInscricao) : 'A definir';
             
             // Status Badge Logic
-            let statusClass = 'bg-gray-100 text-gray-600';
+            let statusClass = 'bg-gray-100 text-gray-500';
             let statusLabel = ed.status;
-            if (ed.status === 'Ativo') { statusClass = 'bg-green-100 text-green-700'; statusLabel = 'Inscrições Abertas'; }
-            if (ed.status === 'Previsto') { statusClass = 'bg-blue-100 text-blue-700'; statusLabel = 'Previsto'; }
-            if (ed.status === 'Encerrado') { statusClass = 'bg-red-100 text-red-700'; statusLabel = 'Inscrições Encerradas'; }
-            if (ed.status === 'Finalizado') { statusClass = 'bg-gray-200 text-gray-700'; statusLabel = 'Prova Realizada'; }
+            if (ed.status === 'Ativo') { statusClass = 'bg-green-500 text-white shadow-lg shadow-green-100'; statusLabel = 'Inscrições Abertas'; }
+            if (ed.status === 'Previsto') { statusClass = 'bg-blue-500 text-white shadow-lg shadow-blue-100'; statusLabel = 'Previsto'; }
+            if (ed.status === 'Encerrado') { statusClass = 'bg-orange-500 text-white shadow-lg shadow-orange-100'; statusLabel = 'Inscrições Encerradas'; }
+            if (ed.status === 'Finalizado') { statusClass = 'bg-gray-400 text-white'; statusLabel = 'Prova Realizada'; }
 
-            card.innerHTML = ' \
-                <div class="flex flex-col h-full"> \
-                    <div class="flex justify-between items-start mb-4"> \
-                        <div class="flex-1"> \
-                            <div class="flex items-center gap-2 mb-1"> \
-                                <span class="bg-primary-50 text-primary-600 text-[10px] font-black uppercase px-2 py-0.5 rounded-lg">' + (ed.banca || "Banca a definir") + '</span> \
-                                <span class="' + statusClass + ' text-[10px] font-bold px-2 py-0.5 rounded-lg">' + statusLabel + '</span> \
-                            </div> \
-                            <h3 class="text-xl font-black text-gray-800 leading-tight">' + ed.nome + '</h3> \
-                        </div> \
-                    </div> \
-                    <div class="grid grid-cols-2 gap-4 mb-6"> \
-                                <p class="text-[9px] font-bold text-gray-400 uppercase">Vagas</p> \
-                                <p class="text-xs font-black text-gray-700">' + (ed.vagas || "--") + '</p> \
-                            </div> \
-                        </div> \
-                        <div class="flex gap-1"> \
-                            ' + (ed.link ? '<a href="' + ed.link + '" target="_blank" class="w-8 h-8 rounded-xl bg-gray-50 text-gray-400 hover:bg-primary-50 hover:text-primary-600 flex items-center justify-center transition-all"><i class="ph ph-link"></i></a>' : '') + ' \
-                            <button onclick="window.editaisController.editar(\'' + ed.id + '\')" class="w-8 h-8 rounded-xl bg-gray-50 text-gray-400 hover:bg-primary-50 hover:text-primary-600 flex items-center justify-center transition-all"> \
-                                <i class="ph ph-pencil-simple"></i> \
-                            </button> \
-                            <button onclick="window.editaisController.remover(\'' + ed.id + '\')" class="w-8 h-8 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-all"> \
-                                <i class="ph ph-trash"></i> \
-                            </button> \
-                        </div> \
-                    </div> \
-                </div>';
+            card.innerHTML = `
+                <div class="flex flex-col h-full">
+                    <!-- Top Info -->
+                    <div class="flex justify-between items-start mb-5">
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <span class="bg-primary-50 text-primary-600 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border border-primary-100">${ed.banca || "BANCA A DEFINIR"}</span>
+                                <span class="${statusClass} text-[10px] font-black uppercase px-2.5 py-1 rounded-lg tracking-wider">${statusLabel}</span>
+                            </div>
+                            <h3 class="text-xl font-black text-gray-900 leading-tight mb-2">${ed.nome}</h3>
+                        </div>
+                    </div>
+
+                    <!-- Details Grid -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Remuneração</p>
+                            <p class="text-sm font-black text-primary-600">R$ ${ed.salario || "--"}</p>
+                        </div>
+                        <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Vagas</p>
+                            <p class="text-sm font-black text-gray-800">${ed.vagas || "--"}</p>
+                        </div>
+                        <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Inscrição</p>
+                            <p class="text-xs font-bold text-gray-600">${inscTxt}</p>
+                        </div>
+                        <div class="bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Data da Prova</p>
+                            <p class="text-xs font-bold text-gray-800">${provaTxt}</p>
+                            ${countdown ? `<p class="text-[10px] font-black text-orange-500 mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataProva}">${countdown}</p>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Nuclear Actions -->
+                    <div class="flex items-center gap-2 mt-auto pt-4 border-t border-gray-50 relative z-10">
+                        ${ed.link ? `
+                            <a href="${ed.link}" target="_blank" class="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 text-gray-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95">
+                                <i class="ph ph-link-simple font-bold"></i> LINK
+                            </a>
+                        ` : ''}
+                        
+                        <button onclick="window.editaisController.editar('${ed.id}')" class="flex-1 flex items-center justify-center gap-2 py-3 bg-primary-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary-200 hover:bg-primary-700 hover:-translate-y-0.5 transition-all active:scale-95">
+                            <i class="ph ph-pencil-simple-line font-bold"></i> EDITAR
+                        </button>
+                        
+                        <button onclick="window.editaisController.remover('${ed.id}')" class="flex-1 flex items-center justify-center gap-2 py-3 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-red-200 hover:bg-red-600 hover:-translate-y-0.5 transition-all active:scale-95">
+                            <i class="ph ph-trash font-bold"></i> EXCLUIR
+                        </button>
+                    </div>
+                </div>
+            `;
             this.container.appendChild(card);
         });
     },
