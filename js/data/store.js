@@ -174,11 +174,11 @@ window.store = {
     },
 
     init: function() {
-        console.log("Store: Initializing pure Firebase sync...");
+        console.log("Store: Initializing 100% Firebase sync...");
         
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                console.log("Auth: User identified:", user.email);
+                console.log("Auth: Session recovered.");
                 this.state.isAuthenticated = true;
                 
                 // Real-time listener per user
@@ -187,22 +187,32 @@ window.store = {
                 this.unsubscribeFirestore = window.db.collection('users').doc(user.uid).onSnapshot((doc) => {
                     if (doc.exists) {
                         const cloudData = doc.data().state;
-                        // Synchronize state
                         this.state = { ...this.state, ...cloudData, isAuthenticated: true };
-                        console.log("Sync: Data received from cloud.");
+                        console.log("Sync: Cloud data synchronized.");
                         this.triggerUIRefresh();
                     }
+                    this.hideLoading();
                 }, (err) => {
                     console.error("Firestore Sync Error:", err);
+                    this.hideLoading();
                 });
 
             } else {
-                console.log("Auth: No user session.");
+                console.log("Auth: No active session.");
                 this.state.isAuthenticated = false;
                 if (this.unsubscribeFirestore) this.unsubscribeFirestore();
                 this.triggerUIRefresh();
+                this.hideLoading();
             }
         });
+    },
+
+    hideLoading: function() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.remove(), 500);
+        }
     },
 
     triggerUIRefresh: function() {
