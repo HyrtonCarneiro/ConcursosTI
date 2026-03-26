@@ -83,13 +83,22 @@ window.cronogramaController = {
         }
 
         conteudos.forEach(c => {
-            const label = document.createElement('label');
-            label.className = 'flex items-center gap-2 cursor-pointer bg-white p-2 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors';
-            label.innerHTML = `
-                <input type="checkbox" name="conteudoCheckbox" value="${c.id}" class="rounded text-primary-600 focus:ring-primary-500 w-4 h-4">
-                <span class="text-sm text-gray-700 font-medium">${c.nome} <span class="text-xs text-gray-400 font-normal">(${c.paginas || 0} pág.)</span></span>
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between gap-4 bg-white p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors group';
+            div.innerHTML = `
+                <label class="flex items-center gap-3 cursor-pointer flex-1">
+                    <input type="checkbox" name="conteudoCheckbox" value="${c.id}" data-total="${c.paginas}" class="rounded text-primary-600 focus:ring-primary-500 w-5 h-5">
+                    <div class="flex flex-col">
+                        <span class="text-sm text-gray-800 font-bold">${c.nome}</span>
+                        <span class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Total: ${c.paginas || 0} pág.</span>
+                    </div>
+                </label>
+                <div class="flex items-center gap-2">
+                    <input type="number" name="paginasOverride_${c.id}" placeholder="${c.paginas}" class="w-16 px-2 py-1 bg-gray-50 border border-gray-100 rounded-lg text-xs font-bold text-gray-700 focus:ring-1 focus:ring-primary-500 outline-none" title="Páginas para esta semana">
+                    <span class="text-[10px] font-black text-gray-300">PÁG.</span>
+                </div>
             `;
-            this.containerCheckboxes.appendChild(label);
+            this.containerCheckboxes.appendChild(div);
         });
     },
 
@@ -111,8 +120,12 @@ window.cronogramaController = {
             window.cronogramaLogic.validateItem(semana, materiaId, conteudosList);
             
             // Salvar para cada conteudo selecionado
-            conteudosList.forEach(conteudoId => {
-                window.store.addCronogramaItem(semana, materiaId, conteudoId);
+            checkboxes.forEach(cb => {
+                const conteudoId = cb.value;
+                const overrideInput = this.containerCheckboxes.querySelector(`input[name="paginasOverride_${conteudoId}"]`);
+                const paginasOverride = overrideInput && overrideInput.value ? Number(overrideInput.value) : null;
+                
+                window.store.addCronogramaItem(semana, materiaId, conteudoId, paginasOverride);
             });
             
             window.utils.showToast("Estudo(s) adicionado(s) com sucesso", "success");
