@@ -178,7 +178,23 @@ window.cronogramaController = {
                 window.utils.showToast("Estudo(s) adicionado(s)", "success");
             }
             
-            this.closeModal();
+            if (id) {
+                this.closeModal();
+            } else {
+                // Keep modal open and increment date for next week
+                const currentSemana = window.utils.getWeekMonday(this.inputSemana.value);
+                const nextWeekDate = new Date(currentSemana + 'T12:00:00');
+                nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+                
+                const yyyy = nextWeekDate.getFullYear();
+                const mm = String(nextWeekDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(nextWeekDate.getDate()).padStart(2, '0');
+                this.inputSemana.value = `${yyyy}-${mm}-${dd}`;
+
+                // Reset checkboxes but keep matter
+                this.renderConteudosCheckboxes(this.selectMateriaModal.value);
+            }
+            
             this.renderTable();
         } catch(e) {
             window.utils.showToast("Erro ao salvar: " + e.message, "error");
