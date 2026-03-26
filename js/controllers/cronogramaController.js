@@ -133,15 +133,42 @@ window.cronogramaController = {
             return;
         }
 
+        // 1. Find the earliest week to calculate "Semana X"
+        const sortedSemanas = [...new Set(itens.map(i => i.semana))].sort();
+        const firstSemanaDate = new Date(sortedSemanas[0] + 'T12:00:00');
+
+        let lastRenderedSemana = null;
+
         itens.forEach(item => {
+            // 2. Detect Week Change and Render Divider
+            if (item.semana !== lastRenderedSemana) {
+                const currentSemanaDate = new Date(item.semana + 'T12:00:00');
+                const diffTime = currentSemanaDate - firstSemanaDate;
+                const weekNum = Math.round(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
+                
+                const divider = document.createElement('tr');
+                divider.className = 'bg-gray-50 border-y border-gray-100';
+                divider.innerHTML = `
+                    <td colspan="5" class="p-4 py-3">
+                        <div class="flex items-center gap-3">
+                            <span class="bg-primary-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md">Semana ${weekNum}</span>
+                            <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Início: ${window.utils.formatDateBR(item.semana)}</span>
+                        </div>
+                    </td>
+                `;
+                this.tbody.appendChild(divider);
+                lastRenderedSemana = item.semana;
+            }
+
             const materia = window.store.getState().materias.find(m => m.id === item.materiaId);
             const conteudo = window.store.getState().conteudos.find(c => c.id === item.conteudoId);
             
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 transition-colors group ' + (item.concluido ? 'opacity-60 bg-gray-50' : '');
             
+            // Note: removed "window.utils.formatDateBR(item.semana)" from the first column since it's now in the header
             const contentHTML = ' \
-                <td class="p-4 text-sm font-medium text-gray-900">' + window.utils.formatDateBR(item.semana) + '</td> \
+                <td class="p-4 text-sm font-medium text-gray-400 italic">Seq. •</td> \
                 <td class="p-4 text-sm text-gray-700">' + (materia ? materia.nome : '-') + '</td> \
                 <td class="p-4 text-sm text-gray-700"> \
                     <div class="flex flex-col"> \
