@@ -139,6 +139,7 @@
                     <button onclick="window.appControllers.navigate('materiais')" id="nav-materiais" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-files"></i> Materiais</button>
                     <button onclick="window.appControllers.navigate('simulados')" id="nav-simulados" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-chart-bar"></i> Simulados</button>
                     <button onclick="window.appControllers.navigate('metas')" id="nav-metas" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-trophy"></i> Metas</button>
+                    <button onclick="window.appControllers.navigate('links')" id="nav-links" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-link"></i> Links</button>
                     <button onclick="window.appControllers.navigate('admin')" id="nav-admin" style="display: none;" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph-bold ph-shield-check"></i> Gerenciamento</button>
                 </div>
 
@@ -690,6 +691,48 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Useful Links Page -->
+            <section id="page-links" class="page-section hidden page-transition">
+                <div class="mb-10 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl font-black text-gray-900 tracking-tight">Links Úteis</h2>
+                        <p class="text-gray-400 text-sm font-medium">Sua central de recursos externos</p>
+                    </div>
+                    <button id="btn-add-link-uteis" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-primary-100 flex items-center gap-2 active:scale-95">
+                        <i class="ph-bold ph-plus-circle"></i> Novo Link
+                    </button>
+                </div>
+
+                <div id="container-links-uteis" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Links via JS -->
+                </div>
+
+                <!-- Modal Add Link -->
+                <div id="modal-link-uteis" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+                    <div id="modal-link-uteis-content" class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 transform transition-all scale-95 opacity-0">
+                        <div class="flex justify-between items-start mb-8">
+                            <h3 class="text-2xl font-black text-gray-900 tracking-tight">Adicionar Link</h3>
+                            <button onclick="window.linksController.fecharModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="ph ph-x text-2xl"></i>
+                            </button>
+                        </div>
+                        <form id="form-link-uteis" class="space-y-6">
+                            <div>
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Título do Link</label>
+                                <input type="text" id="input-link-titulo" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm" placeholder="Ex: NotebookLM" required>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">URL (Endereço)</label>
+                                <input type="url" id="input-link-url" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm" placeholder="https://..." required>
+                            </div>
+                            <button type="submit" class="w-full bg-gray-900 hover:bg-primary-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg hover:shadow-primary-200 active:scale-95 uppercase tracking-widest text-xs">
+                                SALVAR LINK
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- Pomodoro Floating Widget -->
@@ -736,6 +779,7 @@
     <script src="js/controllers/simuladosController.js"></script>
     <script src="js/controllers/gamificationController.js"></script>
     <script src="js/controllers/adminController.js"></script>
+    <script src="js/controllers/linksController.js"></script>
     <script src="js/controllers/main.js"></script>
 </body>
 </html>

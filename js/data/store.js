@@ -11,6 +11,7 @@ window.store = {
         revisoes: [],   // { id, conteudoId, dataRevisao, status }
         simulados: [],  // { id, nome, nota, data }
         materiais: [],  // { conteudoId, links: [], notas: "" }
+        linksUteis: [], // { id, titulo, url }
         estatisticas: {
             streak: 0,
             ultimaDataEstudo: null,
@@ -224,6 +225,19 @@ window.store = {
         window.db.collection('shared').doc('editais').set({ data: newList });
     },
 
+    // --- Useful Links Logic ---
+    addLinkUteis: function(titulo, url) {
+        if (!titulo || !url) throw new Error("Título e URL são obrigatórios");
+        const id = 'link_' + Date.now();
+        this.state.linksUteis.push({ id, titulo, url });
+        this.save();
+    },
+
+    removeLinkUteis: function(id) {
+        this.state.linksUteis = this.state.linksUteis.filter(l => l.id !== id);
+        this.save();
+    },
+
     // --- Persistence (Pure Firestore) ---
     cleanData: function(obj) {
         if (Array.isArray(obj)) return obj.map(v => this.cleanData(v));
@@ -291,6 +305,7 @@ window.store = {
                 revisoes: [],
                 simulados: [],
                 materiais: [],
+                linksUteis: [],
                 estatisticas: {
                     streak: 0,
                     ultimaDataEstudo: null,
@@ -477,6 +492,7 @@ window.store = {
                 if (window.simuladosController) try { window.simuladosController.render(); } catch(e){}
                 if (window.gamificationController) try { window.gamificationController.render(); } catch(e){}
                 if (window.adminController && this.isAdmin()) try { window.adminController.render(); } catch(e){}
+                if (window.linksController) try { window.linksController.render(); } catch(e){}
             }
         }
     }

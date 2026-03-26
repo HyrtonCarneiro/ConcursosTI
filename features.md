@@ -70,3 +70,10 @@ WebApp para organizar cronogramas de estudos para TI e outros assuntos, hospedad
   - Listagem de usuários existentes.
 - **Isolamento de Dados:** Cada usuário possui seu próprio documento no Firestore (`users/{username}`), garantindo total privacidade para seus cronogramas, editais, matérias e estatísticas.
 - **Migração:** O perfil `Hyrton` mantém todos os seus dados atuais de forma isolada.
+
+## 16. Links Úteis
+- Aba para centralizar links externos importantes (NotebookLM, Sites de busca, Editais, etc).
+- Funcionalidades:
+  - Adicionar link com título e URL.
+  - Categorização simples ou listagem direta com ícones automáticos.
+  - Exclusão de links.
