@@ -211,18 +211,32 @@ window.store = {
         
         // Write directly to shared collection
         const newList = [...this.state.editais, edital];
-        window.db.collection('shared').doc('editais').set({ data: newList });
-        return edital;
+        return window.db.collection('shared').doc('editais').set({ data: newList })
+            .then(() => {
+                console.log("Shared sync successful: addEdital");
+            })
+            .catch(err => {
+                console.error("Shared sync error (addEdital):", err);
+                throw err;
+            });
     },
 
     updateEdital: function(id, data) {
         const newList = this.state.editais.map(e => e.id === id ? { ...e, ...data } : e);
-        window.db.collection('shared').doc('editais').set({ data: newList });
+        return window.db.collection('shared').doc('editais').set({ data: newList })
+            .catch(err => {
+                console.error("Shared sync error (updateEdital):", err);
+                throw err;
+            });
     },
 
     removeEdital: function(id) {
         const newList = this.state.editais.filter(e => e.id !== id);
-        window.db.collection('shared').doc('editais').set({ data: newList });
+        return window.db.collection('shared').doc('editais').set({ data: newList })
+            .catch(err => {
+                console.error("Shared sync error (removeEdital):", err);
+                throw err;
+            });
     },
 
     // --- Useful Links Logic ---
@@ -358,21 +372,28 @@ window.store = {
                     console.log("Migration: Attempting to move personal editais to shared...");
                     window.db.collection('shared').doc('editais').get().then(sharedDoc => {
                         const sharedData = sharedDoc.exists ? (sharedDoc.data().data || []) : [];
-                        if (sharedData.length === 0) {
-                            window.db.collection('shared').doc('editais').set({ data: cloudData.editais })
-                                .then(() => {
-                                    console.log("Migration: SUCCESS!");
-                                    // Mark as migrated in personal state to stop using personal slot
-                                    this.state.migratedToShared = true;
-                                    this.save();
-                                })
-                                .catch(e => console.error("Migration: FAILED (Permission?)", e));
-                        } else {
-                            // Already has shared data, just mark as migrated
-                            this.state.migratedToShared = true;
-                            this.save();
-                        }
-                    });
+                        
+                        // MERGE: Keep shared data and add personal data that doesn't exist yet
+                        const mergedData = [...sharedData];
+                        cloudData.editais.forEach(pEd => {
+                            if (!mergedData.find(sEd => sEd.nome.toLowerCase() === pEd.nome.toLowerCase())) {
+                                mergedData.push(pEd);
+                            }
+                        });
+
+                        window.db.collection('shared').doc('editais').set({ data: mergedData })
+                            .then(() => {
+                                console.log("Migration: SUCCESS!");
+                                window.utils.showToast("Editais migrados para a nuvem global!", "success");
+                                // Mark as migrated in personal state to stop using personal slot
+                                this.state.migratedToShared = true;
+                                this.save();
+                            })
+                            .catch(e => {
+                                console.error("Migration: FAILED (Permission?)", e);
+                                window.utils.showToast("Erro na migração: " + e.message, "error");
+                            });
+                    }).catch(e => console.error("Migration: Error reading shared doc", e));
                 }
 
                 if (cloudData.migratedToShared) {
@@ -466,14 +487,20 @@ window.store = {
         if (!window.db) return;
         if (this.unsubscribeSharedEditais) this.unsubscribeSharedEditais();
         
+        console.log("Store: Connecting to Shared Editais...");
         this.unsubscribeSharedEditais = window.db.collection('shared').doc('editais').onSnapshot((doc) => {
             if (doc.exists) {
+                console.log("Store: Shared Editais sync received:", (doc.data().data || []).length, "items");
                 this.state.editais = doc.data().data || [];
             } else {
-                // Initial creation of shared editais doc
-                window.db.collection('shared').doc('editais').set({ data: [] });
+                console.log("Store: Shared Editais doc missing. Initializing...");
+                window.db.collection('shared').doc('editais').set({ data: [] })
+                    .catch(e => console.error("Error creating shared doc:", e));
             }
             this.triggerUIRefresh();
+        }, (err) => {
+            console.error("CRITICAL: Shared Editais sync failed:", err.message);
+            window.utils.showToast("Falha na sincronização global: " + err.message, "error");
         });
     },
 

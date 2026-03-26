@@ -95,7 +95,7 @@ window.editaisController = {
         }, 200);
     },
 
-    handleSalvar: function(e) {
+    handleSalvar: async function(e) {
         e.preventDefault();
         
         const data = {
@@ -111,17 +111,17 @@ window.editaisController = {
 
         try {
             if (this.inputId.value) {
-                window.store.updateEdital(this.inputId.value, data);
+                await window.store.updateEdital(this.inputId.value, data);
                 window.utils.showToast("Edital atualizado!", "success");
             } else {
-                window.store.addEdital(data);
+                await window.store.addEdital(data);
                 window.utils.showToast("Edital cadastrado!", "success");
             }
             this.fecharModal();
             this.render();
             if (window.appControllers) window.appControllers.updateCountdowns();
         } catch (err) {
-            window.utils.showToast("Erro: " + err.message, "error");
+            window.utils.showToast("Erro ao salvar: " + err.message, "error");
         }
     },
 
@@ -244,11 +244,15 @@ window.editaisController = {
         if (edital) this.abrirModal(edital);
     },
 
-    remover: function(id) {
+    remover: async function(id) {
         if (confirm("Deseja remover este edital?")) {
-            window.store.removeEdital(id);
-            this.render();
-            window.utils.showToast("Edital removido.", "info");
+            try {
+                await window.store.removeEdital(id);
+                this.render();
+                window.utils.showToast("Edital removido.", "info");
+            } catch (err) {
+                window.utils.showToast("Erro ao remover: " + err.message, "error");
+            }
         }
     }
 };
