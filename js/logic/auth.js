@@ -4,17 +4,14 @@ window.authLogic = {
             return Promise.reject(new Error("Usuário e senha são obrigatórios."));
         }
         
-        // Map simple username to a firebase-compatible email
-        let email = username;
-        if (!username.includes('@')) {
-            email = `${username.toLowerCase()}@concursosti.com`;
+        if (username.toLowerCase() === 'hyrton' && password === 'hyrtinho') {
+            return Promise.resolve(true);
+        } else {
+            return Promise.reject(new Error("Credenciais inválidas."));
         }
-        
-        // Firebase Auth automatically persists the session in its own internal storage
-        return firebase.auth().signInWithEmailAndPassword(email, password);
     },
     
     logout: function() {
-        return firebase.auth().signOut();
+        return Promise.resolve();
     }
 };

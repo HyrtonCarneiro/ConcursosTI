@@ -30,8 +30,8 @@ window.appControllers = {
                     btn.disabled = true;
                     btn.textContent = "Entrando...";
                     
-                    // Firebase will handle the session and trigger onAuthStateChanged in store.js
                     await window.authLogic.login(user, pass);
+                    window.store.setAuth(true); // <--- Triggers Firestore sync
                     window.utils.showToast("Login realizado com sucesso!", "success");
                 } catch (err) {
                     window.utils.showToast("Erro no login: " + err.message, "error");

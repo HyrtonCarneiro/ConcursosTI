@@ -162,48 +162,68 @@ window.store = {
         this.save();
     },
 
-    // --- Persistence (Pure Firebase) ---
+    // --- Persistence (Pure Firestore) ---
     save: function() {
-        const user = firebase.auth().currentUser;
-        if (!user || !window.db) return;
+        if (!window.db || !this.state.isAuthenticated) return;
 
-        window.db.collection('users').doc(user.uid).set({
-            state: this.state,
+        // Save study data EXCLUSIVELY to Firebase
+        window.db.collection('users').doc('hyrton').set({
+            state: { ...this.state, isAuthenticated: undefined }, // Don't save auth to cloud
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }).catch(err => console.error("Firestore Save Error:", err));
+        
+        // Save ONLY the session flag to browser (to stay logged in)
+        try {
+            localStorage.setItem('auth_session', 'true');
+        } catch(e) {}
+    },
+
+    setAuth: function(val) {
+        this.state.isAuthenticated = val;
+        if (val) {
+            localStorage.setItem('auth_session', 'true');
+            this.initSync(); // Start syncing once logged in
+        } else {
+            localStorage.removeItem('auth_session');
+            this.state = JSON.parse(JSON.stringify(window.store.state)); // Reset to defaults
+            this.triggerUIRefresh();
+        }
     },
 
     init: function() {
-        console.log("Store: Initializing 100% Firebase sync...");
+        console.log("Store: Initializing direct Firebase sync...");
         
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                console.log("Auth: Session recovered.");
-                this.state.isAuthenticated = true;
-                
-                // Real-time listener per user
-                if (this.unsubscribeFirestore) this.unsubscribeFirestore();
-                
-                this.unsubscribeFirestore = window.db.collection('users').doc(user.uid).onSnapshot((doc) => {
-                    if (doc.exists) {
-                        const cloudData = doc.data().state;
-                        this.state = { ...this.state, ...cloudData, isAuthenticated: true };
-                        console.log("Sync: Cloud data synchronized.");
-                        this.triggerUIRefresh();
-                    }
-                    this.hideLoading();
-                }, (err) => {
-                    console.error("Firestore Sync Error:", err);
-                    this.hideLoading();
-                });
+        // Restore session from browser (to avoid re-typing password)
+        const isAuth = localStorage.getItem('auth_session') === 'true';
+        this.state.isAuthenticated = isAuth;
 
+        if (isAuth) {
+            this.initSync();
+        } else {
+            this.hideLoading();
+            this.triggerUIRefresh();
+        }
+    },
+
+    initSync: function() {
+        if (!window.db) return;
+        
+        if (this.unsubscribeFirestore) this.unsubscribeFirestore();
+        
+        this.unsubscribeFirestore = window.db.collection('users').doc('hyrton').onSnapshot((doc) => {
+            if (doc.exists) {
+                const cloudData = doc.data().state;
+                // Merge cloud data into state
+                this.state = { ...this.state, ...cloudData, isAuthenticated: true };
+                console.log("Sync: Cloud data received.");
             } else {
-                console.log("Auth: No active session.");
-                this.state.isAuthenticated = false;
-                if (this.unsubscribeFirestore) this.unsubscribeFirestore();
-                this.triggerUIRefresh();
-                this.hideLoading();
+                console.log("Sync: No remote data. Ready for updates.");
             }
+            this.hideLoading();
+            this.triggerUIRefresh();
+        }, (err) => {
+            console.error("Firestore Sync Error:", err);
+            this.hideLoading();
         });
     },
 
@@ -226,6 +246,7 @@ window.store = {
                 if (window.cadastrosController) try { window.cadastrosController.renderMateriasSelect(); } catch(e){}
                 if (window.materialController) try { window.materialController.render(); } catch(e){}
                 if (window.simuladosController) try { window.simuladosController.render(); } catch(e){}
+                if (window.gamificationController) try { window.gamificationController.render(); } catch(e){}
             }
         }
     }
