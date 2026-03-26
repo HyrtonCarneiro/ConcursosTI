@@ -18,25 +18,17 @@ window.appControllers = {
     bindEvents: function() {
         const formLogin = document.getElementById('form-login');
         if (formLogin) {
-            formLogin.addEventListener('submit', async (e) => {
+            formLogin.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const user = document.getElementById('input-username').value;
                 const pass = document.getElementById('input-password').value;
                 
-                const btn = formLogin.querySelector('button[type="submit"]');
-                const originalText = btn.textContent;
-
-                try {
-                    btn.disabled = true;
-                    btn.textContent = "Entrando...";
-                    
-                    await window.authLogic.login(user, pass);
-                    window.store.setAuth(true); // <--- Triggers Firestore sync
-                    window.utils.showToast("Login realizado com sucesso!", "success");
-                } catch (err) {
-                    window.utils.showToast("Erro no login: " + err.message, "error");
-                    btn.disabled = false;
-                    btn.textContent = originalText;
+                if (window.authLogic.login(user, pass)) {
+                    window.store.setAuth(true); // Triggers Sync
+                    window.utils.showToast("Login iniciado!", "success");
+                    // Interface will switch via triggerUIRefresh from store
+                } else {
+                    window.utils.showToast("Usuário ou senha incorretos.", "error");
                 }
             });
         }

@@ -7,7 +7,6 @@ window.store = {
         cronograma: [], // { id, semana, materiaId, conteudoId, paginas, concluido, dataConclusao }
         editais: [],    // { id, nome, status, dataProva }
         revisoes: [],   // { id, conteudoId, dataRevisao, status }
-        revisoes: [],   // { id, conteudoId, dataRevisao, status }
         simulados: [],  // { id, nome, nota, data }
         materiais: [],  // { conteudoId, links: [], notas: "" }
         estatisticas: {
@@ -163,19 +162,36 @@ window.store = {
     },
 
     // --- Persistence (Pure Firestore) ---
+    cleanData: function(obj) {
+        if (Array.isArray(obj)) return obj.map(v => this.cleanData(v));
+        if (obj !== null && typeof obj === 'object') {
+            const clean = {};
+            Object.keys(obj).forEach(k => {
+                if (obj[k] !== undefined && k !== 'isAuthenticated') {
+                    clean[k] = this.cleanData(obj[k]);
+                }
+            });
+            return clean;
+        }
+        return obj;
+    },
+
     save: function() {
         if (!window.db || !this.state.isAuthenticated) return;
 
-        // Save study data EXCLUSIVELY to Firebase
+        // Clean any undefined values (Firestore fails on them)
+        const dataToSave = this.cleanData(this.state);
+
         window.db.collection('users').doc('hyrton').set({
-            state: { ...this.state, isAuthenticated: undefined }, // Don't save auth to cloud
+            state: dataToSave,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).catch(err => console.error("Firestore Save Error:", err));
+        }).catch(err => {
+            console.error("Firestore Save Error:", err);
+            window.utils.showToast("Erro ao sincronizar com a nuvem: " + err.message, "error");
+        });
         
-        // Save ONLY the session flag to browser (to stay logged in)
-        try {
-            localStorage.setItem('auth_session', 'true');
-        } catch(e) {}
+        // Save ONLY session to browser
+        try { localStorage.setItem('auth_session', 'true'); } catch(e) {}
     },
 
     setAuth: function(val) {
@@ -230,8 +246,7 @@ window.store = {
     hideLoading: function() {
         const overlay = document.getElementById('loading-overlay');
         if (overlay) {
-            overlay.classList.add('opacity-0');
-            setTimeout(() => overlay.remove(), 500);
+            overlay.remove();
         }
     },
 

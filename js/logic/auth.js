@@ -1,17 +1,10 @@
 window.authLogic = {
     login: function(username, password) {
-        if (!username || !password) {
-            return Promise.reject(new Error("Usuário e senha são obrigatórios."));
-        }
-        
-        if (username.toLowerCase() === 'hyrton' && password === 'hyrtinho') {
-            return Promise.resolve(true);
-        } else {
-            return Promise.reject(new Error("Credenciais inválidas."));
-        }
+        if (!username || !password) return false;
+        return (username.toLowerCase() === 'hyrton' && password === 'hyrtinho');
     },
     
     logout: function() {
-        return Promise.resolve();
+        return true;
     }
 };
