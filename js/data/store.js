@@ -162,14 +162,18 @@ window.store = {
         this.save();
     },
 
-    setAuth: function(val) {
-        this.state.isAuthenticated = val;
-        this.save();
-    },
+    isCloudLoaded: false,
+    lastCloudData: null,
 
     // --- Persistence (Firestore Cloud) ---
     save: function() {
         if (!window.db) return;
+        
+        // CRITICAL: Avoid overwriting cloud with empty state if cloud isn't loaded yet
+        if (!this.isCloudLoaded && this.state.isAuthenticated) {
+            console.warn("Save blocked: Cloud data not yet synchronized.");
+            return;
+        }
 
         window.db.collection('users').doc('hyrton').set({
             state: this.state,
@@ -182,37 +186,55 @@ window.store = {
         } catch(e) {}
     },
 
+    setAuth: function(val) {
+        const wasAuthenticated = this.state.isAuthenticated;
+        this.state.isAuthenticated = val;
+        
+        // If logging in, merge any cloud data we already received
+        if (val && !wasAuthenticated && this.lastCloudData) {
+            console.log("Merging pre-loaded cloud data upon login...");
+            this.state = { ...this.state, ...this.lastCloudData };
+        }
+        
+        this.save();
+    },
+
     init: function() {
         // 1. Quick local load
         const saved = localStorage.getItem('concursos_ti_state');
         if (saved) {
-            this.state = { ...this.state, ...JSON.parse(saved) };
+            try {
+                this.state = { ...this.state, ...JSON.parse(saved) };
+            } catch(e) {}
         }
 
         // 2. Real-time Cloud Sync
         if (window.db) {
             window.db.collection('users').doc('hyrton').onSnapshot((doc) => {
+                this.isCloudLoaded = true;
+
                 if (doc.exists) {
                     const cloudData = doc.data().state;
-                    console.log("Cloud sync received:", cloudData);
+                    this.lastCloudData = cloudData; // Cache for immediate login merge
+                    console.log("Cloud data received.");
                     
-                    // Update state (only if authenticated to avoid showing data on login screen)
+                    // Update state only if authenticated
                     if (this.state.isAuthenticated) {
                         this.state = { ...this.state, ...cloudData };
-                        // Persist to local for offline
                         localStorage.setItem('concursos_ti_state', JSON.stringify(this.state));
                         
-                        // Re-render current page
                         if (window.appControllers) {
                             window.appControllers.updateDashboard();
-                            // Optional: re-render specific controllers if active
                             if (window.editaisController) window.editaisController.render();
                             if (window.cronogramaController) window.cronogramaController.renderTable();
+                            if (window.cadastrosController) window.cadastrosController.renderMateriasSelect();
                         }
                     }
+                } else {
+                    console.log("No cloud data found.");
                 }
             }, (err) => {
-                console.error("Erro no listener do Firestore:", err);
+                console.error("Erro Firestore:", err);
             });
         }
 
