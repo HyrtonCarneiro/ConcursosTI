@@ -69,9 +69,9 @@ window.simuladosController = {
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${date}</p>
                     </div>
                 </div>
-                <div class="flex gap-1 opacity-30 group-hover:opacity-100 transition-opacity">
-                    <button onclick="window.simuladosController.handleEditar('${s.id}')" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"><i class="ph ph-pencil-simple text-lg"></i></button>
-                    <button onclick="window.simuladosController.handleRemover('${s.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><i class="ph ph-trash text-lg"></i></button>
+                <div class="flex gap-2 relative z-10">
+                    <button onclick="window.simuladosController.handleEditar('${s.id}')" class="flex items-center gap-1.5 px-3 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md active:scale-95"><i class="ph ph-pencil-simple font-bold"></i> <span class="text-[9px] font-black uppercase">Editar</span></button>
+                    <button onclick="window.simuladosController.handleRemover('${s.id}')" class="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all shadow-md active:scale-95"><i class="ph ph-trash font-bold"></i> <span class="text-[9px] font-black uppercase">Excluir</span></button>
                 </div>
             `;
             this.listEl.appendChild(div);

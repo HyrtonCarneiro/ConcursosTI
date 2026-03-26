@@ -119,9 +119,13 @@ window.cadastrosController = {
                     <div class="w-1.5 h-8 bg-primary-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <span class="font-bold text-gray-800 tracking-tight">${m.nome}</span>
                 </div>
-                <div class="flex gap-1 opacity-30 group-hover:opacity-100 transition-opacity">
-                    <button onclick="window.cadastrosController.abrirModalEditarMateria('${m.id}', '${m.nome}')" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"><i class="ph ph-pencil-simple text-lg"></i></button>
-                    <button onclick="window.cadastrosController.removerMateria('${m.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><i class="ph ph-trash text-lg"></i></button>
+                <div class="flex gap-2 relative z-10">
+                    <button onclick="window.cadastrosController.abrirModalEditarMateria('${m.id}')" class="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md active:scale-90" title="Editar Materia">
+                        <i class="ph ph-pencil-simple font-bold"></i> <span class="text-[10px] font-black uppercase">Editar</span>
+                    </button>
+                    <button onclick="window.cadastrosController.removerMateria('${m.id}')" class="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all shadow-md active:scale-90" title="Apagar">
+                        <i class="ph ph-trash font-bold"></i> <span class="text-[10px] font-black uppercase">Apagar</span>
+                    </button>
                 </div>
             `;
             this.materiasListEl.appendChild(div);
@@ -156,9 +160,13 @@ window.cadastrosController = {
                         </div>
                         <div class="flex items-center justify-between mt-6">
                             <span class="px-3 py-1.5 bg-gray-50 text-[10px] font-black text-gray-500 rounded-xl uppercase tracking-widest">${c.paginas} Pág.</span>
-                            <div class="flex gap-1 opacity-30 group-hover:opacity-100 transition-opacity">
-                                <button onclick="window.cadastrosController.abrirModalEditarConteudo('${c.id}', '${c.nome}', ${c.paginas})" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"><i class="ph ph-pencil-simple-line text-lg"></i></button>
-                                <button onclick="window.cadastrosController.removerConteudo('${c.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><i class="ph ph-trash-line text-lg"></i></button>
+                            <div class="flex gap-2 relative z-10">
+                                <button onclick="window.cadastrosController.abrirModalEditarConteudo('${c.id}')" class="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md active:scale-95" title="Editar Conteúdo">
+                                    <i class="ph ph-pencil-simple-line font-bold"></i> <span class="text-[9px] font-black uppercase">Editar</span>
+                                </button>
+                                <button onclick="window.cadastrosController.removerConteudo('${c.id}')" class="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all shadow-md active:scale-95" title="Apagar">
+                                    <i class="ph ph-trash-line font-bold"></i> <span class="text-[9px] font-black uppercase">Apagar</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -168,7 +176,7 @@ window.cadastrosController = {
         });
     },
 
-    abrirModalEditarMateria: function(id, nome) {
+    abrirModalEditarMateria: function(id) {
         const materia = window.store.getState().materias.find(m => m.id === id);
         if (materia) {
             this.inputEditMateriaId.value = materia.id;

@@ -195,15 +195,12 @@ window.cronogramaController = {
                     <span class="px-3 py-1.5 bg-gray-50 text-[10px] font-black text-gray-500 rounded-xl uppercase tracking-widest">${item.paginas || '--'} Pág.</span>
                 </td>
                 <td class="px-8 py-5 text-right">
-                    <div class="flex justify-end gap-1 opacity-30 group-hover:opacity-100 transition-opacity">
-                        <button onclick="window.cronogramaController.startFocus('${item.id}')" class="p-2 text-gray-300 hover:text-primary-500 hover:bg-primary-50 rounded-xl transition-all" title="Iniciar Pomodoro">
-                            <i class="ph ph-timer text-lg"></i>
+                    <div class="flex justify-end gap-2 relative z-10">
+                        <button onclick="window.cronogramaController.startFocus('${item.id}')" class="flex items-center gap-1.5 px-3 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-md active:scale-95" title="Iniciar Pomodoro">
+                            <i class="ph ph-timer font-bold"></i> <span class="text-[9px] font-black uppercase">Focar</span>
                         </button>
-                        <button onclick="window.cronogramaController.goMaterial('${item.conteudoId}')" class="p-2 text-gray-300 hover:text-primary-500 hover:bg-primary-50 rounded-xl transition-all" title="Ver Notas/Links">
-                            <i class="ph ph-notebook text-lg"></i>
-                        </button>
-                        <button onclick="window.cronogramaController.removerItem('${item.id}')" class="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Remover">
-                            <i class="ph ph-trash text-lg"></i>
+                        <button onclick="window.cronogramaController.removerItem('${item.id}')" class="flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all shadow-md active:scale-95" title="Remover">
+                            <i class="ph ph-trash font-bold"></i> <span class="text-[9px] font-black uppercase">Excluir</span>
                         </button>
                     </div>
                 </td>

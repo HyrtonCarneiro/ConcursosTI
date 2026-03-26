@@ -42,8 +42,8 @@ window.materialController = {
                     <a href="${link}" target="_blank" class="text-xs font-bold text-gray-600 hover:text-primary-600 truncate flex-1 flex items-center gap-2">
                         <i class="ph ph-link-bold text-primary-400"></i> Local ${idx + 1}
                     </a>
-                    <button onclick="window.materialController.removeLink('${c.id}', ${idx})" class="p-1.5 text-gray-300 hover:text-red-500 opacity-30 group-hover/link:opacity-100 transition-opacity">
-                        <i class="ph ph-x text-sm"></i>
+                    <button onclick="window.materialController.removeLink('${c.id}', ${idx})" class="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all shadow-sm active:scale-95">
+                        <i class="ph ph-x font-bold"></i> <span class="text-[8px] font-black uppercase">Remover</span>
                     </button>
                 </div>
             `).join('');
