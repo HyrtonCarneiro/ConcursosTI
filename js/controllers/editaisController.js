@@ -178,23 +178,6 @@ window.editaisController = {
                         </div> \
                     </div> \
                     <div class="grid grid-cols-2 gap-4 mb-6"> \
-                        <div class="bg-gray-50 p-3 rounded-2xl"> \
-                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prova</p> \
-                            <p class="text-xs font-black text-gray-700">' + (ed.dataProva ? window.utils.formatDateBR(ed.dataProva) : 'A definir') + '</p> \
-                            <p class="text-[10px] text-primary-500 font-bold">' + provaTxt + '</p> \
-                        </div> \
-                        <div class="bg-gray-50 p-3 rounded-2xl"> \
-                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Inscrições até</p> \
-                            <p class="text-sm font-black text-gray-700">' + inscTxt + '</p> \
-                        </div> \
-                    </div> \
-                    <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50"> \
-                        <div class="flex gap-4"> \
-                            <div> \
-                                <p class="text-[9px] font-bold text-gray-400 uppercase">Salário</p> \
-                                <p class="text-xs font-black text-green-600">R$ ' + (ed.salario || "--") + '</p> \
-                            </div> \
-                            <div> \
                                 <p class="text-[9px] font-bold text-gray-400 uppercase">Vagas</p> \
                                 <p class="text-xs font-black text-gray-700">' + (ed.vagas || "--") + '</p> \
                             </div> \

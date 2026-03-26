@@ -160,40 +160,47 @@ window.cronogramaController = {
                 lastRenderedSemana = item.semana;
             }
 
-            const materia = window.store.getState().materias.find(m => m.id === item.materiaId);
-            const conteudo = window.store.getState().conteudos.find(c => c.id === item.conteudoId);
-            
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50 transition-colors group ' + (item.concluido ? 'opacity-60 bg-gray-50' : '');
+            tr.className = 'group hover:bg-primary-50/50 transition-colors';
             
-            // Note: removed "window.utils.formatDateBR(item.semana)" from the first column since it's now in the header
-            const contentHTML = ' \
-                <td class="p-4 text-sm font-medium text-gray-400 italic">Seq. •</td> \
-                <td class="p-4 text-sm text-gray-700">' + (materia ? materia.nome : '-') + '</td> \
-                <td class="p-4 text-sm text-gray-700"> \
-                    <div class="flex flex-col"> \
-                        <span class="' + (item.concluido ? 'line-through text-gray-400' : 'font-medium') + '">' + (conteudo ? conteudo.nome : '-') + '</span> \
-                        <button onclick="window.cronogramaController.goMaterial(\'' + item.conteudoId + '\')" class="text-xs text-primary-500 hover:underline flex items-center gap-1 mt-1"> \
-                            <i class="ph ph-notebook"></i> Notas/Links \
-                        </button> \
-                    </div> \
-                </td> \
-                <td class="p-4 text-sm font-semibold text-primary-600 text-center">' + item.paginas + '</td> \
-                <td class="p-4 text-sm"> \
-                    <div class="flex items-center justify-center gap-3"> \
-                        <button onclick="window.cronogramaController.toggleConcluido(\'' + item.id + '\')" class="w-8 h-8 rounded-full border-2 ' + (item.concluido ? 'bg-green-500 border-green-500 text-white' : 'border-gray-200 text-transparent hover:border-green-500') + ' flex items-center justify-center transition-all"> \
-                            <i class="ph ph-check-bold scale-75"></i> \
-                        </button> \
-                        <button onclick="window.cronogramaController.startFocus(\'' + item.id + '\')" class="w-8 h-8 rounded-xl bg-primary-100 text-primary-600 hover:bg-primary-600 hover:text-white flex items-center justify-center transition-all" title="Iniciar Pomodoro"> \
-                            <i class="ph ph-timer"></i> \
-                        </button> \
-                        <button class="w-8 h-8 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" onclick="window.cronogramaController.removerItem(\'' + item.id + '\')" title="Remover"> \
-                            <i class="ph ph-trash"></i> \
-                        </button> \
-                    </div> \
-                </td>';
-            
-            tr.innerHTML = contentHTML;
+            const statusIcon = item.concluido ? 'ph-fill ph-check-circle text-green-500' : 'ph ph-circle text-gray-300 group-hover:text-primary-300';
+            const textClass = item.concluido ? 'line-through text-gray-400 font-medium' : 'text-gray-700 font-bold';
+            const dateStr = item.data ? window.utils.formatDateBR(item.data) : '--/--';
+            const diaSemana = item.data ? new Date(item.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase() : '';
+
+            tr.innerHTML = `
+                <td class="px-8 py-5">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-black text-gray-900 tracking-tighter">${diaSemana}</span>
+                        <span class="text-[10px] text-gray-300 font-bold">${dateStr}</span>
+                    </div>
+                </td>
+                <td class="px-8 py-5">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-1">${item.materiaNome || 'Matéria'}</span>
+                        <span class="${textClass} tracking-tight line-clamp-1">${item.conteudoNome || 'Conteúdo'}</span>
+                    </div>
+                </td>
+                <td class="px-8 py-5">
+                    <button onclick="window.cronogramaController.toggleConcluido('${item.id}')" class="flex items-center gap-2 group/btn">
+                        <i class="${statusIcon} text-2xl transition-transform group-hover/btn:scale-110"></i>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest ${item.concluido ? 'text-green-600' : ''}">${item.concluido ? 'Concluído' : 'Pendente'}</span>
+                    </button>
+                </td>
+                <td class="px-8 py-5 text-right">
+                    <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="window.cronogramaController.startFocus('${item.id}')" class="p-2 text-gray-300 hover:text-primary-500 hover:bg-primary-50 rounded-xl transition-all" title="Iniciar Pomodoro">
+                            <i class="ph ph-timer-bold text-lg"></i>
+                        </button>
+                        <button onclick="window.cronogramaController.goMaterial('${item.conteudoId}')" class="p-2 text-gray-300 hover:text-primary-500 hover:bg-primary-50 rounded-xl transition-all" title="Ver Notas/Links">
+                            <i class="ph ph-notebook-bold text-lg"></i>
+                        </button>
+                        <button onclick="window.cronogramaController.removerItem('${item.id}')" class="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Remover">
+                            <i class="ph ph-trash-bold text-lg"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
             this.tbody.appendChild(tr);
         });
     },

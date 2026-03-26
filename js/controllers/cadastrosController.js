@@ -102,58 +102,73 @@ window.cadastrosController = {
     },
 
     renderLists: function() {
-        if (!this.listMaterias || !this.listConteudos) return;
+        if (!this.materiasListEl || !this.conteudosListEl) return;
         const state = window.store.getState();
         
-        // Render Materias
-        this.listMaterias.innerHTML = '';
-        state.materias.forEach(m => {
+        this.renderMaterias(state.materias);
+        this.renderConteudos(state.materias, state.conteudos);
+    },
+
+    renderMaterias: function(materias) {
+        this.materiasListEl.innerHTML = "";
+        materias.forEach(m => {
             const div = document.createElement('div');
-            div.className = 'flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-primary-200 transition-all';
+            div.className = 'group flex items-center justify-between p-5 bg-white border border-gray-50 rounded-[1.5rem] shadow-premium hover:border-primary-100 transition-all hover:-translate-y-1';
             div.innerHTML = `
-                <span class="font-bold text-gray-700">${m.nome}</span>
-                <div class="flex gap-2">
-                    <button onclick="window.cadastrosController.abrirEditMateria('${m.id}')" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"><i class="ph ph-pencil-simple"></i></button>
-                    <button onclick="window.cadastrosController.removerMateria('${m.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><i class="ph ph-trash"></i></button>
+                <div class="flex items-center gap-4">
+                    <div class="w-1.5 h-8 bg-primary-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span class="font-bold text-gray-800 tracking-tight">${m.nome}</span>
+                </div>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="window.cadastrosController.abrirModalEditarMateria('${m.id}', '${m.nome}')" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"><i class="ph ph-pencil-simple-bold text-lg"></i></button>
+                    <button onclick="window.cadastrosController.removerMateria('${m.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><i class="ph ph-trash-bold text-lg"></i></button>
                 </div>
             `;
-            this.listMaterias.appendChild(div);
-        });
-
-        // Render Conteudos by Materia
-        this.listConteudos.innerHTML = '';
-        state.materias.forEach(m => {
-            const conteudos = state.conteudos.filter(c => c.materiaId === m.id);
-            if (conteudos.length > 0) {
-                const group = document.createElement('div');
-                group.className = 'bg-gray-50/50 p-4 rounded-3xl border border-gray-100';
-                group.innerHTML = `<h5 class="text-[10px] font-black text-primary-600 uppercase mb-3 px-1">${m.nome}</h5>`;
-                
-                const table = document.createElement('table');
-                table.className = 'w-full text-sm text-left';
-                table.innerHTML = `
-                    <tbody class="divide-y divide-gray-100">
-                        ${conteudos.map(c => `
-                            <tr>
-                                <td class="py-2 pr-4 font-medium text-gray-700">${c.nome}</td>
-                                <td class="py-2 pr-4 text-gray-400">${c.paginas} pág.</td>
-                                <td class="py-2 text-right">
-                                    <div class="flex justify-end gap-1">
-                                        <button onclick="window.cadastrosController.abrirEditConteudo('${c.id}')" class="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg"><i class="ph ph-pencil-simple"></i></button>
-                                        <button onclick="window.cadastrosController.removerConteudo('${c.id}')" class="p-1.5 text-gray-400 hover:text-red-500 rounded-lg"><i class="ph ph-trash"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                `;
-                group.appendChild(table);
-                this.listConteudos.appendChild(group);
-            }
+            this.materiasListEl.appendChild(div);
         });
     },
 
-    abrirEditMateria: function(id) {
+    renderConteudos: function(materias, conteudos) {
+        this.conteudosListEl.innerHTML = "";
+        if (materias.length === 0) {
+            this.conteudosListEl.innerHTML = `<div class="col-span-full py-20 text-center bg-gray-50/50 rounded-[2.5rem] border border-dashed border-gray-200">
+                <i class="ph ph-mask-happy text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-400 font-bold uppercase tracking-widest text-xs">Nenhuma matéria cadastrada ainda</p>
+            </div>`;
+            return;
+        }
+
+        materias.forEach(m => {
+            const mConteudos = conteudos.filter(c => c.materiaId === m.id);
+            if (mConteudos.length === 0) return;
+
+            mConteudos.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'group bg-white p-6 rounded-[2rem] shadow-premium border border-gray-50 hover:border-primary-100 transition-all hover:shadow-xl-primary relative overflow-hidden';
+                div.innerHTML = `
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-primary-50/50 rounded-full -mr-12 -mt-12 group-hover:bg-primary-100/50 transition-colors"></div>
+                    <div class="relative">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <p class="text-[9px] font-black text-primary-500 uppercase tracking-[0.2em] mb-1">${m.nome}</p>
+                                <h4 class="font-bold text-gray-800 leading-tight pr-8">${c.nome}</h4>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mt-6">
+                            <span class="px-3 py-1.5 bg-gray-50 text-[10px] font-black text-gray-500 rounded-xl uppercase tracking-widest">${c.paginas} Pág.</span>
+                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.cadastrosController.abrirModalEditarConteudo('${c.id}', '${c.nome}', ${c.paginas})" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"><i class="ph ph-pencil-simple-line-bold text-lg"></i></button>
+                                <button onclick="window.cadastrosController.removerConteudo('${c.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><i class="ph ph-trash-line-bold text-lg"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                this.conteudosListEl.appendChild(div);
+            });
+        });
+    },
+
+    abrirModalEditarMateria: function(id, nome) {
         const materia = window.store.getState().materias.find(m => m.id === id);
         if (materia) {
             this.inputEditMateriaId.value = materia.id;

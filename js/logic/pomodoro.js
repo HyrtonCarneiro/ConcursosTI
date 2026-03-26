@@ -1,5 +1,6 @@
 window.pomodoroLogic = {
     timer: null,
+    totalTime: 25 * 60,
     timeLeft: 25 * 60,
     isActive: false,
     mode: 'work', // 'work' or 'break'
@@ -10,7 +11,10 @@ window.pomodoroLogic = {
         
         this.timer = setInterval(() => {
             this.timeLeft--;
-            if (onTick) onTick(this.formatTime(this.timeLeft));
+            if (onTick) {
+                const perc = (this.timeLeft / this.totalTime) * 100;
+                onTick(this.formatTime(this.timeLeft), perc);
+            }
             
             if (this.timeLeft <= 0) {
                 this.stop();
@@ -27,7 +31,8 @@ window.pomodoroLogic = {
     reset: function(mode = 'work') {
         this.stop();
         this.mode = mode;
-        this.timeLeft = mode === 'work' ? 25 * 60 : 5 * 60;
+        this.totalTime = mode === 'work' ? 25 * 60 : 5 * 60;
+        this.timeLeft = this.totalTime;
         return this.formatTime(this.timeLeft);
     },
     

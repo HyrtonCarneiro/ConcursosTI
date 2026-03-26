@@ -15,19 +15,20 @@ window.simuladosController = {
 
     bindEvents: function() {
         if (this.btnNovo) {
-            this.btnNovo.addEventListener('click', () => this.handleNovo());
+            this.btnNovo.onclick = () => this.handleNovo();
         }
     },
 
     handleNovo: function() {
-        const nome = prompt("Nome do simulado (ex: Simulado 01 - CEF):");
+        const nome = prompt("Nome do simulado (ex: Simulado 01 - Receita):");
         if (!nome) return;
-        const nota = prompt("Sua nota / porcentagem de acertos (ex: 85):");
+        const nota = prompt("Seu percentual de acertos (ex: 85):");
         if (nota === null) return;
         
         try {
             window.store.addSimulado(nome, nota);
             window.utils.showToast("Simulado registrado!", "success");
+            // render will be called by state listener in real app, but we trigger here to be sure
             this.render();
         } catch (e) {
             window.utils.showToast("Erro: " + e.message, "error");
@@ -35,39 +36,48 @@ window.simuladosController = {
     },
 
     render: function() {
-        this.renderList();
-        this.renderChart();
-    },
-
-    renderList: function() {
         if (!this.listEl) return;
-        const simulados = window.store.getState().simulados;
+        const state = window.store.getState();
+        const simulados = state.simulados || [];
+        
         this.listEl.innerHTML = "";
         
         if (simulados.length === 0) {
-            this.listEl.innerHTML = '<p class="text-sm text-gray-500 italic">Nenhum simulado registrado.</p>';
+            this.listEl.innerHTML = `
+                <div class="py-10 text-center opacity-40">
+                    <i class="ph ph-mask-sad text-4xl mb-2"></i>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">Ainda sem histórico</p>
+                </div>
+            `;
             return;
         }
 
-        simulados.slice().reverse().forEach(s => {
-            const date = new Date(s.data).toLocaleDateString();
+        [...simulados].reverse().forEach(s => {
+            const date = s.data ? new Date(s.data).toLocaleDateString() : '--/--';
+            const perc = s.percentual || 0;
+            const colorClass = perc >= 80 ? 'text-green-500' : perc >= 60 ? 'text-orange-500' : 'text-red-500';
+            
             const div = document.createElement('div');
-            div.className = 'flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-primary-100 transition-all group';
+            div.className = 'group bg-gray-50/50 p-5 rounded-[1.5rem] border border-transparent hover:border-primary-100 hover:bg-white transition-all flex items-center justify-between';
             div.innerHTML = `
-                <div class="flex-1">
-                    <p class="text-sm font-bold text-gray-800">${s.nome}</p>
-                    <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">${date}</p>
-                </div>
                 <div class="flex items-center gap-4">
-                    <span class="text-lg font-black text-primary-600">${s.nota}%</span>
-                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick="window.simuladosController.handleEditar('${s.id}')" class="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg"><i class="ph ph-pencil-simple"></i></button>
-                        <button onclick="window.simuladosController.handleRemover('${s.id}')" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><i class="ph ph-trash"></i></button>
+                    <div class="w-12 h-12 rounded-full border-2 border-dashed border-gray-100 flex items-center justify-center font-black ${colorClass} text-sm">
+                        ${perc}%
                     </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm leading-tight">${s.nome}</h4>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${date}</p>
+                    </div>
+                </div>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="window.simuladosController.handleEditar('${s.id}')" class="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"><i class="ph ph-pencil-simple-bold text-lg"></i></button>
+                    <button onclick="window.simuladosController.handleRemover('${s.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><i class="ph ph-trash-bold text-lg"></i></button>
                 </div>
             `;
             this.listEl.appendChild(div);
         });
+        
+        this.renderChart(simulados);
     },
 
     handleEditar: function(id) {
@@ -75,7 +85,7 @@ window.simuladosController = {
         if (!s) return;
         const novoNome = prompt("Novo nome:", s.nome);
         if (novoNome === null) return;
-        const novaNota = prompt("Nova nota (%):", s.nota);
+        const novaNota = prompt("Nova nota (%):", s.percentual || s.nota);
         if (novaNota === null) return;
         
         window.store.updateSimulado(id, { nome: novoNome, nota: novaNota });
@@ -91,16 +101,15 @@ window.simuladosController = {
         }
     },
 
-    renderChart: function() {
+    renderChart: function(simulados) {
         if (!this.canvas) return;
-        const simulados = window.store.getState().simulados;
+        if (!simulados) simulados = window.store.getState().simulados || [];
         
         if (this.chart) this.chart.destroy();
-        
         if (simulados.length === 0) return;
 
         const labels = simulados.map((s, index) => 'Sim ' + (index + 1));
-        const data = simulados.map(s => s.nota);
+        const data = simulados.map(s => s.percentual || s.nota);
 
         this.chart = new Chart(this.canvas, {
             type: 'line',
@@ -114,14 +123,17 @@ window.simuladosController = {
                     fill: true,
                     tension: 0.4,
                     pointRadius: 6,
-                    pointBackgroundColor: '#3b82f6'
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderWidth: 0,
+                    borderWidth: 3
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true, max: 100 }
+                    y: { beginAtZero: true, max: 100, ticks: { font: { size: 10, weight: 'bold' } } },
+                    x: { ticks: { font: { size: 10, weight: 'bold' } } }
                 },
                 plugins: {
                     legend: { display: false }

@@ -5,66 +5,59 @@ window.pomodoroController = {
     },
 
     cacheDOM: function() {
-        this.widget = document.getElementById('pomodoro-widget');
-        this.content = document.getElementById('pomodoro-content');
-        this.timerEl = document.getElementById('pomo-timer');
-        this.labelEl = document.getElementById('pomo-label');
-        this.materiaEl = document.getElementById('pomo-materia');
-        this.btnToggle = document.getElementById('btn-pomo-toggle');
-        this.btnReset = document.getElementById('btn-pomo-reset');
-        this.btnFab = document.getElementById('btn-pomo-fab');
-        this.btnClose = document.getElementById('btn-pomo-close');
+        this.timerEl = document.getElementById('pomodoro-timer');
+        this.progressEl = document.getElementById('pomodoro-progress');
+        this.statusEl = document.getElementById('pomodoro-status');
+        this.btnToggle = document.getElementById('btn-pomodoro-toggle');
+        this.btnReset = document.getElementById('btn-pomodoro-reset');
     },
 
     bindEvents: function() {
-        this.btnFab.addEventListener('click', () => this.toggleWidget());
-        this.btnClose.addEventListener('click', () => this.toggleWidget(false));
-        this.btnToggle.addEventListener('click', () => this.handleToggle());
-        this.btnReset.addEventListener('click', () => this.handleReset());
-    },
-
-    toggleWidget: function(force) {
-        const show = typeof force === 'boolean' ? force : this.content.classList.contains('opacity-0');
-        if (show) {
-            this.content.classList.remove('translate-y-20', 'opacity-0');
-        } else {
-            this.content.classList.add('translate-y-20', 'opacity-0');
-        }
-    },
-
-    openWithContext: function(text) {
-        this.materiaEl.textContent = text;
-        this.toggleWidget(true);
+        if (this.btnToggle) this.btnToggle.onclick = () => this.handleToggle();
+        if (this.btnReset) this.btnReset.onclick = () => this.handleReset();
     },
 
     handleToggle: function() {
         if (window.pomodoroLogic.isActive) {
             window.pomodoroLogic.stop();
-            this.btnToggle.textContent = 'Retomar';
-            this.btnToggle.className = 'flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl font-medium transition-all';
+            this.updateIcon(false);
+            this.statusEl.textContent = "Pausado";
         } else {
             window.pomodoroLogic.start(
-                (time) => { this.timerEl.textContent = time; },
-                (mode) => { this.handleComplete(mode); }
+                (time, perc) => this.updateUI(time, perc),
+                (mode) => this.handleComplete(mode)
             );
-            this.btnToggle.textContent = 'Pausar';
-            this.btnToggle.className = 'flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-xl font-medium transition-all';
+            this.updateIcon(true);
+            this.statusEl.textContent = window.pomodoroLogic.mode === 'work' ? "Focando..." : "Descansando...";
         }
+    },
+
+    updateUI: function(time, perc) {
+        if (this.timerEl) this.timerEl.textContent = time;
+        if (this.progressEl) {
+            const offset = 226 - (226 * perc / 100);
+            this.progressEl.style.strokeDashoffset = offset;
+        }
+    },
+
+    updateIcon: function(active) {
+        if (!this.btnToggle) return;
+        this.btnToggle.innerHTML = active ? '<i class="ph ph-pause-fill text-xl"></i>' : '<i class="ph ph-play-fill text-xl"></i>';
     },
 
     handleReset: function() {
         const time = window.pomodoroLogic.reset();
-        this.timerEl.textContent = time;
-        this.btnToggle.textContent = 'Iniciar';
-        this.btnToggle.className = 'flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-xl font-medium transition-all';
+        this.updateUI(time, 100);
+        this.updateIcon(false);
+        this.statusEl.textContent = "Pronto para o Foco";
     },
 
     handleComplete: function(mode) {
-        window.utils.showToast(mode === 'work' ? "Hora de descansar!" : "Hora de focar!", "info");
         const nextMode = mode === 'work' ? 'break' : 'work';
-        this.labelEl.textContent = nextMode === 'work' ? 'Modo Foco' : 'Descanso';
-        this.handleReset();
+        window.utils.showToast(mode === 'work' ? "Trabalho concluído! Hora de descansar." : "Descanso finalizado! Vamos voltar?", "info");
+        
         window.pomodoroLogic.reset(nextMode);
-        this.timerEl.textContent = window.pomodoroLogic.formatTime(window.pomodoroLogic.timeLeft);
+        this.handleReset();
+        this.statusEl.textContent = nextMode === 'work' ? "Pronto para o Foco" : "Pronto para o Descanso";
     }
 };

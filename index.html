@@ -3,27 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ConcursosTI</title>
+    <title>ConcursosTI | Sua Aprovação Começa Aqui</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
                     colors: {
-                        background: '#f8fafc',
+                        background: '#fcfdfe',
                         primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
+                            50: '#f0f4ff',
+                            100: '#dbe4fe',
+                            200: '#bfd0fe',
+                            300: '#93b0fd',
+                            400: '#6085fa',
+                            500: '#3b5df5',
+                            600: '#253ee8',
+                            700: '#1d2eca',
+                            800: '#1e28a3',
+                            900: '#1e2781',
                         }
+                    },
+                    boxShadow: {
+                        'premium': '0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02)',
+                        'xl-primary': '0 20px 25px -5px rgba(59, 93, 245, 0.1), 0 10px 10px -5px rgba(59, 93, 245, 0.04)',
                     }
                 }
             }
         }
     </script>
+    
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .nav-active { background: #3b5df5 !important; color: white !important; box-shadow: 0 4px 12px rgba(59, 93, 245, 0.2); }
+        .page-transition { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    </style>
+
     <!-- Firebase SDK (CDN) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -31,63 +61,83 @@
     
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Global CSS -->
-    <link rel="stylesheet" href="css/style.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-background text-gray-800 font-sans min-h-screen">
+<body class="bg-background text-gray-800 font-sans min-h-screen selection:bg-primary-100 selection:text-primary-700">
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="w-16 h-16 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin mb-4"></div>
-        <p class="text-gray-500 font-medium animate-pulse">Sincronizando com a Nuvem...</p>
+    <div id="loading-overlay" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="relative w-24 h-24 mb-6">
+            <div class="absolute inset-0 border-4 border-primary-50 border-t-primary-600 rounded-full animate-spin"></div>
+            <div class="absolute inset-4 border-4 border-primary-50 border-b-primary-400 rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
+            <i class="ph ph-lightning absolute inset-0 flex items-center justify-center text-primary-600 text-2xl animate-pulse"></i>
+        </div>
+        <p class="text-gray-400 font-bold uppercase tracking-[0.2em] text-[10px] animate-pulse">Sincronizando Nuvem</p>
     </div>
 
     <!-- Toasts Container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+    <div id="toast-container" class="fixed top-6 right-6 z-[110] flex flex-col gap-3"></div>
 
     <!-- Login View -->
-    <div id="view-login" class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-lg shadow-gray-200/50 w-full max-w-md border border-gray-100">
-            <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">ConcursosTI</h1>
-            <p class="text-center text-gray-500 mb-8">Organize seu cronograma</p>
+    <div id="view-login" class="flex items-center justify-center min-h-screen p-6 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-50 via-white to-background">
+        <div class="bg-white/70 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-premium w-full max-w-md border border-white/50 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-400 to-primary-600"></div>
+            <div class="flex flex-col items-center mb-10">
+                <div class="w-16 h-16 bg-primary-600 rounded-2xl shadow-xl-primary flex items-center justify-center mb-6 rotate-3">
+                    <i class="ph-fill ph-graduation-cap text-white text-3xl"></i>
+                </div>
+                <h1 class="text-4xl font-black text-gray-900 tracking-tight">Concursos<span class="text-primary-600">TI</span></h1>
+                <p class="text-gray-400 font-medium text-sm mt-2 uppercase tracking-widest">Plataforma de Elite</p>
+            </div>
             
-            <form id="form-login" class="flex flex-col gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Usuário</label>
-                    <input type="text" id="input-username" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="Hyrton" autocomplete="username">
+            <form id="form-login" class="space-y-5">
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Seu Usuário</label>
+                    <div class="relative">
+                        <i class="ph ph-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+                        <input type="text" id="input-username" class="w-full pl-12 pr-4 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-gray-300" placeholder="Hyrton" autocomplete="username">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-                    <input type="password" id="input-password" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="••••••••" autocomplete="current-password">
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Sua Senha</label>
+                    <div class="relative">
+                        <i class="ph ph-lock-key absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
+                        <input type="password" id="input-password" class="w-full pl-12 pr-4 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all placeholder:text-gray-300" placeholder="••••••••" autocomplete="current-password">
+                    </div>
                 </div>
-                <button type="submit" class="mt-4 w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                    Entrar
+                <button type="submit" class="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-black rounded-2xl shadow-lg shadow-primary-200 hover:shadow-primary-300 hover:-translate-y-1 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    ENTRAR AGORA <i class="ph ph-arrow-right-bold"></i>
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Main App View (Hidden purely by display: none to allow init mapping) -->
-    <div id="view-app" class="hidden min-h-screen bg-background">
-        <!-- Sidebar / Navigation -->
-        <nav class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
-            <div class="flex items-center gap-2">
-                <i class="ph ph-books text-primary-600 text-3xl"></i>
-                <span class="text-xl font-bold text-gray-800">ConcursosTI</span>
-            </div>
-            <div class="flex gap-4">
-                <button onclick="window.appControllers.navigate('dashboard')" id="nav-dashboard" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Dashboard</button>
-                <button onclick="window.appControllers.navigate('editais')" id="nav-editais" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Editais</button>
-                <button onclick="window.appControllers.navigate('cadastros')" id="nav-cadastros" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cadastros</button>
-                <button onclick="window.appControllers.navigate('cronograma')" id="nav-cronograma" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cronograma</button>
-                <button onclick="window.appControllers.navigate('materiais')" id="nav-materiais" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Materiais</button>
-                <button onclick="window.appControllers.navigate('simulados')" id="nav-simulados" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Simulados</button>
-                <button onclick="window.appControllers.navigate('metas')" id="nav-metas" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Metas</button>
-            </div>
-            <div>
-                <button id="btn-logout" class="text-sm font-medium text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
-                    <i class="ph ph-sign-out"></i> Sair
+    <!-- Main App View -->
+    <div id="view-app" class="hidden min-h-screen pb-20">
+        <!-- Dashboard Navigation (Horizontal Glass) -->
+        <nav class="glass sticky top-0 z-[100] px-8 py-4 mb-8">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200">
+                        <i class="ph ph-graduation-cap-bold text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-black text-gray-900 tracking-tighter">ConcursosTI</span>
+                        <div class="h-0.5 w-full bg-primary-600 rounded-full mt-[-2px]"></div>
+                    </div>
+                </div>
+                
+                <div class="hidden lg:flex bg-gray-100/50 p-1.5 rounded-2xl gap-1">
+                    <button onclick="window.appControllers.navigate('dashboard')" id="nav-dashboard" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-layout"></i> Dashboard</button>
+                    <button onclick="window.appControllers.navigate('editais')" id="nav-editais" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-article-ny-times"></i> Editais</button>
+                    <button onclick="window.appControllers.navigate('cadastros')" id="nav-cadastros" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-database"></i> Cadastros</button>
+                    <button onclick="window.appControllers.navigate('cronograma')" id="nav-cronograma" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-calendar-check"></i> Cronograma</button>
+                    <button onclick="window.appControllers.navigate('materiais')" id="nav-materiais" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-files"></i> Materiais</button>
+                    <button onclick="window.appControllers.navigate('simulados')" id="nav-simulados" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-chart-bar"></i> Simulados</button>
+                    <button onclick="window.appControllers.navigate('metas')" id="nav-metas" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-trophy"></i> Metas</button>
+                </div>
+
+                <button id="btn-logout" class="group flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors">
+                    <span class="text-xs font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Sair</span>
+                    <i class="ph ph-sign-out text-2xl"></i>
                 </button>
             </div>
         </nav>
@@ -140,48 +190,51 @@
             </section>
 
             <!-- Editais Page -->
-            <section id="page-editais" class="page-section hidden">
-                <div class="flex items-center justify-between mb-8">
+            <section id="page-editais" class="page-section hidden page-transition">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Meus Editais</h2>
-                        <p class="text-sm text-gray-500">Acompanhe prazos e datas importantes de concursos.</p>
+                        <h2 class="text-3xl font-black text-gray-900 tracking-tight">Editais & Concursos</h2>
+                        <p class="text-gray-400 text-sm font-medium">Acompanhe as melhores oportunidades</p>
                     </div>
-                    <div class="flex gap-2">
-                        <div class="relative">
-                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" id="input-search-editais" placeholder="Filtrar editais..." class="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none w-64 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="relative group">
+                            <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary-500 transition-colors"></i>
+                            <input type="text" id="input-search-editais" placeholder="Filtrar por órgão ou banca..." class="pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none w-72 transition-all shadow-sm">
                         </div>
-                        <button id="btn-novo-edital" class="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2">
-                            <i class="ph ph-plus-circle"></i> Novo Edital
+                        <button id="btn-novo-edital" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-primary-200 flex items-center gap-2 active:scale-95">
+                            <i class="ph ph-plus-circle-bold"></i> Novo Edital
                         </button>
                     </div>
                 </div>
                 
-                <div id="container-editais" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="container-editais" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <!-- Cards dinâmicos -->
                 </div>
 
-                <!-- Modal Edital -->
-                <div id="modal-edital" class="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden scale-95 opacity-0 transition-all duration-200" id="modal-edital-content">
-                        <div class="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <h3 id="edital-modal-title" class="text-lg font-bold text-gray-800">Novo Edital</h3>
-                            <button onclick="window.editaisController.fecharModal()" class="text-gray-400 hover:text-gray-600 font-bold"><i class="ph ph-x text-xl"></i></button>
+                <!-- Modal Edital (Refined) -->
+                <div id="modal-edital" class="fixed inset-0 z-[150] bg-gray-900/60 backdrop-blur-md hidden flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden" id="modal-edital-content">
+                        <div class="px-10 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h3 id="edital-modal-title" class="text-xl font-black text-gray-900">Novo Edital</h3>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Informações do Concurso</p>
+                            </div>
+                            <button onclick="window.editaisController.fecharModal()" class="w-10 h-10 flex items-center justify-center text-gray-300 hover:text-gray-600 hover:bg-white rounded-full transition-all"><i class="ph ph-x text-2xl"></i></button>
                         </div>
-                        <form id="form-edital" class="p-8 space-y-6">
+                        <form id="form-edital" class="p-10 space-y-8">
                             <input type="hidden" id="input-edital-id">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div class="md:col-span-2">
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Órgão / Concurso</label>
-                                    <input type="text" id="input-edital-nome" required class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="Ex: Receita Federal">
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Órgão / Nome do Concurso</label>
+                                    <input type="text" id="input-edital-nome" required class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="Ex: Auditor Fiscal da Receita Federal">
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Banca</label>
-                                    <input type="text" id="input-edital-banca" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="Ex: FGV, FCC...">
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Banca Examinadora</label>
+                                    <input type="text" id="input-edital-banca" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="Ex: FGV, FCC, CESPE">
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Status</label>
-                                    <select id="select-edital-status" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Status Atual</label>
+                                    <select id="select-edital-status" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
                                         <option value="Ativo">Inscrições Abertas</option>
                                         <option value="Previsto">Previsto / Autorizado</option>
                                         <option value="Encerrado">Inscrições Encerradas</option>
@@ -189,37 +242,37 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Data da Prova</label>
-                                    <input type="date" id="input-edital-data" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
-                                    <label class="flex items-center gap-2 mt-2 cursor-pointer">
-                                        <input type="checkbox" id="check-edital-data-indefinida" class="rounded text-primary-500" onchange="document.getElementById('input-edital-data').disabled = this.checked">
-                                        <span class="text-xs text-gray-500">A definir</span>
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Data da Prova</label>
+                                    <input type="date" id="input-edital-data" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
+                                    <label class="flex items-center gap-2 mt-3 cursor-pointer group">
+                                        <input type="checkbox" id="check-edital-data-indefinida" class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" onchange="document.getElementById('input-edital-data').disabled = this.checked">
+                                        <span class="text-xs font-bold text-gray-400 group-hover:text-gray-600 transition-colors">Ainda não definida</span>
                                     </label>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Fim das Inscrições</label>
-                                    <input type="date" id="input-edital-inscricao" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
-                                    <label class="flex items-center gap-2 mt-2 cursor-pointer">
-                                        <input type="checkbox" id="check-edital-insc-indefinida" class="rounded text-primary-500" onchange="document.getElementById('input-edital-inscricao').disabled = this.checked">
-                                        <span class="text-xs text-gray-500">A definir</span>
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Encerramento Inscrições</label>
+                                    <input type="date" id="input-edital-inscricao" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
+                                    <label class="flex items-center gap-2 mt-3 cursor-pointer group">
+                                        <input type="checkbox" id="check-edital-insc-indefinida" class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" onchange="document.getElementById('input-edital-inscricao').disabled = this.checked">
+                                        <span class="text-xs font-bold text-gray-400 group-hover:text-gray-600 transition-colors">Ainda não definida</span>
                                     </label>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Salário (R$)</label>
-                                    <input type="text" id="input-edital-salario" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="Ex: 15.000,00">
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Salário Estimado (R$)</label>
+                                    <input type="text" id="input-edital-salario" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="Ex: 21.000,00">
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Vagas</label>
-                                    <input type="number" id="input-edital-vagas" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="Ex: 100">
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Número de Vagas</label>
+                                    <input type="number" id="input-edital-vagas" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="Ex: 50">
                                 </div>
                                 <div class="md:col-span-2">
-                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Link do Edital</label>
-                                    <input type="url" id="input-edital-link" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="https://...">
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Link Oficial (URL)</label>
+                                    <input type="url" id="input-edital-link" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all" placeholder="https://www.banca.com.br/concurso">
                                 </div>
                             </div>
-                            <div class="pt-4 flex gap-3">
-                                <button type="button" onclick="window.editaisController.fecharModal()" class="flex-1 py-3 border border-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-50 transition-all">Cancelar</button>
-                                <button type="submit" class="flex-[2] py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-2xl shadow-lg shadow-primary-200 transition-all">Salvar Edital</button>
+                            <div class="pt-6 flex gap-4">
+                                <button type="button" onclick="window.editaisController.fecharModal()" class="flex-1 py-4 border border-gray-100 text-gray-400 font-bold rounded-2xl hover:bg-gray-50 transition-all uppercase tracking-widest text-[10px]">Cancelar</button>
+                                <button type="submit" class="flex-[2] py-4 bg-primary-600 hover:bg-primary-700 text-white font-black rounded-2xl shadow-xl shadow-primary-200 transition-all uppercase tracking-widest text-xs">Salvar Informações</button>
                             </div>
                         </form>
                     </div>
@@ -227,87 +280,131 @@
             </section>
 
             <!-- Cadastros Page (Materias e Conteudos) -->
-            <section id="page-cadastros" class="page-section hidden">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Cadastrar Materiais</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Cadastro de Materias -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">Nova Matéria</h3>
-                        <form id="form-materia" class="flex flex-col gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Matéria</label>
-                                <input type="text" id="input-materia-nome" class="w-full px-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all" placeholder="Ex: Banco de Dados">
-                            </div>
-                            <button type="submit" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 rounded-xl transition-all shadow-sm hover:shadow-md">
-                                Salvar Matéria
-                            </button>
-                        </form>
+            <section id="page-cadastros" class="page-section hidden page-transition">
+                <div class="mb-10">
+                    <h2 class="text-3xl font-black text-gray-900 tracking-tight">Base de Conhecimento</h2>
+                    <p class="text-gray-400 text-sm font-medium">Mantenha sua grade de estudos sempre atualizada</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <!-- Cadastro de Materias (Refined) -->
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-primary-50 rounded-full -mr-16 -mt-16 group-hover:bg-primary-100 transition-colors"></div>
+                        <div class="relative">
+                            <h3 class="text-lg font-black text-gray-800 mb-6 flex items-center gap-2">
+                                <i class="ph-fill ph-book-open text-primary-500"></i> Nova Matéria
+                            </h3>
+                            <form id="form-materia" class="space-y-6">
+                                <div>
+                                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Nome da Matéria</label>
+                                    <input type="text" id="input-materia-nome" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm" placeholder="Ex: Engenharia de Software">
+                                </div>
+                                <button type="submit" class="w-full bg-gray-900 group-hover:bg-primary-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg hover:shadow-primary-200 active:scale-95 uppercase tracking-widest text-xs">
+                                    Cadastrar Matéria
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
+                    <!-- Cadastro de Conteudos (Refined) -->
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-primary-50 rounded-full -mr-16 -mt-16 group-hover:bg-primary-100 transition-colors"></div>
+                        <div class="relative">
+                            <h3 class="text-lg font-black text-gray-800 mb-6 flex items-center gap-2">
+                                <i class="ph-fill ph-list-checks text-primary-500"></i> Novo Conteúdo / Aula
+                            </h3>
+                            <form id="form-conteudo" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="md:col-span-2">
+                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Matéria Vinculada</label>
+                                        <select id="select-materia" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm">
+                                            <option value="" disabled selected>Escolha a matéria...</option>
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Nome do Conteúdo</label>
+                                        <input type="text" id="input-conteudo-nome" placeholder="Ex: Modelagem de Dados e Crows Foot" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Total de Páginas / Slides</label>
+                                        <div class="relative">
+                                            <input type="number" id="input-conteudo-paginas" placeholder="Ex: 60" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm">
+                                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-400 uppercase">Pág.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-gray-900 group-hover:bg-primary-600 text-white font-black py-4 rounded-2xl transition-all shadow-lg hover:shadow-primary-200 active:scale-95 uppercase tracking-widest text-xs">
+                                    Cadastrar Conteúdo
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Gestão de Cadastros -->
-                <div class="mt-12">
-                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                        <i class="ph ph-stack text-primary-600"></i> Gerenciar Cadastros
-                    </h3>
+                <!-- Gestão de Cadastros (Modernized & FIXED) -->
+                <div class="mt-20">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="h-0.5 flex-1 bg-gray-100"></div>
+                        <h3 class="text-xl font-black text-gray-900 uppercase tracking-tighter flex items-center gap-3">
+                            <i class="ph ph-stack-bold text-primary-600"></i> Gerenciar Registros
+                        </h3>
+                        <div class="h-0.5 flex-1 bg-gray-100"></div>
+                    </div>
                     
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
                         <!-- Lista de Matérias -->
-                        <div class="lg:col-span-1">
-                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Matérias</h4>
-                            <div id="list-materias" class="space-y-3">
+                        <div class="lg:col-span-4">
+                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 border-l-4 border-primary-600 pl-4 py-1">Matérias Atuais</h4>
+                            <div id="list-materias" class="space-y-4">
                                 <!-- JS items -->
                             </div>
                         </div>
 
                         <!-- Lista de Conteúdos -->
-                        <div class="lg:col-span-2">
-                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Conteúdos por Matéria</h4>
-                            <div id="list-conteudos" class="space-y-4">
+                        <div class="lg:col-span-8">
+                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 border-l-4 border-primary-600 pl-4 py-1">Conteúdos por Disciplina</h4>
+                            <div id="list-conteudos" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- JS items -->
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Modal Editar Matéria -->
-                <div id="modal-edit-materia" class="fixed inset-0 z-[60] bg-gray-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
-                        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                            <h3 class="font-bold text-gray-800">Editar Matéria</h3>
-                            <button onclick="document.getElementById('modal-edit-materia').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
+                <!-- Modals for Cadastros (Fixed & Premium) -->
+                <div id="modal-edit-materia" class="fixed inset-0 z-[160] bg-gray-900/60 backdrop-blur-md hidden flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden scale-in">
+                        <div class="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                            <h3 class="font-black text-gray-900">Editar Matéria</h3>
+                            <button onclick="document.getElementById('modal-edit-materia').classList.add('hidden')" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-gray-600 transition-all"><i class="ph ph-x text-xl"></i></button>
                         </div>
-                        <form id="form-edit-materia" class="p-6 space-y-4">
+                        <form id="form-edit-materia" class="p-8 space-y-6">
                             <input type="hidden" id="edit-materia-id">
                             <div>
-                                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Nome</label>
-                                <input type="text" id="edit-materia-nome" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Nome da Matéria</label>
+                                <input type="text" id="edit-materia-nome" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
                             </div>
-                            <button type="submit" class="w-full py-3 bg-primary-600 text-white font-bold rounded-2xl">Salvar Alterações</button>
+                            <button type="submit" class="w-full py-4 bg-primary-600 text-white font-black rounded-2xl shadow-lg shadow-primary-100 transition-all active:scale-95">SALVAR ALTERAÇÕES</button>
                         </form>
                     </div>
                 </div>
 
-                <!-- Modal Editar Conteúdo -->
-                <div id="modal-edit-conteudo" class="fixed inset-0 z-[60] bg-gray-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
-                        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                            <h3 class="font-bold text-gray-800">Editar Conteúdo</h3>
-                            <button onclick="document.getElementById('modal-edit-conteudo').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
+                <div id="modal-edit-conteudo" class="fixed inset-0 z-[160] bg-gray-900/60 backdrop-blur-md hidden flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden scale-in">
+                        <div class="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                            <h3 class="font-black text-gray-900">Editar Conteúdo</h3>
+                            <button onclick="document.getElementById('modal-edit-conteudo').classList.add('hidden')" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-gray-600 transition-all"><i class="ph ph-x text-xl"></i></button>
                         </div>
-                        <form id="form-edit-conteudo" class="p-6 space-y-4">
+                        <form id="form-edit-conteudo" class="p-8 space-y-6">
                             <input type="hidden" id="edit-conteudo-id">
                             <div>
-                                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Nome</label>
-                                <input type="text" id="edit-conteudo-nome" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Nome do Conteúdo</label>
+                                <input type="text" id="edit-conteudo-nome" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Páginas</label>
-                                <input type="number" id="edit-conteudo-paginas" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Total de Páginas</label>
+                                <input type="number" id="edit-conteudo-paginas" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all">
                             </div>
-                            <button type="submit" class="w-full py-3 bg-primary-600 text-white font-bold rounded-2xl">Salvar Alterações</button>
+                            <button type="submit" class="w-full py-4 bg-primary-600 text-white font-black rounded-2xl shadow-lg shadow-primary-100 transition-all active:scale-95">SALVAR ALTERAÇÕES</button>
                         </form>
                     </div>
                 </div>
