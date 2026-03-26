@@ -289,7 +289,9 @@ window.store = {
         if (val) {
             localStorage.setItem('auth_session', 'true');
             localStorage.setItem('auth_user', username);
-            this.initSync(); // Start syncing once logged in
+            this.initSync(); // Start syncing personal data
+            this.syncSharedEditais(); // Start syncing global data
+            this.syncUserList();     // Start syncing user list (for admin)
         } else {
             localStorage.removeItem('auth_session');
             localStorage.removeItem('auth_user');
