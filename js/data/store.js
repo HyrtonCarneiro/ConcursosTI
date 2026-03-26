@@ -331,6 +331,14 @@ window.store = {
         this.unsubscribeFirestore = window.db.collection('users').doc(this.state.currentUser).onSnapshot((doc) => {
             if (doc.exists) {
                 let cloudData = doc.data().state;
+                
+                // --- Migration Logic ---
+                // If we have personal editais and shared ones are not yet loaded or empty
+                if (cloudData.editais && cloudData.editais.length > 0 && this.state.editais.length === 0) {
+                    console.log("Migration: Moving personal editais to shared...");
+                    window.db.collection('shared').doc('editais').set({ data: cloudData.editais });
+                }
+
                 delete cloudData.editais; // Force use of shared data even if old data exists
 
                 // Self-heal duplicate IDs in cronograma (common bug with Date.now() IDs)
