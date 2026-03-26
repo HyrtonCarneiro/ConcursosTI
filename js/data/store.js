@@ -248,7 +248,11 @@ window.store = {
         // Clean any undefined values (Firestore fails on them)
         const dataToSave = this.cleanData(this.state);
         delete dataToSave.userList; // Don't save central user list into personal doc
-        // delete dataToSave.editais;  // TEMP: Stop deleting to see if data recurs
+        
+        // Only stop saving personal editais if migration is complete
+        if (this.state.migratedToShared) {
+            delete dataToSave.editais;
+        }
 
         window.db.collection('users').doc(this.state.currentUser).set({
             state: dataToSave,
@@ -332,12 +336,31 @@ window.store = {
             if (doc.exists) {
                 let cloudData = doc.data().state;
                 
-                // if (cloudData.editais && cloudData.editais.length > 0 && this.state.editais.length === 0) {
-                //     console.log("Migration: Moving personal editais to shared...");
-                //     window.db.collection('shared').doc('editais').set({ data: cloudData.editais });
-                // }
+                // --- Safe Migration Logic ---
+                if (this.isAdmin() && cloudData.editais && cloudData.editais.length > 0 && !cloudData.migratedToShared) {
+                    console.log("Migration: Attempting to move personal editais to shared...");
+                    window.db.collection('shared').doc('editais').get().then(sharedDoc => {
+                        const sharedData = sharedDoc.exists ? (sharedDoc.data().data || []) : [];
+                        if (sharedData.length === 0) {
+                            window.db.collection('shared').doc('editais').set({ data: cloudData.editais })
+                                .then(() => {
+                                    console.log("Migration: SUCCESS!");
+                                    // Mark as migrated in personal state to stop using personal slot
+                                    this.state.migratedToShared = true;
+                                    this.save();
+                                })
+                                .catch(e => console.error("Migration: FAILED (Permission?)", e));
+                        } else {
+                            // Already has shared data, just mark as migrated
+                            this.state.migratedToShared = true;
+                            this.save();
+                        }
+                    });
+                }
 
-                // delete cloudData.editais; // TEMP: Stop deleting to help recovery
+                if (cloudData.migratedToShared) {
+                    delete cloudData.editais; // Once migrated, personal slot is ignored
+                }
 
                 // Self-heal duplicate IDs in cronograma (common bug with Date.now() IDs)
                 if (cloudData && cloudData.cronograma) {
