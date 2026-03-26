@@ -175,8 +175,9 @@ window.editaisController = {
             card.className = 'bg-white p-5 rounded-[1.5rem] border border-gray-100 hover:border-primary-500 transition-all shadow-sm hover:shadow-lg hover:-translate-y-1 group relative overflow-hidden flex flex-col';
             
             const provaTxt = ed.dataProva ? window.utils.formatDateBR(ed.dataProva) : 'A definir';
-            const countdown = ed.dataProva ? window.utils.calculateCountdown(ed.dataProva) : null;
+            const countdownProva = ed.dataProva ? window.utils.calculateCountdown(ed.dataProva) : null;
             const inscTxt = ed.dataInscricao ? window.utils.formatDateBR(ed.dataInscricao) : 'A definir';
+            const countdownInsc = ed.dataInscricao ? window.utils.calculateCountdown(ed.dataInscricao) : null;
             
             let statusClass = 'bg-gray-100 text-gray-500';
             let statusLabel = ed.status;
@@ -209,11 +210,12 @@ window.editaisController = {
                         <div class="bg-gray-50/80 p-2 rounded-xl border border-gray-50">
                             <p class="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Inscrição</p>
                             <p class="text-[9px] font-bold text-gray-600">${inscTxt}</p>
+                            ${countdownInsc ? `<p class="text-[8px] font-black text-primary-500 mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataInscricao}">${countdownInsc}</p>` : ''}
                         </div>
                         <div class="bg-gray-50/80 p-2 rounded-xl border border-gray-50">
                             <p class="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Prova</p>
                             <p class="text-[9px] font-bold text-gray-800">${provaTxt}</p>
-                            ${countdown ? `<p class="text-[8px] font-black text-orange-500 mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataProva}">${countdown}</p>` : ''}
+                            ${countdownProva ? `<p class="text-[8px] font-black text-orange-500 mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataProva}">${countdownProva}</p>` : ''}
                         </div>
                     </div>
 
