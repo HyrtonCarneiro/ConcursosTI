@@ -134,7 +134,7 @@ window.linksController = {
 [HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open]
 
 [HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open\\command]
-@="powershell.exe -WindowStyle Hidden -Command \\"$u='%1'; $p=$u -replace '^abrir-pasta:',''; $p=[uri]::UnescapeDataString($p); explorer $p\\""`;
+@="mshta vbscript:Execute(\\"CreateObject(\\"\"WScript.Shell\\"\"\\).Run \\"\"powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \\\\\\"\"$u='%1'; $p=$u -replace '^abrir-pasta:',''; $p=[uri]::UnescapeDataString($p); explorer $p\\\\\\"\"\\"\"\\", 0 : window.close\\")\""`;
 
         const blob = new Blob([regContent], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
