@@ -190,6 +190,36 @@
                     </div>
                 </div>
 
+                <!-- Próxima Data Importante -->
+                <div id="dash-next-event-card" class="mb-8 hidden">
+                    <div class="relative bg-gray-900 rounded-[2.5rem] p-8 overflow-hidden text-white">
+                        <!-- Background accent -->
+                        <div class="absolute inset-0 opacity-20" style="background: radial-gradient(ellipse at 80% 50%, #3b5df5 0%, transparent 70%)"></div>
+                        <div class="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6">
+                            <!-- Icon + countdown -->
+                            <div class="flex flex-col items-center gap-2 shrink-0">
+                                <div id="dash-next-event-icon" class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl bg-white/10 backdrop-blur">
+                                    <i class="ph-bold ph-calendar-check text-primary-400"></i>
+                                </div>
+                                <div class="text-center">
+                                    <p id="dash-next-event-days" class="text-4xl font-black leading-none text-white">--</p>
+                                    <p class="text-[9px] font-black uppercase tracking-widest text-gray-400">dias</p>
+                                </div>
+                            </div>
+                            <!-- Info -->
+                            <div class="flex-1 text-center md:text-left">
+                                <p id="dash-next-event-type" class="text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1">Próxima Data</p>
+                                <h3 id="dash-next-event-name" class="text-2xl font-black tracking-tight mb-2 leading-tight">--</h3>
+                                <p id="dash-next-event-date" class="text-sm text-gray-400 font-medium">--</p>
+                            </div>
+                            <!-- Alert badge -->
+                            <div id="dash-next-event-badge" class="hidden shrink-0">
+                                <span class="bg-red-500 text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest animate-pulse">Urgente!</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                     <!-- Stat Cards -->
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4">

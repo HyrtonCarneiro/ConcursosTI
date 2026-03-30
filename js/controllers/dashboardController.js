@@ -23,7 +23,7 @@ window.dashboardController = {
         const percGeral = totalPaginas > 0 ? Math.round((paginasLidas / totalPaginas) * 100) : 0;
         const semanasAtivas = (cronograma && cronograma.length > 0) ? new Set(cronograma.map(i => i.semana)).size : 0;
 
-        // 2. Proximo Edital
+        // 2. Proximo Edital (stat card)
         const now = new Date();
         const upcomingEditais = editais
             .filter(e => e.dataProva && new Date(e.dataProva) >= now)
@@ -41,7 +41,10 @@ window.dashboardController = {
         const progressBar = document.getElementById('dash-progress-bar');
         if (progressBar) progressBar.style.width = `${percGeral}%`;
 
-        // 4. Chart Refactoring
+        // 4. Next Event Hero Card
+        this.renderNextEvent(editais);
+
+        // 5. Charts
         this.renderProgressoChart(materias, cronograma);
         this.renderEditaisChart(editais);
     },
@@ -49,6 +52,76 @@ window.dashboardController = {
     safeSetText: function(id, text) {
         const el = document.getElementById(id);
         if (el) el.textContent = text;
+    },
+
+    renderNextEvent: function(editais) {
+        const card = document.getElementById('dash-next-event-card');
+        if (!card) return;
+
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        // Build list of all upcoming events (inscricao + prova) across all editais
+        const events = [];
+        editais.forEach(e => {
+            if (e.dataInscricao) {
+                const d = new Date(e.dataInscricao + 'T00:00:00');
+                if (d >= now) events.push({ date: d, tipo: 'Inscrição', edital: e.nome || 'Edital' });
+            }
+            if (e.dataProva) {
+                const d = new Date(e.dataProva + 'T00:00:00');
+                if (d >= now) events.push({ date: d, tipo: 'Prova', edital: e.nome || 'Edital' });
+            }
+        });
+
+        if (events.length === 0) {
+            card.classList.add('hidden');
+            return;
+        }
+
+        // Sort to find the nearest
+        events.sort((a, b) => a.date - b.date);
+        const next = events[0];
+        const diffMs = next.date - now;
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        // Format date in pt-BR
+        const dateFormatted = next.date.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+        // Choose icon and color based on type
+        const isProva = next.tipo === 'Prova';
+        const iconHtml = isProva
+            ? '<i class="ph-bold ph-exam text-yellow-400"></i>'
+            : '<i class="ph-bold ph-pen-nib text-primary-400"></i>';
+        const tipoBadgeColor = isProva ? 'text-yellow-400' : 'text-primary-400';
+
+        // Update DOM
+        const iconEl = document.getElementById('dash-next-event-icon');
+        if (iconEl) iconEl.innerHTML = iconHtml;
+
+        const typeEl = document.getElementById('dash-next-event-type');
+        if (typeEl) {
+            typeEl.textContent = `${next.tipo} · ${next.edital}`;
+            typeEl.className = `text-[10px] font-black uppercase tracking-widest mb-1 ${tipoBadgeColor}`;
+        }
+
+        this.safeSetText('dash-next-event-name', next.edital);
+        this.safeSetText('dash-next-event-date', dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1));
+
+        const daysEl = document.getElementById('dash-next-event-days');
+        if (daysEl) {
+            daysEl.textContent = diffDays === 0 ? 'Hoje' : diffDays;
+            daysEl.className = `text-4xl font-black leading-none ${diffDays <= 7 ? 'text-red-400' : diffDays <= 30 ? 'text-yellow-400' : 'text-white'}`;
+        }
+
+        // Show urgency badge if ≤ 7 days
+        const badge = document.getElementById('dash-next-event-badge');
+        if (badge) {
+            if (diffDays <= 7) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
+        }
+
+        card.classList.remove('hidden');
     },
 
     renderProgressoChart: function(materias, cronograma) {
