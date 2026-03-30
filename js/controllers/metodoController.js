@@ -1,78 +1,91 @@
 window.metodoController = {
-    quill: null,
+    instances: {}, // {segunda: quillInstance, ...}
     saveTimeout: null,
+    days: ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'fds'],
 
     /**
-     * Inicializa o editor Quill se ainda não foi feito.
+     * Inicializa os 6 editores Quill.
      */
     async init() {
-        if (!this.quill) {
-            this.initQuill();
+        if (Object.keys(this.instances).length === 0) {
+            this.initEditors();
             await this.load();
         }
     },
 
-    initQuill() {
-        const container = document.getElementById('editor-metodo');
-        if (!container) return;
+    initEditors() {
+        this.days.forEach(day => {
+            const containerId = `editor-${day}`;
+            const container = document.getElementById(containerId);
+            if (!container) return;
 
-        this.quill = new Quill('#editor-metodo', {
-            theme: 'snow',
-            placeholder: 'Digite aqui seu método de estudos passo a passo...',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    [{ 'color': [] }, { 'background': [] }],
-                    ['link', 'clean']
-                ]
-            }
-        });
+            this.instances[day] = new Quill(`#${containerId}`, {
+                theme: 'snow',
+                placeholder: 'O que estudar hoje?',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['clean']
+                    ]
+                }
+            });
 
-        // Escutar mudanças para auto-save
-        this.quill.on('text-change', () => {
-            this.handleAutoSave();
+            // Escutar mudanças em cada editor
+            this.instances[day].on('text-change', () => {
+                this.handleAutoSave();
+            });
         });
     },
 
     async load() {
         try {
-            const content = await window.metodoLogic.loadMetodo();
-            if (content) {
-                // Se o conteúdo for JSON (Delta), carregamos como tal, senão como HTML
-                try {
-                    const delta = JSON.parse(content);
-                    this.quill.setContents(delta);
-                } catch (e) {
-                    this.quill.root.innerHTML = content;
+            const data = await window.metodoLogic.loadMetodo();
+            
+            this.days.forEach(day => {
+                const content = data[day];
+                if (content && this.instances[day]) {
+                    try {
+                        const delta = JSON.parse(content);
+                        this.instances[day].setContents(delta);
+                    } catch (e) {
+                        this.instances[day].root.innerHTML = content;
+                    }
                 }
-            }
+            });
         } catch (e) {
             window.utils.showToast("Erro ao carregar seu método: " + e.message, "error");
         }
     },
 
     handleAutoSave() {
-        // Reset timeout
         if (this.saveTimeout) clearTimeout(this.saveTimeout);
         
         const statusEl = document.getElementById('metodo-status');
-        if (statusEl) statusEl.style.opacity = '0.3'; // Indicando que está pendente
+        if (statusEl) {
+            statusEl.classList.remove('opacity-0');
+            statusEl.style.opacity = '0.3';
+        }
 
         this.saveTimeout = setTimeout(async () => {
             try {
-                // Salvamos como string JSON do Delta para manter formatação perfeita
-                const content = JSON.stringify(this.quill.getContents());
-                await window.metodoLogic.saveMetodo(content);
+                // Coletar conteúdo de todos os editores
+                const fullContent = {};
+                this.days.forEach(day => {
+                    if (this.instances[day]) {
+                        fullContent[day] = JSON.stringify(this.instances[day].getContents());
+                    }
+                });
+
+                await window.metodoLogic.saveMetodo(fullContent);
                 
                 if (statusEl) {
                     statusEl.style.opacity = '1';
-                    setTimeout(() => statusEl.style.opacity = '0', 2000); // Esconde após confirmar
+                    setTimeout(() => statusEl.style.opacity = '0', 2000);
                 }
             } catch (e) {
-                window.utils.showToast("Erro ao salvar automaticamente: " + e.message, "error");
+                window.utils.showToast("Erro ao salvar: " + e.message, "error");
             }
-        }, 1500); // Salva após 1.5s de inatividade
+        }, 2000); // 2 segundos de buffer para 6 editores
     }
 };

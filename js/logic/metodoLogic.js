@@ -5,14 +5,21 @@ window.metodoLogic = {
      */
     async loadMetodo() {
         const state = window.store.getState();
-        if (!state.user) return "";
+        if (!state.user) return {};
 
         try {
             const doc = await window.db.collection('users').doc(state.user).collection('data').doc('metodo').get();
             if (doc.exists) {
-                return doc.data().content || "";
+                const data = doc.data().content;
+                
+                // MIGRATION: Se for uma string (formato antigo), movemos para 'segunda'
+                if (typeof data === 'string') {
+                    return { segunda: data };
+                }
+                
+                return data || {};
             }
-            return "";
+            return {};
         } catch (e) {
             console.error("Erro ao carregar método:", e);
             throw e;
@@ -21,7 +28,7 @@ window.metodoLogic = {
 
     /**
      * Salva as notas do método do usuário.
-     * @param {string} content Conteúdo (HTML ou Delta) do editor.
+     * @param {Object} content Objeto com os conteúdos mapeados por dia {segunda: "...", terca: "..."}
      */
     async saveMetodo(content) {
         const state = window.store.getState();
@@ -29,7 +36,7 @@ window.metodoLogic = {
 
         try {
             await window.db.collection('users').doc(state.user).collection('data').doc('metodo').set({
-                content: content,
+                content: content, // Agora é um objeto
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
         } catch (e) {

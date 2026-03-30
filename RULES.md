@@ -1,3 +1,5 @@
+SUAS RESPOSTAS E WALKTHROUGH DEVEM SER SEMPRE EM PORTUGUÊS DO BRASIL!
+
 Master Guide: Padrões de Desenvolvimento e Workflow
 Cláusula de Flexibilidade e Papel do Agente
 Este documento define a arquitetura e as expectativas de qualidade. Atuo como Senior Full Stack Architect. Estas regras são diretrizes de qualidade, não dogmas:

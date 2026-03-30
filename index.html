@@ -660,26 +660,76 @@
                 </div>
             </section>
 
-            <!-- Metodo Page (Premium Text Editor) -->
+            <!-- Metodo Page (Premium Text Editor Grid) -->
             <section id="page-metodo" class="page-section hidden page-transition">
-                <div class="mb-10 flex justify-between items-end">
+                <div class="mb-10 flex flex-wrap items-end justify-between gap-6">
                     <div>
                         <h2 class="text-3xl font-black text-gray-900 tracking-tight">Estratégia de Estudos</h2>
-                        <p class="text-gray-400 text-sm font-medium">Anote detalhadamente seu método com passo a passo</p>
+                        <p class="text-gray-400 text-sm font-medium">Cronograma Detalhado Passo a Passo</p>
+                    </div>
+                    <div id="metodo-status" class="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest opacity-0 transition-opacity duration-300 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+                        <i class="ph-bold ph-cloud-check text-green-500 text-sm"></i> Sincronizado
                     </div>
                 </div>
 
-                <div class="bg-white rounded-[2.5rem] shadow-premium border border-gray-100 overflow-hidden relative">
-                    <!-- Custom Toolbar Styling -->
-                    <style>
-                        .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f3f4f6 !important; padding: 1.5rem !important; background: #fcfdfe; }
-                        .ql-container.ql-snow { border: none !important; height: 60vh !important; font-family: 'Outfit', sans-serif !important; font-size: 15px !important; color: #374151 !important; line-height: 1.8 !important; }
-                        .ql-editor { padding: 2.5rem !important; }
-                        .ql-editor.ql-blank::before { color: #d1d5db !important; font-style: normal !important; }
-                    </style>
-                    <div id="editor-metodo"></div>
-                    <div id="metodo-status" class="absolute bottom-6 right-8 flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest opacity-0 transition-opacity duration-300">
-                        <i class="ph-bold ph-cloud-check text-green-500 text-sm"></i> Sincronizado
+                <!-- Custom Editor Styling -->
+                <style>
+                    .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f3f4f6 !important; padding: 0.75rem !important; background: #fcfdfe; }
+                    .ql-container.ql-snow { border: none !important; height: 280px !important; font-family: 'Outfit', sans-serif !important; font-size: 14px !important; color: #374151 !important; line-height: 1.6 !important; }
+                    .ql-editor { padding: 1.5rem !important; }
+                    .ql-editor.ql-blank::before { color: #d1d5db !important; font-style: normal !important; opacity: 0.5; }
+                    .method-card { background: white; border-radius: 2rem; border: 1px solid #f3f4f6; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); transition: all 0.3s ease; }
+                    .method-card:hover { border-color: #3b5df533; box-shadow: 0 10px 15px -3px rgb(59 93 245 / 0.1); transform: translateY(-4px); }
+                </style>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Segunda -->
+                    <div class="method-card">
+                        <div class="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                            <span class="text-[10px] font-black text-primary-600 uppercase tracking-widest">Segunda-feira</span>
+                            <i class="ph-bold ph-calendar-blank text-gray-300"></i>
+                        </div>
+                        <div id="editor-segunda"></div>
+                    </div>
+                    <!-- Terça -->
+                    <div class="method-card">
+                        <div class="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                            <span class="text-[10px] font-black text-primary-600 uppercase tracking-widest">Terça-feira</span>
+                            <i class="ph-bold ph-calendar-blank text-gray-300"></i>
+                        </div>
+                        <div id="editor-terca"></div>
+                    </div>
+                    <!-- Quarta -->
+                    <div class="method-card">
+                        <div class="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                            <span class="text-[10px] font-black text-primary-600 uppercase tracking-widest">Quarta-feira</span>
+                            <i class="ph-bold ph-calendar-blank text-gray-300"></i>
+                        </div>
+                        <div id="editor-quarta"></div>
+                    </div>
+                    <!-- Quinta -->
+                    <div class="method-card">
+                        <div class="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                            <span class="text-[10px] font-black text-primary-600 uppercase tracking-widest">Quinta-feira</span>
+                            <i class="ph-bold ph-calendar-blank text-gray-300"></i>
+                        </div>
+                        <div id="editor-quinta"></div>
+                    </div>
+                    <!-- Sexta -->
+                    <div class="method-card">
+                        <div class="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                            <span class="text-[10px] font-black text-primary-600 uppercase tracking-widest">Sexta-feira</span>
+                            <i class="ph-bold ph-calendar-blank text-gray-300"></i>
+                        </div>
+                        <div id="editor-sexta"></div>
+                    </div>
+                    <!-- Final de Semana -->
+                    <div class="method-card">
+                        <div class="px-6 py-4 border-b border-gray-50 bg-primary-50/50 flex items-center justify-between">
+                            <span class="text-[10px] font-black text-primary-600 uppercase tracking-widest font-black">Final de Semana</span>
+                            <i class="ph-fill ph-star text-primary-400"></i>
+                        </div>
+                        <div id="editor-fds"></div>
                     </div>
                 </div>
             </section>
