@@ -1,14 +1,13 @@
 Windows Registry Editor Version 5.00
 
-; =============================================================
-; Protocolo Customizado: abrir-pasta:
-; Abre pastas locais diretamente do navegador sem janela alguma.
+; ===================================================
+; PROTOCOLO: abrir-pasta:
+; Abre pastas locais a partir do navegador.
 ;
 ; INSTRUCOES:
-;   1. Copie o arquivo "abrir-pasta-handler.vbs" para C:\abrir-pasta\
-;      (crie a pasta se nao existir)
-;   2. Clique duas vezes neste arquivo .reg e confirme a importacao
-; =============================================================
+;   1. Clique duas vezes neste arquivo e confirme.
+;   2. Pronto - sem janelas, sem configuracao adicional.
+; ===================================================
 
 [HKEY_CLASSES_ROOT\abrir-pasta]
 @="URL:Abrir Pasta Protocol"
@@ -19,4 +18,4 @@ Windows Registry Editor Version 5.00
 [HKEY_CLASSES_ROOT\abrir-pasta\shell\open]
 
 [HKEY_CLASSES_ROOT\abrir-pasta\shell\open\command]
-@="wscript.exe //nologo //b \"C:\\abrir-pasta\\abrir-pasta-handler.vbs\" \"%1\""
+@="powershell.exe -WindowStyle Hidden -NonInteractive -NoProfile -ExecutionPolicy Bypass -Command \"Start-Process explorer.exe -ArgumentList ([System.Uri]::UnescapeDataString('%1') -replace '^abrir-pasta:','')\""
