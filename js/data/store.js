@@ -12,6 +12,7 @@ window.store = {
         simulados: [],  // { id, nome, nota, data }
         materiais: [],  // { conteudoId, links: [], notas: "" }
         linksUteis: [], // { id, titulo, url }
+        metodo: {},     // { segunda: "...", terca: "...", ... }
         estatisticas: {
             streak: 0,
             ultimaDataEstudo: null,
@@ -330,6 +331,7 @@ window.store = {
                 simulados: [],
                 materiais: [],
                 linksUteis: [],
+                metodo: {},
                 estatisticas: {
                     streak: 0,
                     ultimaDataEstudo: null,
