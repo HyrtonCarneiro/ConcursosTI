@@ -122,30 +122,101 @@ window.linksController = {
         }
     },
 
-    downloadReg: function() {
+    downloadInstalador: function() {
+        // VBScript handler content (silent, no window)
+        const vbsContent = `' Handler silencioso para o protocolo abrir-pasta:
+' Executado por wscript.exe (sem janela de console)
+Dim url, path, shell
+url = WScript.Arguments(0)
+path = url
+path = Replace(path, "abrir-pasta://", "")
+path = Replace(path, "abrir-pasta:", "")
+path = Replace(path, "%20", " ")
+path = Replace(path, "%5C", "\\")
+path = Replace(path, "%3A", ":")
+path = Replace(path, "%2F", "\\")
+path = Replace(path, "/", "\\")
+Do While Left(path, 2) = "\\\\"
+    path = Mid(path, 2)
+Loop
+Set shell = CreateObject("WScript.Shell")
+shell.Run "explorer.exe """ & path & """", 0, False
+Set shell = Nothing
+WScript.Quit 0`;
+
+        // Registry content
         const regContent = `Windows Registry Editor Version 5.00
 
 [HKEY_CLASSES_ROOT\\abrir-pasta]
-"URL Protocol"=""
 @="URL:Abrir Pasta Protocol"
+"URL Protocol"=""
 
 [HKEY_CLASSES_ROOT\\abrir-pasta\\shell]
 
 [HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open]
 
 [HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open\\command]
-@="mshta vbscript:Execute(\\"CreateObject(\\"\"WScript.Shell\\"\"\\).Run \\"\"powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command \\\\\\"\"& { param($u); $p = [uri]::UnescapeDataString($u -replace '^abrir-pasta:',''); explorer $p }\\\\\\"\" -- \\\\\\"\"%1\\\\\\"\"\\"\"\\", 0 : window.close\\")\""`;
+@="wscript.exe //nologo //b \\"C:\\\\abrir-pasta\\\\abrir-pasta-handler.vbs\\" \\"%1\\""`;
 
-        const blob = new Blob([regContent], { type: 'text/plain' });
+        // BAT installer that creates folder, writes VBS and imports REG — all silently
+        const batContent = `@echo off
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+if not exist "C:\\abrir-pasta" mkdir "C:\\abrir-pasta"
+(
+echo ' Handler silencioso para o protocolo abrir-pasta:
+echo Dim url, path, shell
+echo url = WScript.Arguments(0^)
+echo path = url
+echo path = Replace(path, "abrir-pasta://", ""^)
+echo path = Replace(path, "abrir-pasta:", ""^)
+echo path = Replace(path, "%%20", " "^)
+echo path = Replace(path, "%%5C", "\\"^)
+echo path = Replace(path, "%%3A", ":"^)
+echo path = Replace(path, "%%2F", "\\"^)
+echo path = Replace(path, "/", "\\"^)
+echo Do While Left(path, 2^) = "\\\\"
+echo path = Mid(path, 2^)
+echo Loop
+echo Set shell = CreateObject("WScript.Shell"^)
+echo shell.Run "explorer.exe """ ^& path ^& """", 0, False
+echo Set shell = Nothing
+echo WScript.Quit 0
+) > "C:\\abrir-pasta\\abrir-pasta-handler.vbs"
+(
+echo Windows Registry Editor Version 5.00
+echo.
+echo [HKEY_CLASSES_ROOT\\abrir-pasta]
+echo @="URL:Abrir Pasta Protocol"
+echo "URL Protocol"=""
+echo.
+echo [HKEY_CLASSES_ROOT\\abrir-pasta\\shell]
+echo.
+echo [HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open]
+echo.
+echo [HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open\\command]
+echo @="wscript.exe //nologo //b \\"C:\\\\abrir-pasta\\\\abrir-pasta-handler.vbs\\" \\"%1\\""
+) > "%TEMP%\\abrir-pasta-temp.reg"
+regedit /s "%TEMP%\\abrir-pasta-temp.reg"
+del "%TEMP%\\abrir-pasta-temp.reg" >nul 2>&1
+exit /b 0`;
+
+        const blob = new Blob([batContent], { type: 'application/octet-stream' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'ativar-pastas.reg';
+        a.download = 'instalar-protocolo-pastas.bat';
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
-        window.utils.showToast("Script baixado! Execute-o para ativar.", "success");
-    }
+        window.utils.showToast("Instalador baixado! Execute como Administrador para ativar.", "success");
+    },
+
+    // Alias for backward compatibility
+    downloadReg: function() { this.downloadInstalador(); }
 };
