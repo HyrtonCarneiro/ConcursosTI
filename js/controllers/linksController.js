@@ -123,38 +123,34 @@ window.linksController = {
     },
 
     downloadInstalador: function() {
-        // Simple, robust installer using reg add (no helper files, no escaping bugs)
-        // PowerShell -WindowStyle Hidden runs completely invisible
-        const batContent = `@echo off
-:: Instalador do protocolo abrir-pasta:
-:: Executa automaticamente como Administrador
+        // Gera um .reg que usa HKCU (sem precisar de Admin)
+        // PowerShell -WindowStyle Hidden = sem janela visível
+        const regContent = 
+`Windows Registry Editor Version 5.00\r\n` +
+`\r\n` +
+`[HKEY_CURRENT_USER\\Software\\Classes\\abrir-pasta]\r\n` +
+`@="URL:Abrir Pasta Protocol"\r\n` +
+`"URL Protocol"=""\r\n` +
+`\r\n` +
+`[HKEY_CURRENT_USER\\Software\\Classes\\abrir-pasta\\shell]\r\n` +
+`\r\n` +
+`[HKEY_CURRENT_USER\\Software\\Classes\\abrir-pasta\\shell\\open]\r\n` +
+`\r\n` +
+`[HKEY_CURRENT_USER\\Software\\Classes\\abrir-pasta\\shell\\open\\command]\r\n` +
+`@="powershell.exe -WindowStyle Hidden -Command \\"Start-Process -FilePath ([System.Uri]::UnescapeDataString('%1') -replace '^abrir-pasta:', '')\\""` +
+`\r\n`;
 
-net session >nul 2>&1
-if %errorLevel% neq 0 (
-    powershell -Command "Start-Process cmd -ArgumentList '/c \"%~f0\"' -Verb RunAs -WindowStyle Hidden"
-    exit /b
-)
-
-:: Registrar o protocolo no Windows
-reg add "HKEY_CLASSES_ROOT\\abrir-pasta" /ve /d "URL:Abrir Pasta Protocol" /f >nul
-reg add "HKEY_CLASSES_ROOT\\abrir-pasta" /v "URL Protocol" /d "" /f >nul
-reg add "HKEY_CLASSES_ROOT\\abrir-pasta\\shell" /f >nul
-reg add "HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open" /f >nul
-reg add "HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open\\command" /ve /d "powershell.exe -WindowStyle Hidden -NonInteractive -NoProfile -ExecutionPolicy Bypass -Command \\"Start-Process explorer.exe -ArgumentList ([System.Uri]::UnescapeDataString('%%1') -replace '^abrir-pasta:','')\\""  /f >nul
-
-exit /b 0`;
-
-        const blob = new Blob([batContent], { type: 'application/octet-stream' });
+        const blob = new Blob([regContent], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'instalar-protocolo-pastas.bat';
+        a.download = 'ativar-pastas.reg';
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         
-        window.utils.showToast("Instalador baixado! Clique-direito → Executar como Administrador.", "success");
+        window.utils.showToast("Arquivo baixado! Dê duplo clique e confirme 'Sim'.", "success");
     },
 
     // Alias for backward compatibility
