@@ -400,10 +400,8 @@ window.store = {
             if (doc.exists) {
                 let cloudData = doc.data().state;
                 let displayName = doc.data().displayName;
-                
-                if (displayName) this.state.displayName = displayName;
-                
-                // Self-heal duplicate IDs
+
+                // Self-heal duplicate IDs in cronograma
                 if (cloudData && cloudData.cronograma) {
                     const seenIds = new Set();
                     cloudData.cronograma.forEach(item => {
@@ -416,6 +414,10 @@ window.store = {
 
                 // Merge cloud data into state
                 this.state = { ...this.state, ...cloudData, isAuthenticated: true, hasLoadedFromCloud: true };
+                
+                // Restore displayName from top-level doc field (not inside state object)
+                if (displayName) this.state.displayName = displayName;
+                
                 console.log("Sync: Cloud data received.");
             } else {
                 console.warn(`Sync: Document [${normalizedUser}] not found. Checking for legacy casing...`);

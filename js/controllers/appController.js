@@ -46,7 +46,7 @@ window.appControllers = {
                 try {
                     const authResult = await window.authLogic.login(user, pass);
                     if (authResult) {
-                        window.store.setAuth(true, authResult.username); // Use original casing from DB
+                        window.store.setAuth(true, authResult); // Pass full object: username, displayName, role
                         window.utils.showToast("Login iniciado!", "success");
                     } else {
                         window.utils.showToast("Usuário ou senha incorretos.", "error");
