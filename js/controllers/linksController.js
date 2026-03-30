@@ -80,11 +80,21 @@ window.linksController = {
             let iconBg = "bg-gray-100 text-gray-400";
             
             const url = link.url.toLowerCase();
-            if (url.includes('google')) { iconClass = "ph-bold ph-google-logo"; iconBg = "bg-blue-50 text-blue-500"; }
-            if (url.includes('notebooklm')) { iconClass = "ph-bold ph-brain"; iconBg = "bg-purple-50 text-purple-600"; }
-            if (url.includes('youtube')) { iconClass = "ph-bold ph-youtube-logo"; iconBg = "bg-red-50 text-red-500"; }
-            if (url.includes('notion')) { iconClass = "ph-bold ph-notebook"; iconBg = "bg-gray-900 text-white"; }
-            if (url.includes('concurso')) { iconClass = "ph-bold ph-exam"; iconBg = "bg-green-50 text-green-600"; }
+            const isLocal = /^[a-zA-Z]:[\\\/]/.test(link.url);
+            
+            if (isLocal) {
+                iconClass = "ph-bold ph-folder-open";
+                iconBg = "bg-amber-50 text-amber-600";
+            } else {
+                if (url.includes('google')) { iconClass = "ph-bold ph-google-logo"; iconBg = "bg-blue-50 text-blue-500"; }
+                if (url.includes('notebooklm')) { iconClass = "ph-bold ph-brain"; iconBg = "bg-purple-50 text-purple-600"; }
+                if (url.includes('youtube')) { iconClass = "ph-bold ph-youtube-logo"; iconBg = "bg-red-50 text-red-500"; }
+                if (url.includes('notion')) { iconClass = "ph-bold ph-notebook"; iconBg = "bg-gray-900 text-white"; }
+                if (url.includes('concurso')) { iconClass = "ph-bold ph-exam"; iconBg = "bg-green-50 text-green-600"; }
+            }
+
+            const finalHref = isLocal ? `abrir-pasta:${link.url}` : link.url;
+            const displayUrl = isLocal ? link.url : link.url.replace('https://', '').replace('http://', '').split('/')[0];
 
             card.innerHTML = `
                 <div class="w-12 h-12 ${iconBg} rounded-2xl flex items-center justify-center text-xl shrink-0 transition-transform group-hover:scale-110">
@@ -92,8 +102,8 @@ window.linksController = {
                 </div>
                 <div class="flex-1 min-w-0">
                     <h4 class="text-sm font-black text-gray-900 truncate mb-0.5">${link.titulo}</h4>
-                    <a href="${link.url}" target="_blank" class="text-[10px] font-bold text-primary-600 truncate block hover:underline">
-                        ${link.url.replace('https://', '').replace('http://', '').split('/')[0]}
+                    <a href="${finalHref}" ${isLocal ? '' : 'target="_blank"'} class="text-[10px] font-bold text-primary-600 truncate block hover:underline">
+                        ${displayUrl}
                     </a>
                 </div>
                 <button onclick="window.linksController.remover('${link.id}')" class="w-8 h-8 rounded-lg bg-gray-50 text-gray-300 hover:bg-red-50 hover:text-red-500 transition-all active:scale-95 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -110,5 +120,32 @@ window.linksController = {
             this.render();
             window.utils.showToast("Link removido.", "info");
         }
+    },
+
+    downloadReg: function() {
+        const regContent = `Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\\abrir-pasta]
+"URL Protocol"=""
+@="URL:Abrir Pasta Protocol"
+
+[HKEY_CLASSES_ROOT\\abrir-pasta\\shell]
+
+[HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open]
+
+[HKEY_CLASSES_ROOT\\abrir-pasta\\shell\\open\\command]
+@="powershell.exe -WindowStyle Hidden -Command \\"$u='%1'; $p=$u -replace '^abrir-pasta:',''; $p=[uri]::UnescapeDataString($p); explorer $p\\""`;
+
+        const blob = new Blob([regContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ativar-pastas.reg';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        window.utils.showToast("Script baixado! Execute-o para ativar.", "success");
     }
 };

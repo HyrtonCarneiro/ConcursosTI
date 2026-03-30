@@ -182,16 +182,22 @@ window.materialController = {
             return;
         }
 
-        this.linksList.innerHTML = links.map((l, idx) => `
-            <div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl hover:border-primary-300 transition-all group">
-                <a href="${l}" target="_blank" class="text-xs font-bold text-gray-700 hover:text-primary-600 truncate flex-1 flex items-center gap-3 pr-4">
-                    <i class="ph-bold ph-link text-primary-400"></i> ${l}
-                </a>
-                <button onclick="window.materialController.removeLink(${idx})" class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all active:scale-95">
-                    <i class="ph-bold ph-trash"></i>
-                </button>
-            </div>
-        `).join('');
+        this.linksList.innerHTML = links.map((l, idx) => {
+            const isLocal = /^[a-zA-Z]:[\\\/]/.test(l);
+            const finalHref = isLocal ? `abrir-pasta:${l}` : l;
+            const icon = isLocal ? 'ph-bold ph-folder-open text-amber-500' : 'ph-bold ph-link text-primary-400';
+            
+            return `
+                <div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl hover:border-primary-300 transition-all group">
+                    <a href="${finalHref}" ${isLocal ? '' : 'target="_blank"'} class="text-xs font-bold text-gray-700 hover:text-primary-600 truncate flex-1 flex items-center gap-3 pr-4">
+                        <i class="${icon}"></i> ${l}
+                    </a>
+                    <button onclick="window.materialController.removeLink(${idx})" class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all active:scale-95">
+                        <i class="ph-bold ph-trash"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
     },
 
     handleAddLink: function() {

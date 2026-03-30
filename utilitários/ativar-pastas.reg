@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\abrir-pasta]
+"URL Protocol"=""
+@="URL:Abrir Pasta Protocol"
+
+[HKEY_CLASSES_ROOT\abrir-pasta\shell]
+
+[HKEY_CLASSES_ROOT\abrir-pasta\shell\open]
+
+[HKEY_CLASSES_ROOT\abrir-pasta\shell\open\command]
+@="powershell.exe -WindowStyle Hidden -Command \"$u='%1'; $p=$u -replace '^abrir-pasta:',''; $p=[uri]::UnescapeDataString($p); explorer $p\""
