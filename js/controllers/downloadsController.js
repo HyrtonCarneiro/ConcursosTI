@@ -113,11 +113,17 @@ $vbsPath = "$installDir\\anki-monitor.vbs"
 try {
     Write-Host "--- INSTALADOR BLINDADO ConcursosTI ---" -ForegroundColor Yellow
     
-    Write-Host "1. Limpando processos antigos..." -ForegroundColor Cyan
+    Write-Host "1. Faxina profunda de processos e inicializacao..." -ForegroundColor Cyan
+    # Encerra qualquer PowerShell que possa ser o monitor
+    taskkill /F /IM powershell.exe /FI "WINDOWTITLE eq *AnkiMonitor*" /T 2>$null
     $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*anki-monitor.ps1*" }
     foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
 
-    Write-Host "2. Preparando pasta..." -ForegroundColor Cyan
+    # Limpa QUALQUER arquivo relacionado ao anki na pasta de inicializacao
+    if (Test-Path "$startupDir\\anki*.*") { Remove-Item "$startupDir\\anki*.*" -Force -ErrorAction SilentlyContinue }
+    if (Test-Path "$startupDir\\monitor*.*") { Remove-Item "$startupDir\\monitor*.*" -Force -ErrorAction SilentlyContinue }
+
+    Write-Host "2. Preparando pasta de destino..." -ForegroundColor Cyan
     if (Test-Path $installDir) { Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue }
     mkdir $installDir -Force | Out-Null
 
