@@ -17,13 +17,25 @@ window.notificationService = {
                 // Registro explícito do Service Worker para evitar o erro "no active Service Worker"
                 if ('serviceWorker' in navigator) {
                     try {
+                        // LIMPEZA: Remove registros antigos para garantir que a versão mais nova rode
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (let reg of registrations) {
+                            await reg.unregister();
+                            console.log("Service Worker antigo removido.");
+                        }
+
                         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
                         console.log("Service Worker registrado com sucesso:", registration.scope);
                         
                         // Espera ficar ativo de verdade
                         const readyReg = await navigator.serviceWorker.ready;
                         
-                        const currentToken = await messaging.getToken({ serviceWorkerRegistration: readyReg });
+                        // IMPORTANTE: Aqui usaremos a VAPID Key para uma solução definitiva
+                        // Se você já tiver a chave, coloque-a no objeto abaixo como { vapidKey: '...' }
+                        const currentToken = await messaging.getToken({ 
+                            serviceWorkerRegistration: readyReg
+                            // vapidKey: 'SUBSTITUIR_PELA_CHAVE_VAPID_DO_FIREBASE' 
+                        });
                         
                         if (currentToken) {
                             // Salvar no Firestore usando currentUser
