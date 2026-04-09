@@ -73,6 +73,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
     
     <!-- Phosphor Icons (Updated CDN version 2.1.1) -->
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
@@ -158,6 +159,7 @@
                         <button onclick="window.appControllers.navigate('materiais')" id="nav-materiais" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-files"></i> Materiais</button>
                         <button onclick="window.appControllers.navigate('metodo')" id="nav-metodo" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-strategy"></i> Meu Método</button>
                         <button onclick="window.appControllers.navigate('links')" id="nav-links" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph ph-link"></i> Links</button>
+                        <button onclick="window.notificationService.requestPermission()" id="btn-enable-notifications" class="px-5 py-2 text-xs font-bold text-primary-500 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider md:hidden"><i class="ph-bold ph-bell-ringing"></i> Notificações</button>
                         <button onclick="window.appControllers.navigate('admin')" id="nav-admin" style="display: none;" class="px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph-bold ph-shield-check"></i> Gerenciamento</button>
                     </div>
                 </div>
@@ -936,6 +938,7 @@
     <script src="js/logic/metodoLogic.js"></script>
     <!-- 4. Services -->
     <script src="js/services/ankiService.js"></script>
+    <script src="js/services/notificationService.js"></script>
     <!-- 5. Controllers -->
     <script src="js/controllers/appController.js"></script>
     <script src="js/controllers/dashboardController.js"></script>
