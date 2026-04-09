@@ -38,14 +38,17 @@ window.downloadsController = {
             return;
         }
 
-        let fcmToken = null;
-        try {
-            const userDoc = await window.db.collection('users').doc(state.currentUser).get();
-            if (userDoc.exists && userDoc.data().fcmToken) {
-                fcmToken = userDoc.data().fcmToken;
+        let fcmToken = state.fcmToken;
+        
+        if (!fcmToken) {
+            try {
+                const userDoc = await window.db.collection('users').doc(state.currentUser).get();
+                if (userDoc.exists) {
+                    fcmToken = userDoc.data().fcmToken || (userDoc.data().state ? userDoc.data().state.fcmToken : null);
+                }
+            } catch(e) {
+                console.error("Erro ao buscar token:", e);
             }
-        } catch(e) {
-            console.error("Erro ao buscar token:", e);
         }
 
         if (!fcmToken) {

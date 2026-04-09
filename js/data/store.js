@@ -19,6 +19,7 @@ window.store = {
             totalPaginasLidas: 0,
             totalHorasEstudo: 0
         },
+        fcmToken: null, // Guardar token no estado para persistência e fácil acesso
         hasLoadedFromCloud: false
     },
 
@@ -296,7 +297,7 @@ window.store = {
             state: dataToSave,
             displayName: this.state.displayName || this.state.currentUser,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).catch(err => {
+        }, { merge: true }).catch(err => {
             console.error("Firestore Save Error:", err);
             window.utils.showToast("Erro ao sincronizar com a nuvem: " + err.message, "error");
         });
@@ -349,7 +350,8 @@ window.store = {
                     ultimaDataEstudo: null,
                     totalPaginasLidas: 0,
                     totalHorasEstudo: 0
-                }
+                },
+                fcmToken: null
             };
             this.triggerUIRefresh();
         }

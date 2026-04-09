@@ -66,10 +66,9 @@ window.notificationService = {
             });
 
             if (token) {
-                await window.db.collection('users').doc(state.currentUser).set({
-                    fcmToken: token,
-                    ultimoAlertaAnki: null
-                }, { merge: true });
+                // Salvar no estado da store (que cuida do merge no save)
+                window.store.getState().fcmToken = token;
+                await window.store.save();
 
                 window.utils.showToast("Notificações ativadas com sucesso! 🎉", "success");
                 const btn = document.getElementById('btn-enable-notifications');
