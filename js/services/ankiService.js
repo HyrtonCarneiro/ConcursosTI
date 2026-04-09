@@ -14,7 +14,7 @@ window.ankiService = {
                     "action": "findCards",
                     "version": 6,
                     "params": {
-                        "query": "is:due"
+                        "query": "is:due OR is:new"
                     }
                 })
             });

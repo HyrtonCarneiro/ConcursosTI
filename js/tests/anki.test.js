@@ -19,7 +19,7 @@ describe('AnkiService Logic', () => {
                 const response = await fetch('http://localhost:8765', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: "findCards", version: 6, params: { query: "is:due" } })
+                    body: JSON.stringify({ action: "findCards", version: 6, params: { query: "is:due OR is:new" } })
                 });
                 if (!response.ok) throw new Error('Servidor retornou erro ou não está rodando.');
                 const result = await response.json();
