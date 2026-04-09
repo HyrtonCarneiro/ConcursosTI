@@ -13,24 +13,37 @@ window.notificationService = {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 const messaging = firebase.messaging();
-                // Obtain token without VAPID key (Vapid is optional but recommended. We rely on the project config here)
-                const currentToken = await messaging.getToken();
                 
-                if (currentToken) {
-                    // Salvar no Firestore usando currentUser
-                    await window.db.collection('users').doc(state.currentUser).set({
-                        fcmToken: currentToken,
-                        ultimoAlertaAnki: null // reseta pra garantir o envio no teste
-                    }, { merge: true });
-                    
-                    window.utils.showToast("Notificações ativadas com sucesso no seu dispositivo!", "success");
-                    
-                    // Esconde botão se estiver no celular
-                    const btn = document.getElementById('btn-enable-notifications');
-                    if (btn) btn.style.display = 'none';
+                // Registro explícito do Service Worker para evitar o erro "no active Service Worker"
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                        console.log("Service Worker registrado com sucesso:", registration.scope);
+                        
+                        const currentToken = await messaging.getToken({ serviceWorkerRegistration: registration });
+                        
+                        if (currentToken) {
+                            // Salvar no Firestore usando currentUser
+                            await window.db.collection('users').doc(state.currentUser).set({
+                                fcmToken: currentToken,
+                                ultimoAlertaAnki: null // reseta pra garantir o envio no teste
+                            }, { merge: true });
+                            
+                            window.utils.showToast("Notificações ativadas com sucesso no seu dispositivo!", "success");
+                            
+                            // Esconde botão
+                            const btn = document.getElementById('btn-enable-notifications');
+                            if (btn) btn.style.display = 'none';
 
+                        } else {
+                            window.utils.showToast("Falha ao gerar o token de notificação. Tente novamente.", "error");
+                        }
+                    } catch (swError) {
+                        console.error("Erro no Service Worker:", swError);
+                        window.utils.showToast("Erro de registro interno do navegador. Atualize a página e tente.", "error");
+                    }
                 } else {
-                    window.utils.showToast("Falha ao gerar o token de notificação. Tente novamente.", "error");
+                    window.utils.showToast("Seu navegador não suporta notificações em segundo plano.", "error");
                 }
             } else {
                 window.utils.showToast("Permissão para notificações foi negada.", "error");
