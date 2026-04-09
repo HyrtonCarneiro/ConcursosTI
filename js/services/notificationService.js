@@ -5,7 +5,7 @@ window.notificationService = {
     requestPermission: async function() {
         try {
             const state = window.store.getState();
-            if (!state.isAuthenticated || !state.user || !state.user.username) {
+            if (!state.isAuthenticated || !state.currentUser) {
                 window.utils.showToast("Você precisa estar logado para ativar notificações.", "error");
                 return;
             }
@@ -17,8 +17,8 @@ window.notificationService = {
                 const currentToken = await messaging.getToken();
                 
                 if (currentToken) {
-                    // Salvar no Firestore
-                    await window.db.collection('users').doc(state.user.username).set({
+                    // Salvar no Firestore usando currentUser
+                    await window.db.collection('users').doc(state.currentUser).set({
                         fcmToken: currentToken,
                         ultimoAlertaAnki: null // reseta pra garantir o envio no teste
                     }, { merge: true });

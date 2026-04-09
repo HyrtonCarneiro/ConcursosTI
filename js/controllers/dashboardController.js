@@ -337,11 +337,11 @@ window.dashboardController = {
 
                 // Push Notification Logic (Dispara 1 vez por dia se ativado)
                 const state = window.store.getState();
-                if (state.user && state.user.username && count > 0) {
+                if (state.currentUser && count > 0) {
                     const hojeDateString = new Date().toISOString().split('T')[0]; // ex: "2026-04-09"
                     
                     try {
-                        const userDocRef = window.db.collection('users').doc(state.user.username);
+                        const userDocRef = window.db.collection('users').doc(state.currentUser);
                         const userDoc = await userDocRef.get();
                         
                         if (userDoc.exists) {
@@ -350,7 +350,7 @@ window.dashboardController = {
                             if (data.ultimoAlertaAnki !== hojeDateString && data.fcmToken) {
                                 console.log("Primeira sincronização do Anki no dia. Disparando notificação mobile...");
                                 
-                                const pushEnviado = await window.notificationService.triggerMobilePush(state.user.username, count);
+                                const pushEnviado = await window.notificationService.triggerMobilePush(state.currentUser, count);
                                 
                                 if (pushEnviado) {
                                     await userDocRef.set({ ultimoAlertaAnki: hojeDateString }, { merge: true });
