@@ -1,12 +1,7 @@
 window.downloadsController = {
     render: function() {
-        // Controller is render-ready; the HTML is statically defined in index.html
-        // This function is called when navigating to the Downloads page
     },
 
-    /**
-     * Gera e baixa o arquivo .reg para ativar o protocolo abrir-pasta
-     */
     downloadProtocoloPastas: function() {
         const regContent = 
 `Windows Registry Editor Version 5.00\r\n` +
@@ -23,15 +18,10 @@ window.downloadsController = {
 `@="powershell.exe -WindowStyle Hidden -Command \\"Start-Process -FilePath ([System.Uri]::UnescapeDataString('%1') -replace '^abrir-pasta:', '')\\""\r\n`;
 
         this._downloadFile('ativar-pastas.reg', regContent, 'text/plain');
-        window.utils.showToast("Arquivo baixado! Dê duplo clique e confirme 'Sim'.", "success");
+        window.utils.showToast("Arquivo baixado! Dê duplo clique.", "success");
     },
 
-    /**
-     * Gera e baixa o Monitor Anki (pacote .bat auto-instalador)
-     * O .bat cria os arquivos necessários e configura a inicialização com o Windows
-     */
     downloadMonitorAnki: async function() {
-        // 1. Buscar o token FCM do Firestore para embuti-lo no instalador
         const state = window.store.getState();
         if (!state.isAuthenticated || !state.currentUser) {
             window.utils.showToast("Faça login para baixar o monitor.", "error");
@@ -39,16 +29,13 @@ window.downloadsController = {
         }
 
         let fcmToken = state.fcmToken;
-        
         if (!fcmToken) {
             try {
                 const userDoc = await window.db.collection('users').doc(state.currentUser).get();
                 if (userDoc.exists) {
                     fcmToken = userDoc.data().fcmToken || (userDoc.data().state ? userDoc.data().state.fcmToken : null);
                 }
-            } catch(e) {
-                console.error("Erro ao buscar token:", e);
-            }
+            } catch(e) { console.error(e); }
         }
 
         if (!fcmToken) {
@@ -56,130 +43,90 @@ window.downloadsController = {
             return;
         }
 
-        // 2. Gerar o conteúdo do .bat instalador
-        // O Batch cria a pasta, os arquivos PS1 e VBS, o config JSON, e o atalho na Startup
         const batContent = this._gerarInstaladorBat(fcmToken);
-        
         this._downloadFile('Instalar-Monitor-Anki.bat', batContent, 'application/x-bat');
-        window.utils.showToast("Instalador baixado! Clique com direito > Executar como Administrador NÃO é necessário. Basta dar duplo clique.", "success");
+        window.utils.showToast("Instalador baixado!", "success");
     },
 
     _gerarInstaladorBat: function(fcmToken) {
-        // O Batch instala tudo automaticamente:
-        // - Cria pasta %USERPROFILE%\AnkiMonitor
-        // - Cria o script PowerShell
-        // - Cria o config.json com o token
-        // - Cria um .vbs wrapper para executar sem janela
-        // - Cria atalho na pasta Startup do Windows
+        // Usando comandos individuais linha por linha (mais seguro contra erros de sintaxe no CMD)
         return `@echo off
 chcp 65001 >nul
 title Instalando Monitor Anki...
+set "INSTALL_DIR=%USERPROFILE%\\AnkiMonitor"
+set "PS_FILE=%INSTALL_DIR%\\anki-monitor.ps1"
+set "CFG_FILE=%INSTALL_DIR%\\config.json"
+set "VBS_FILE=%INSTALL_DIR%\\anki-monitor.vbs"
+set "TST_FILE=%INSTALL_DIR%\\TESTAR-NOTIFICACAO.bat"
+
 echo.
 echo ============================================
 echo   INSTALADOR DO MONITOR ANKI - ConcursosTI
 echo ============================================
 echo.
 
-set "INSTALL_DIR=%USERPROFILE%\\AnkiMonitor"
-
-echo [1/5] Criando pasta de instalacao...
+echo [1/6] Criando pasta: %INSTALL_DIR%
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 
-echo [2/5] Criando script do monitor...
-(
-echo $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-echo $configFile = Join-Path $PSScriptRoot "config.json"
-echo $logFile = Join-Path $PSScriptRoot "monitor.log"
-echo.
-echo function Log-Msg($msg^) {
-echo     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-echo     Add-Content -Path $logFile -Value "[$ts] $msg"
-echo }
-echo.
-echo if (-not (Test-Path $configFile^)^) {
-echo     Log-Msg "ERRO: config.json nao encontrado."
-echo     exit
-echo }
-echo.
-echo Log-Msg "Monitor Anki iniciado."
-echo.
-echo while ($true^) {
-echo     try {
-echo         $config = Get-Content $configFile ^| ConvertFrom-Json
-echo         $hoje = Get-Date -Format "yyyy-MM-dd"
-echo.
-echo         if ($config.lastNotifiedDate -ne $hoje^) {
-echo             # 1. Busca detas dos cards (Novos, Aprender, Revisar)
-echo             $qNew = @{ action = 'findCards'; version = 6; params = @{ query = 'is:new' } } ^| ConvertTo-Json
-echo             $qLrn = @{ action = 'findCards'; version = 6; params = @{ query = 'is:learn' } } ^| ConvertTo-Json
-echo             $qRev = @{ action = 'findCards'; version = 6; params = @{ query = 'is:review is:due' } } ^| ConvertTo-Json
-echo.
-echo             $rNew = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qNew -ErrorAction Stop
-echo             $rLrn = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qLrn -ErrorAction Stop
-echo             $rRev = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qRev -ErrorAction Stop
-echo.
-echo             $cNew = $rNew.result.Count
-echo             $cLrn = $rLrn.result.Count
-echo             $cRev = $rRev.result.Count
-echo             $total = $cNew + $cLrn + $cRev
-echo.
-echo             if ($total -gt 0^) {
-echo                 Log-Msg "Detectados $total cards. Enviando push..."
-echo                 $bodyText = "Voce tem $total cards pendentes: Novos: $cNew | Aprender: $cLrn | Revisar: $cRev"
-echo                 $bodyPush = @{ token = $config.fcmToken; title = 'Estudos Pendentes 📚'; body = $bodyText } ^| ConvertTo-Json
-echo.
-echo                 Invoke-RestMethod -Uri "https://concursosti.vercel.app/api/notify" -Method Post -Body $bodyPush -ContentType "application/json" -ErrorAction Stop
-echo                 Log-Msg "Push enviado com sucesso!"
-echo                 $config.lastNotifiedDate = $hoje
-echo                 $config ^| ConvertTo-Json ^| Set-Content $configFile
-echo             } else {
-echo                 Log-Msg "Nenhum card pendente."
-echo             }
-echo         }
-echo     } catch {
-echo         # Anki fechado ou sem internet. Tentara novamente no proximo ciclo.
-echo     }
-echo     Start-Sleep -Seconds 1800
-echo }
-) > "%INSTALL_DIR%\\anki-monitor.ps1"
+echo [2/6] Gerando script de monitoramento...
+echo $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition > "%PS_FILE%"
+echo $configFile = Join-Path $PSScriptRoot "config.json" >> "%PS_FILE%"
+echo $logFile = Join-Path $PSScriptRoot "monitor.log" >> "%PS_FILE%"
+echo function Log-Msg($msg) { >> "%PS_FILE%"
+echo     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss" >> "%PS_FILE%"
+echo     Add-Content -Path $logFile -Value "[$ts] $msg" >> "%PS_FILE%"
+echo } >> "%PS_FILE%"
+echo if (-not (Test-Path $configFile)) { exit } >> "%PS_FILE%"
+echo while ($true) { >> "%PS_FILE%"
+echo     try { >> "%PS_FILE%"
+echo         $config = Get-Content $configFile ^| ConvertFrom-Json >> "%PS_FILE%"
+echo         $hoje = Get-Date -Format "yyyy-MM-dd" >> "%PS_FILE%"
+echo         if ($config.lastNotifiedDate -ne $hoje) { >> "%PS_FILE%"
+echo             $qNew = @{ action = 'findCards'; version = 6; params = @{ query = 'is:new' } } ^| ConvertTo-Json >> "%PS_FILE%"
+echo             $qLrn = @{ action = 'findCards'; version = 6; params = @{ query = 'is:learn' } } ^| ConvertTo-Json >> "%PS_FILE%"
+echo             $qRev = @{ action = 'findCards'; version = 6; params = @{ query = 'is:review is:due' } } ^| ConvertTo-Json >> "%PS_FILE%"
+echo             $rNew = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qNew -ErrorAction Stop >> "%PS_FILE%"
+echo             $rLrn = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qLrn -ErrorAction Stop >> "%PS_FILE%"
+echo             $rRev = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qRev -ErrorAction Stop >> "%PS_FILE%"
+echo             $total = $rNew.result.Count + $rLrn.result.Count + $rRev.result.Count >> "%PS_FILE%"
+echo             if ($total -gt 0) { >> "%PS_FILE%"
+echo                 $bodyText = "Voce tem $total cards pendentes (Novos: $($rNew.result.Count) | Aprender: $($rLrn.result.Count) | Revisar: $($rRev.result.Count))" >> "%PS_FILE%"
+echo                 $bodyPush = @{ token = $config.fcmToken; title = 'Estudos Pendentes'; body = $bodyText } ^| ConvertTo-Json >> "%PS_FILE%"
+echo                 Invoke-RestMethod -Uri "https://concursosti.vercel.app/api/notify" -Method Post -Body $bodyPush -ContentType "application/json" >> "%PS_FILE%"
+echo                 $config.lastNotifiedDate = $hoje >> "%PS_FILE%"
+echo                 $config ^| ConvertTo-Json ^| Set-Content $configFile >> "%PS_FILE%"
+echo             } >> "%PS_FILE%"
+echo         } >> "%PS_FILE%"
+echo     } catch {} >> "%PS_FILE%"
+echo     Start-Sleep -Seconds 1800 >> "%PS_FILE%"
+echo } >> "%PS_FILE%"
 
-echo [3/5] Criando arquivo de configuracao...
-(
-echo {
-echo   "fcmToken": "${fcmToken}",
-echo   "lastNotifiedDate": ""
-echo }
-) > "%INSTALL_DIR%\\config.json"
+echo [3/6] Configurando credenciais...
+echo { > "%CFG_FILE%"
+echo   "fcmToken": "${fcmToken}", >> "%CFG_FILE%"
+echo   "lastNotifiedDate": "" >> "%CFG_FILE%"
+echo } >> "%CFG_FILE%"
 
-echo [4/5] Criando inicializador silencioso...
-(
-echo Set WshShell = CreateObject("WScript.Shell"^)
-echo WshShell.Run "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File """ ^& Replace(WScript.ScriptFullName, WScript.ScriptName, ""^) ^& "anki-monitor.ps1""", 0, False
-) > "%INSTALL_DIR%\\anki-monitor.vbs"
+echo [4/6] Configurando execucao silenciosa...
+echo Set WshShell = CreateObject("WScript.Shell") > "%VBS_FILE%"
+echo WshShell.Run "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File """ ^& Replace(WScript.ScriptFullName, WScript.ScriptName, "") ^& "anki-monitor.ps1""", 0, False >> "%VBS_FILE%"
 
-echo [5/5] Adicionando a inicializacao do Windows...
-copy "%INSTALL_DIR%\\anki-monitor.vbs" "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\anki-monitor.vbs" >nul 2>&1
+echo [5/6] Adicionando a inicializacao do Windows...
+copy "%VBS_FILE%" "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\anki-monitor.vbs" >nul
+
+echo [6/6] Criando arquivo de teste...
+echo @echo off > "%TST_FILE%"
+echo echo Consultando Anki... >> "%TST_FILE%"
+echo powershell.exe -ExecutionPolicy Bypass -Command "$config = Get-Content '%INSTALL_DIR%\\config.json' ^| ConvertFrom-Json; $qNew = @{ action = 'findCards'; version = 6; params = @{ query = 'is:new' } } ^| ConvertTo-Json; $qLrn = @{ action = 'findCards'; version = 6; params = @{ query = 'is:learn' } } ^| ConvertTo-Json; $qRev = @{ action = 'findCards'; version = 6; params = @{ query = 'is:review is:due' } } ^| ConvertTo-Json; $rNew = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qNew; $rLrn = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qLrn; $rRev = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qRev; $total = $rNew.result.Count + $rLrn.result.Count + $rRev.result.Count; $bodyText = 'TESTE: ' + $total + ' cards (N: ' + $rNew.result.Count + ' | A: ' + $rLrn.result.Count + ' | R: ' + $rRev.result.Count + ')'; $bodyPush = @{ token = $config.fcmToken; title = 'Teste de Notificacao'; body = $bodyText } ^| ConvertTo-Json; Invoke-RestMethod -Uri 'https://concursosti.vercel.app/api/notify' -Method Post -Body $bodyPush -ContentType 'application/json'; echo OK: Notificacao enviada!" >> "%TST_FILE%"
+echo pause >> "%TST_FILE%"
 
 echo.
 echo ============================================
-echo   INSTALACAO CONCLUIDA COM SUCESSO!
+echo   CONCLUIDO! O MONITOR JA ESTA ATIVO.
 echo ============================================
 echo.
-echo [6/6] Criando atalho de teste manual...
-(
-echo @echo off
-echo title Testando Notificacao...
-echo echo [1/2] Consultando Anki e enviando push de teste...
-echo powershell.exe -ExecutionPolicy Bypass -Command "$config = Get-Content '%INSTALL_DIR%\\config.json' ^| ConvertFrom-Json; $qNew = @{ action = 'findCards'; version = 6; params = @{ query = 'is:new' } } ^| ConvertTo-Json; $qLrn = @{ action = 'findCards'; version = 6; params = @{ query = 'is:learn' } } ^| ConvertTo-Json; $qRev = @{ action = 'findCards'; version = 6; params = @{ query = 'is:review is:due' } } ^| ConvertTo-Json; $rNew = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qNew; $rLrn = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qLrn; $rRev = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qRev; $cNew = $rNew.result.Count; $cLrn = $rLrn.result.Count; $cRev = $rRev.result.Count; $total = $cNew + $cLrn + $cRev; $bodyText = 'TESTE MANUAL: Voce tem ' + $total + ' cards pendentes: Novos: ' + $cNew + ' ^| Aprender: ' + $cLrn + ' ^| Revisar: ' + $cRev; $bodyPush = @{ token = $config.fcmToken; title = 'Teste de Notificacao 🔔'; body = $bodyText } ^| ConvertTo-Json; Invoke-RestMethod -Uri 'https://concursosti.vercel.app/api/notify' -Method Post -Body $bodyPush -ContentType 'application/json'; msg * 'Teste enviado! Verifique seu celular.'"
-echo echo [2/2] Concluido.
-) > "%INSTALL_DIR%\\TESTAR-NOTIFICACAO.bat"
-
-echo.
-echo   Pasta: %INSTALL_DIR%
-echo   O monitor sera iniciado automaticamente
-echo   quando voce ligar o computador.
-echo.
-echo   Para testar agora, use o arquivo:
+echo   Pasta de instalacao: %INSTALL_DIR%
+echo   Para testar agora, abra a pasta e execute:
 echo   ---^> TESTAR-NOTIFICACAO.bat
 echo.
 pause
