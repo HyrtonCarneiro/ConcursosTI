@@ -25,9 +25,13 @@ window.notificationService = {
                     try {
                         // LIMPEZA: Remove registros antigos para garantir que a versão mais nova rode
                         const registrations = await navigator.serviceWorker.getRegistrations();
-                        for (let reg of registrations) {
-                            await reg.unregister();
-                            console.log("Service Worker antigo removido.");
+                        if (registrations.length > 0) {
+                            for (let reg of registrations) {
+                                await reg.unregister();
+                                console.log("Service Worker antigo removido.");
+                            }
+                            // Pequena pausa para o SO processar a remoção
+                            await new Promise(r => setTimeout(r, 800));
                         }
 
                         const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
