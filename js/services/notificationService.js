@@ -31,10 +31,9 @@ window.notificationService = {
                         const readyReg = await navigator.serviceWorker.ready;
                         
                         // IMPORTANTE: Aqui usaremos a VAPID Key para uma solução definitiva
-                        // Se você já tiver a chave, coloque-a no objeto abaixo como { vapidKey: '...' }
                         const currentToken = await messaging.getToken({ 
-                            serviceWorkerRegistration: readyReg
-                            // vapidKey: 'SUBSTITUIR_PELA_CHAVE_VAPID_DO_FIREBASE' 
+                            serviceWorkerRegistration: readyReg,
+                            vapidKey: 'BHDkjfknKZxGgd6sRIQ7YemXZBzOjp9oyztTgGsho5DKH-PBQN_GUYQ6qy4ZiHU3XsNqx5kmSmxLSdIoHmLbB-s' 
                         });
                         
                         if (currentToken) {
