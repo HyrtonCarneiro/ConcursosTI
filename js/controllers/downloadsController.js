@@ -123,7 +123,7 @@ try {
 
     Write-Host "3. Instalando arquivos..." -ForegroundColor Cyan
     [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${toB64(ps1Script)}")) | Set-Content "$installDir\\anki-monitor.ps1" -Encoding UTF8
-    [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${toB64(vbsScript)}")) | Set-Content $vbsPath -Encoding UTF8
+    [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${toB64(vbsScript)}")) | Set-Content $vbsPath -Encoding Ascii
     [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${toB64(testBat)}")) | Set-Content "$installDir\\TESTAR-NOTIFICACAO.bat" -Encoding UTF8
     '${configJson}' | Set-Content "$installDir\\config.json" -Encoding UTF8
 
