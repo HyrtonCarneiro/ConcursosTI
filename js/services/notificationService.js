@@ -1,72 +1,71 @@
 window.notificationService = {
-    /**
-     * Solicita permissão e registra Push Notifications.
-     * O Service Worker já é pré-registrado na página (index.html).
-     * Aqui só precisamos esperar ele estar pronto e pedir o token.
-     */
     requestPermission: async function() {
         try {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                window.utils.showToast("ERRO: Navegador sem suporte a Push.", "error");
+                window.utils.showToast("Navegador sem suporte a Push.", "error");
                 return;
             }
 
             const state = window.store.getState();
             if (!state.isAuthenticated || !state.currentUser) {
-                window.utils.showToast("ERRO: Faça login primeiro.", "error");
+                window.utils.showToast("Faça login primeiro.", "error");
                 return;
             }
 
-            // Pedir permissão
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
-                window.utils.showToast("Permissão negada. Status: " + permission, "error");
+                window.utils.showToast("Permissão negada: " + permission, "error");
                 return;
             }
 
-            window.utils.showToast("Conectando ao serviço de push...", "success");
+            window.utils.showToast("Testando conexão push (pode levar ~10s)...", "success");
 
-            // Esperar o SW que foi pré-registrado no index.html ficar pronto
             const registration = await navigator.serviceWorker.ready;
-            console.log("Push: SW pronto, scope:", registration.scope);
+            console.log("Push: SW pronto:", registration.scope);
 
-            // Pedir o token ao Firebase
-            const messaging = firebase.messaging();
             const VAPID_KEY = 'BHDkjfknKZxGgd6sRIQ7YemXZBzOjp9oyztTgGsho5DKH-PBQN_GUYQ6qy4ZiHU3XsNqx5kmSmxLSdIoHmLbB-s';
 
-            let token = null;
-            let lastError = null;
-
-            // Tentar até 3 vezes com intervalo de 2s (push service error pode ser transitório)
-            for (let tentativa = 1; tentativa <= 3; tentativa++) {
-                try {
-                    console.log("Push: Tentativa " + tentativa + "/3...");
-                    token = await messaging.getToken({
-                        serviceWorkerRegistration: registration,
-                        vapidKey: VAPID_KEY
-                    });
-                    if (token) {
-                        console.log("Push: Token obtido na tentativa " + tentativa);
-                        break;
-                    }
-                } catch (err) {
-                    lastError = err;
-                    console.warn("Push: Tentativa " + tentativa + " falhou:", err.message);
-
-                    if (tentativa < 3) {
-                        // Limpar assinatura push anterior e tentar de novo
-                        try {
-                            const sub = await registration.pushManager.getSubscription();
-                            if (sub) await sub.unsubscribe();
-                        } catch(e) {}
-                        try { await messaging.deleteToken(); } catch(e) {}
-                        await new Promise(r => setTimeout(r, 2000));
-                    }
+            // === DIAGNÓSTICO: Testar PushManager diretamente (sem Firebase) ===
+            try {
+                console.log("Push: Teste direto do PushManager...");
+                const existingSub = await registration.pushManager.getSubscription();
+                if (existingSub) {
+                    console.log("Push: Assinatura existente encontrada, removendo...");
+                    await existingSub.unsubscribe();
                 }
+
+                // Converter VAPID key para Uint8Array
+                const applicationServerKey = this._urlBase64ToUint8Array(VAPID_KEY);
+
+                const testSub = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: applicationServerKey
+                });
+                console.log("Push: PushManager.subscribe SUCESSO!", testSub.endpoint);
+                // Se chegou aqui, o PushManager funciona. Desfazer e deixar Firebase fazer.
+                await testSub.unsubscribe();
+            } catch (pushTestError) {
+                console.error("Push: PushManager.subscribe FALHOU:", pushTestError.message);
+                window.utils.showToast(
+                    "O Chrome do seu celular não consegue se conectar ao serviço de push do Google. " +
+                    "Isso é um problema do aparelho, não do site. Tente: " +
+                    "1) Reiniciar o celular. " +
+                    "2) Verificar se o Chrome está atualizado. " +
+                    "3) Ir em Config do Chrome > Notificações e certificar que estão ativas. " +
+                    "4) Limpar dados do Chrome: Configurações > Apps > Chrome > Limpar Cache.",
+                    "error"
+                );
+                return;
             }
 
+            // === Se o teste acima passou, Firebase vai funcionar ===
+            const messaging = firebase.messaging();
+            const token = await messaging.getToken({
+                serviceWorkerRegistration: registration,
+                vapidKey: VAPID_KEY
+            });
+
             if (token) {
-                // Salvar no Firestore
                 await window.db.collection('users').doc(state.currentUser).set({
                     fcmToken: token,
                     ultimoAlertaAnki: null
@@ -76,8 +75,7 @@ window.notificationService = {
                 const btn = document.getElementById('btn-enable-notifications');
                 if (btn) btn.style.display = 'none';
             } else {
-                const errMsg = lastError ? lastError.message : "Token vazio";
-                window.utils.showToast("FALHA após 3 tentativas: " + errMsg, "error");
+                window.utils.showToast("Token vazio. Firebase getToken retornou null.", "error");
             }
 
         } catch (error) {
@@ -86,9 +84,17 @@ window.notificationService = {
         }
     },
 
-    /**
-     * Dispara push notification via Vercel Serverless Function.
-     */
+    _urlBase64ToUint8Array: function(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    },
+
     triggerMobilePush: async function(username, cardsCount, breakdown) {
         try {
             const userDoc = await window.db.collection('users').doc(username).get();
