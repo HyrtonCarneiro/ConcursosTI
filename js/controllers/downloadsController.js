@@ -165,12 +165,22 @@ echo ============================================
 echo   INSTALACAO CONCLUIDA COM SUCESSO!
 echo ============================================
 echo.
+echo [6/6] Criando atalho de teste manual...
+(
+echo @echo off
+echo title Testando Notificacao...
+echo echo [1/2] Consultando Anki e enviando push de teste...
+echo powershell.exe -ExecutionPolicy Bypass -Command "$config = Get-Content '%INSTALL_DIR%\\config.json' ^| ConvertFrom-Json; $qNew = @{ action = 'findCards'; version = 6; params = @{ query = 'is:new' } } ^| ConvertTo-Json; $qLrn = @{ action = 'findCards'; version = 6; params = @{ query = 'is:learn' } } ^| ConvertTo-Json; $qRev = @{ action = 'findCards'; version = 6; params = @{ query = 'is:review is:due' } } ^| ConvertTo-Json; $rNew = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qNew; $rLrn = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qLrn; $rRev = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qRev; $cNew = $rNew.result.Count; $cLrn = $rLrn.result.Count; $cRev = $rRev.result.Count; $total = $cNew + $cLrn + $cRev; $bodyText = 'TESTE MANUAL: Voce tem ' + $total + ' cards pendentes: Novos: ' + $cNew + ' ^| Aprender: ' + $cLrn + ' ^| Revisar: ' + $cRev; $bodyPush = @{ token = $config.fcmToken; title = 'Teste de Notificacao 🔔'; body = $bodyText } ^| ConvertTo-Json; Invoke-RestMethod -Uri 'https://concursosti.vercel.app/api/notify' -Method Post -Body $bodyPush -ContentType 'application/json'; msg * 'Teste enviado! Verifique seu celular.'"
+echo echo [2/2] Concluido.
+) > "%INSTALL_DIR%\\TESTAR-NOTIFICACAO.bat"
+
+echo.
 echo   Pasta: %INSTALL_DIR%
 echo   O monitor sera iniciado automaticamente
 echo   quando voce ligar o computador.
 echo.
-echo   Para testar agora, abra o Anki e
-echo   execute o arquivo anki-monitor.vbs
+echo   Para testar agora, use o arquivo:
+echo   ---^> TESTAR-NOTIFICACAO.bat
 echo.
 pause
 `;
