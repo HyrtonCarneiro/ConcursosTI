@@ -229,40 +229,49 @@ window.dashboardController = {
 
         if (this.chartEditais) this.chartEditais.destroy();
 
-        if (editais.length === 0) return;
-
         const monthsNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-        const monthlyInsc = {};
-        const monthlyProva = {};
-        
-        // Collect all months involved
-        const allMonths = new Set();
+        const sortedLabels = [];
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        // 6 months before and 6 months after
+        for (let i = -6; i <= 6; i++) {
+            const d = new Date(currentYear, currentMonth + i, 1);
+            const m = monthsNames[d.getMonth()];
+            const y = d.getFullYear().toString().slice(-2);
+            sortedLabels.push(`${m}/${y}`);
+        }
+
+        const inscricoesMap = {};
+        const provasMap = {};
+        sortedLabels.forEach(l => {
+            inscricoesMap[l] = [];
+            provasMap[l] = [];
+        });
 
         editais.forEach(e => {
             if (e.ignorado) return;
             if (e.dataInscricao) {
-                const d = new Date(e.dataInscricao);
+                const d = new Date(e.dataInscricao + 'T00:00:00');
                 const key = `${monthsNames[d.getMonth()]}/${d.getFullYear().toString().slice(-2)}`;
-                monthlyInsc[key] = (monthlyInsc[key] || 0) + 1;
-                allMonths.add(key);
+                if (inscricoesMap[key]) {
+                    inscricoesMap[key].push({ date: d, nome: e.nome, tipo: 'Inscrição' });
+                }
             }
             if (e.dataProva) {
-                const d = new Date(e.dataProva);
+                const d = new Date(e.dataProva + 'T00:00:00');
                 const key = `${monthsNames[d.getMonth()]}/${d.getFullYear().toString().slice(-2)}`;
-                monthlyProva[key] = (monthlyProva[key] || 0) + 1;
-                allMonths.add(key);
+                if (provasMap[key]) {
+                    provasMap[key].push({ date: d, nome: e.nome, tipo: 'Prova' });
+                }
             }
         });
 
-        const sortedLabels = Array.from(allMonths).sort((a,b) => {
-            const [mA, yA] = a.split('/');
-            const [mB, yB] = b.split('/');
-            if (yA !== yB) return yA - yB;
-            return monthsNames.indexOf(mA) - monthsNames.indexOf(mB);
-        });
+        const dataInsc = sortedLabels.map(l => inscricoesMap[l].length);
+        const dataProva = sortedLabels.map(l => provasMap[l].length);
 
-        const dataInsc = sortedLabels.map(l => monthlyInsc[l] || 0);
-        const dataProva = sortedLabels.map(l => monthlyProva[l] || 0);
+        const maxEvents = Math.max(...dataInsc, ...dataProva, 0);
 
         this.chartEditais = new Chart(canvas, {
             type: 'line',
@@ -272,6 +281,7 @@ window.dashboardController = {
                     {
                         label: 'Inscrições',
                         data: dataInsc,
+                        eventsMap: inscricoesMap,
                         borderColor: '#3b5df5', // Blue
                         backgroundColor: '#3b5df544',
                         tension: 0.3,
@@ -282,6 +292,7 @@ window.dashboardController = {
                     {
                         label: 'Provas',
                         data: dataProva,
+                        eventsMap: provasMap,
                         borderColor: '#ef4444', // Red
                         backgroundColor: '#ef444444',
                         tension: 0.3,
@@ -297,6 +308,7 @@ window.dashboardController = {
                 scales: {
                     y: { 
                         beginAtZero: true, 
+                        suggestedMax: maxEvents + 1,
                         ticks: { stepSize: 1, font: { size: 10 } },
                         grid: { display: true, color: '#f1f5f9' }
                     },
@@ -307,10 +319,35 @@ window.dashboardController = {
                 },
                 plugins: {
                     legend: { position: 'top', labels: { usePointStyle: true, font: { weight: 'bold', size: 10 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.chart.data.labels[context.dataIndex];
+                                const events = context.dataset.eventsMap[label];
+                                if (!events || events.length === 0) return context.dataset.label + ': 0';
+                                return events.map(e => {
+                                    const dd = String(e.date.getDate()).padStart(2, '0');
+                                    const mm = String(e.date.getMonth() + 1).padStart(2, '0');
+                                    return `${dd}/${mm} - ${e.nome} (${e.tipo})`;
+                                });
+                            }
+                        }
+                    },
                     datalabels: {
                         anchor: 'end',
                         align: 'top',
-                        formatter: (val) => val > 0 ? val : '',
+                        textAlign: 'center',
+                        formatter: (val, context) => {
+                            if (val === 0) return '';
+                            const label = context.chart.data.labels[context.dataIndex];
+                            const events = context.dataset.eventsMap[label];
+                            if (!events || events.length === 0) return '';
+                            return events.map(e => {
+                                const dd = String(e.date.getDate()).padStart(2, '0');
+                                const mm = String(e.date.getMonth() + 1).padStart(2, '0');
+                                return `${dd}/${mm}`;
+                            }).join('\n');
+                        },
                         font: { weight: 'bold', size: 10 },
                         color: context => context.dataset.borderColor
                     }
