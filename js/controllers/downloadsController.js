@@ -74,20 +74,32 @@ if (-not (Test-Path $configFile)) { exit }
 while ($true) {
     try {
         $config = Get-Content $configFile | ConvertFrom-Json
-        $qNew = @{ action = 'findCards'; version = 6; params = @{ query = 'is:new' } } | ConvertTo-Json
-        $qLrn = @{ action = 'findCards'; version = 6; params = @{ query = 'is:learn' } } | ConvertTo-Json
-        $qRev = @{ action = 'findCards'; version = 6; params = @{ query = 'is:review is:due' } } | ConvertTo-Json
-        $rNew = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qNew -ErrorAction Stop
-        $rLrn = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qLrn -ErrorAction Stop
-        $rRev = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qRev -ErrorAction Stop
-        $total = ($rNew.result.Count) + ($rLrn.result.Count) + ($rRev.result.Count)
-        if ($total -gt 0) {
-            $bodyText = "Voce tem $total cards pendentes (Novos: $($rNew.result.Count) | Aprender: $($rLrn.result.Count) | Revisar: $($rRev.result.Count))"
-            $bodyPush = @{ token = $config.fcmToken; title = 'Estudos Pendentes 📚'; body = $bodyText } | ConvertTo-Json
-            Invoke-RestMethod -Uri "https://concursosti.vercel.app/api/notify" -Method Post -Body $bodyPush -ContentType "application/json"
+        $now = Get-Date
+        # Verifica se já notificou recentemente (nos últimos 55 minutos)
+        $last = if ($config.lastNotifiedAt) { [DateTime]::Parse($config.lastNotifiedAt) } else { [DateTime]::MinValue }
+        
+        if ($now -gt $last.AddMinutes(55)) {
+            $qNew = @{ action = 'findCards'; version = 6; params = @{ query = 'is:new' } } | ConvertTo-Json
+            $qLrn = @{ action = 'findCards'; version = 6; params = @{ query = 'is:learn' } } | ConvertTo-Json
+            $qRev = @{ action = 'findCards'; version = 6; params = @{ query = 'is:review is:due' } } | ConvertTo-Json
+            
+            $rNew = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qNew -ErrorAction Stop
+            $rLrn = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qLrn -ErrorAction Stop
+            $rRev = Invoke-RestMethod -Uri 'http://localhost:8765' -Method Post -Body $qRev -ErrorAction Stop
+            
+            $total = ($rNew.result.Count) + ($rLrn.result.Count) + ($rRev.result.Count)
+            if ($total -gt 0) {
+                $bodyText = "Voce tem $total cards pendentes (Novos: $($rNew.result.Count) | Aprender: $($rLrn.result.Count) | Revisar: $($rRev.result.Count))"
+                $bodyPush = @{ token = $config.fcmToken; title = 'Estudos Pendentes 📚'; body = $bodyText } | ConvertTo-Json
+                Invoke-RestMethod -Uri "https://concursosti.vercel.app/api/notify" -Method Post -Body $bodyPush -ContentType "application/json"
+                
+                # Salva o horário da notificação no arquivo compartilhado (trava anti-duplicidade)
+                $config.lastNotifiedAt = $now.ToString("o")
+                $config | ConvertTo-Json | Set-Content $configFile
+            }
         }
     } catch {}
-    Start-Sleep -Seconds 3600
+    Start-Sleep -Seconds 600
 }`;
 
         const vbsScript = `Set WshShell = CreateObject("WScript.Shell")
@@ -108,23 +120,29 @@ $vbsPath = "$installDir\\anki-monitor.vbs"
 try {
     Write-Host "--- INSTALADOR BLINDADO ConcursosTI ---" -ForegroundColor Yellow
     
-    Write-Host "1. Faxina profunda de processos e inicializacao..." -ForegroundColor Cyan
-    # Sweep BROAD: Encerra QUALQUER processo PowerShell que tenha 'anki-monitor' no comando
+    Write-Host "1. Faxina profunda de processos e inicialização..." -ForegroundColor Cyan
+    # Sweep BROAD: Encerra processos PowerShell que tenham 'anki-monitor' no comando
     $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*anki-monitor*" }
     foreach ($p in $procs) { 
         Write-Host "Encerrando processo antigo: $($p.ProcessId)" -ForegroundColor Gray
         Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue 
     }
-    # Backup por titulo de janela (especifico do monitor rodando oculto via VBS/WScript)
-    taskkill /F /IM powershell.exe /FI "WINDOWTITLE eq *AnkiMonitor*" /T 2>$null | Out-Null
-    taskkill /F /IM wscript.exe /FI "COMMANDLINE eq *anki-monitor*" /T 2>$null | Out-Null
+    # Backup por título de janela e executáveis brutos
+    taskkill /F /IM powershell.exe /FI "WINDOWTITLE eq *AnkiMonitor*" /T /ErrorAction SilentlyContinue | Out-Null
+    taskkill /F /IM wscript.exe /FI "COMMANDLINE eq *anki-monitor*" /T /ErrorAction SilentlyContinue | Out-Null
+    Start-Sleep -Seconds 1 # Tempo para o SO liberar arquivos
 
-    # Limpa QUALQUER arquivo relacionado ao anki na pasta de inicializacao para evitar duplicidade no boot
-    Get-ChildItem "$startupDir" -Filter "anki*" | Remove-Item -Force -ErrorAction SilentlyContinue
-    Get-ChildItem "$startupDir" -Filter "monitor*" | Remove-Item -Force -ErrorAction SilentlyContinue
+    # Limpa arquivos relacionados na inicialização
+    if (Test-Path "$startupDir") {
+       Get-ChildItem "$startupDir" -Filter "anki-monitor*" | Remove-Item -Force -ErrorAction SilentlyContinue
+    }
 
     Write-Host "2. Preparando pasta de destino..." -ForegroundColor Cyan
-    if (Test-Path $installDir) { Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue }
+    if (Test-Path $installDir) { 
+        # Tenta remover arquivos individualmente primeiro se o diretório estiver travado
+        Get-ChildItem $installDir | Remove-Item -Force -ErrorAction SilentlyContinue
+        Remove-Item $installDir -Recurse -Force -ErrorAction SilentlyContinue 
+    }
     mkdir $installDir -Force | Out-Null
 
     Write-Host "3. Instalando arquivos..." -ForegroundColor Cyan
@@ -133,9 +151,8 @@ try {
     [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${toB64(testBat)}")) | Set-Content "$installDir\\TESTAR-NOTIFICACAO.bat" -Encoding UTF8
     '${configJson}' | Set-Content "$installDir\\config.json" -Encoding UTF8
 
-    Write-Host "4. Configurando inicializacao..." -ForegroundColor Cyan
-    if (Test-Path "$startupDir\\anki-monitor.vbs") { Remove-Item "$startupDir\\anki-monitor.vbs" -Force }
-    Copy-Item $vbsPath "$startupDir\\anki-monitor.vbs" -Force
+    Write-Host "4. Configurando inicialização..." -ForegroundColor Cyan
+    Copy-Item $vbsPath "$startupDir\\anki-monitor.vbs" -Force -ErrorAction SilentlyContinue
 
     Write-Host "5. Iniciando monitor..." -ForegroundColor Cyan
     & wscript.exe $vbsPath
@@ -144,10 +161,11 @@ try {
     Write-Host "========================================" -ForegroundColor Green
     Write-Host "     INSTALACAO CONCLUIDA COM SUCESSO!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
+    Write-Host "Pressione qualquer tecla para fechar esta janela..." -ForegroundColor Gray
 } catch {
     Write-Error "Erro critico: $_"
-    Read-Host "Pressione Enter para fechar"
 }
+Read-Host
 `;
 
         const encodedCommand = toUTF16LEB64(masterScript);
@@ -157,12 +175,11 @@ chcp 65001 >nul
 title Instalador Blindado
 echo Iniciando instalacao segura...
 powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand "${encodedCommand}"
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo Ocorreu um erro. Verifique se o PowerShell esta bloqueado.
-    pause
-)
-exit /b
+echo.
+echo ========================================================
+echo   PROCESSO FINALIZADO. VOCÊ PODE FECHAR ESTA JANELA.
+echo ========================================================
+pause
 `;
     },
 
