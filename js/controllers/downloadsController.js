@@ -119,6 +119,8 @@ $vbsPath = "$installDir\\anki-monitor.vbs"
 
 try {
     Write-Host "--- INSTALADOR BLINDADO ConcursosTI ---" -ForegroundColor Yellow
+    Write-Host "Pasta de destino: $installDir" -ForegroundColor Gray
+    Write-Host ""
     
     Write-Host "1. Faxina profunda de processos e inicialização..." -ForegroundColor Cyan
     # Sweep BROAD: Encerra processos PowerShell que tenham 'anki-monitor' no comando
@@ -128,8 +130,8 @@ try {
         Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue 
     }
     # Backup por título de janela e executáveis brutos
-    taskkill /F /IM powershell.exe /FI "WINDOWTITLE eq *AnkiMonitor*" /T /ErrorAction SilentlyContinue | Out-Null
-    taskkill /F /IM wscript.exe /FI "COMMANDLINE eq *anki-monitor*" /T /ErrorAction SilentlyContinue | Out-Null
+    taskkill /F /IM powershell.exe /FI "WINDOWTITLE eq *AnkiMonitor*" /T 2>$null | Out-Null
+    taskkill /F /IM wscript.exe /FI "COMMANDLINE eq *anki-monitor*" /T 2>$null | Out-Null
     Start-Sleep -Seconds 1 # Tempo para o SO liberar arquivos
 
     # Limpa arquivos relacionados na inicialização
