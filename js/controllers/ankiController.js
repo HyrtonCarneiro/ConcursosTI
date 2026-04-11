@@ -120,6 +120,30 @@ window.ankiController = {
 
         const lapsesData = await window.ankiApi.getTagLapses();
         const labels = Object.keys(lapsesData);
+        
+        const emptyMsgId = 'anki-lapses-empty-msg';
+        let emptyMsg = document.getElementById(emptyMsgId);
+
+        if (labels.length === 0) {
+            ctx.style.display = 'none';
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('div');
+                emptyMsg.id = emptyMsgId;
+                emptyMsg.className = 'flex flex-col items-center justify-center text-gray-400 w-full h-full';
+                emptyMsg.innerHTML = '<i class="ph-fill ph-check-circle text-4xl mb-2 text-green-500"></i><p class="text-sm font-bold text-center">Nenhum erro crítico detectado!</p><p class="text-xs text-center mt-1 leading-relaxed">Você ainda não errou cartões repetidas vezes nas revisões<br>ou seus cartões no Anki não possuem <b>Tags</b>.</p>';
+                ctx.parentElement.appendChild(emptyMsg);
+            } else {
+                emptyMsg.style.display = 'flex';
+            }
+            if (this.chartLapses) {
+                this.chartLapses.destroy();
+            }
+            return;
+        } else {
+            ctx.style.display = 'block';
+            if (emptyMsg) emptyMsg.style.display = 'none';
+        }
+
         // Sort by most errors
         labels.sort((a, b) => lapsesData[b] - lapsesData[a]);
         
