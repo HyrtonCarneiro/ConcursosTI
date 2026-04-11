@@ -116,7 +116,8 @@ window.ankiApi = {
     
     async getTodayStats() {
         try {
-            const dueToday = await this.invoke('findCards', 6, { query: 'is:due' });
+            const dueToday = await this.invoke('findCards', 6, { query: 'is:due is:review' });
+            const learnToday = await this.invoke('findCards', 6, { query: 'is:learn' });
             const newToday = await this.invoke('findCards', 6, { query: 'is:new' });
             
             // To find how many studied today, we can get today from Heatmap
@@ -136,12 +137,13 @@ window.ankiApi = {
 
             return {
                 due: dueToday.length,
-                newCards: newToday.length, // total new cards available in the deck
+                learn: learnToday.length,
+                newCards: newToday.length,
                 studied: studiedToday
             };
         } catch (e) {
             console.warn("Could not get today's stats fully: ", e);
-            return { due: 0, newCards: 0, studied: 0 };
+            return { due: 0, learn: 0, newCards: 0, studied: 0 };
         }
     }
 };

@@ -47,10 +47,12 @@ window.ankiController = {
         const stats = await window.ankiApi.getTodayStats();
         
         const elDue = document.getElementById('anki-stat-due');
+        const elLearn = document.getElementById('anki-stat-learn');
         const elStudied = document.getElementById('anki-stat-studied');
         const elNew = document.getElementById('anki-stat-new');
 
         if (elDue) elDue.textContent = stats.due;
+        if (elLearn) elLearn.textContent = stats.learn;
         if (elStudied) elStudied.textContent = stats.studied;
         if (elNew) elNew.textContent = stats.newCards;
     },
@@ -81,7 +83,11 @@ window.ankiController = {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
             
+            // Formato YYYY-MM-DD para busca
             const formatStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            // Formato DD/MM/YYYY para tooltip
+            const displayStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            
             const count = records[formatStr] || 0;
             
             const box = document.createElement('div');
@@ -101,7 +107,7 @@ window.ankiController = {
             // Tooltip
             const tooltip = document.createElement('div');
             tooltip.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-[9px] whitespace-nowrap rounded font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20';
-            tooltip.textContent = `${count} revs em ${formatStr}`;
+            tooltip.textContent = `${count} revs em ${displayStr}`;
             box.appendChild(tooltip);
 
             container.appendChild(box);
