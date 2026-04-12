@@ -1209,35 +1209,53 @@
                 .catch(function(err) { console.warn('SW pre-register failed:', err.message); });
         }
     </script>
-    <!-- Modal Quick Edit Card (New Feature) -->
+    <!-- Modal Editar Card Premium -->
     <div id="modal-anki-edit-card" class="fixed inset-0 z-[200] bg-gray-900/80 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden animate-scale-in">
             <div class="px-10 py-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
                 <div>
                     <h3 class="font-black text-gray-900 text-xl tracking-tight flex items-center gap-3">
-                        <i class="ph-fill ph-pencil-circle text-primary-600 text-3xl"></i> Editor de Flashcard
+                        <i class="ph-fill ph-pencil-circle text-primary-600 text-3xl"></i> Editor de Flashcard Premium
                     </h3>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Alterações refletem instantaneamente no Anki</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Sincronização instantânea com Anki Desktop</p>
                 </div>
                 <button onclick="document.getElementById('modal-anki-edit-card').classList.add('hidden')" class="w-10 h-10 flex items-center justify-center text-gray-300 hover:text-gray-600 transition-all bg-white rounded-full shadow-sm">
                     <i class="ph ph-x text-2xl"></i>
                 </button>
             </div>
-            <form id="form-anki-edit-card" class="p-10 space-y-8">
+            
+            <div class="p-10 space-y-6">
                 <input type="hidden" id="anki-edit-note-id">
+                
+                <!-- Toolbar do Editor -->
+                <div class="flex flex-wrap gap-1 p-2 bg-gray-50 rounded-2xl border border-gray-100 mb-2">
+                    <button type="button" onclick="window.ankiController.execEditorCmd('bold')" class="w-10 h-10 rounded-xl hover:bg-white hover:shadow-sm text-gray-600 flex items-center justify-center transition-all" title="Negrito (Ctrl+B)"><i class="ph-bold ph-text-b"></i></button>
+                    <button type="button" onclick="window.ankiController.execEditorCmd('italic')" class="w-10 h-10 rounded-xl hover:bg-white hover:shadow-sm text-gray-600 flex items-center justify-center transition-all" title="Itálico (Ctrl+I)"><i class="ph-bold ph-text-italic"></i></button>
+                    <button type="button" onclick="window.ankiController.execEditorCmd('underline')" class="w-10 h-10 rounded-xl hover:bg-white hover:shadow-sm text-gray-600 flex items-center justify-center transition-all" title="Sublinhado (Ctrl+U)"><i class="ph-bold ph-text-underline"></i></button>
+                    <div class="w-px h-6 bg-gray-200 mx-2 self-center"></div>
+                    <button type="button" onclick="window.ankiController.execEditorCmd('insertUnorderedList')" class="w-10 h-10 rounded-xl hover:bg-white hover:shadow-sm text-gray-600 flex items-center justify-center transition-all" title="Marcadores"><i class="ph-bold ph-list-bullets"></i></button>
+                    <button type="button" onclick="window.ankiController.execEditorCmd('insertOrderedList')" class="w-10 h-10 rounded-xl hover:bg-white hover:shadow-sm text-gray-600 flex items-center justify-center transition-all" title="Numeração"><i class="ph-bold ph-list-numbers"></i></button>
+                    <div class="w-px h-6 bg-gray-200 mx-2 self-center"></div>
+                    <button type="button" onclick="window.ankiController.execEditorCmd('removeFormat')" class="w-10 h-10 rounded-xl hover:bg-red-50 text-red-400 flex items-center justify-center transition-all" title="Limpar Formatação"><i class="ph-bold ph-eraser"></i></button>
+                </div>
+
                 <div class="space-y-4">
                     <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">Frente (Pergunta)</label>
-                    <textarea id="anki-edit-front" rows="4" class="w-full p-6 bg-gray-50 border border-gray-100 rounded-[2rem] focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all font-bold text-gray-800 text-lg leading-relaxed shadow-inner"></textarea>
+                    <div id="anki-edit-front" contenteditable="true" class="w-full min-h-[120px] max-h-[200px] overflow-y-auto p-6 bg-gray-50 border border-gray-100 rounded-[2rem] focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all font-bold text-gray-800 text-lg leading-relaxed shadow-inner content-editor"></div>
                 </div>
+                
                 <div class="space-y-4">
                     <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">Verso (Resposta)</label>
-                    <textarea id="anki-edit-back" rows="4" class="w-full p-6 bg-gray-50 border border-gray-100 rounded-[2rem] focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all font-medium text-gray-700 leading-relaxed shadow-inner italic"></textarea>
+                    <div id="anki-edit-back" contenteditable="true" class="w-full min-h-[120px] max-h-[200px] overflow-y-auto p-6 bg-gray-50 border border-gray-100 rounded-[2rem] focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all font-medium text-gray-700 leading-relaxed shadow-inner content-editor"></div>
                 </div>
-                <div class="flex gap-4 pt-4">
-                    <button type="button" onclick="document.getElementById('modal-anki-edit-card').classList.add('hidden')" class="px-8 py-5 bg-gray-100 text-gray-500 font-black rounded-2xl transition-all hover:bg-gray-200 uppercase tracking-widest text-xs">Descartar</button>
-                    <button type="submit" class="flex-1 py-5 bg-primary-600 text-white font-black rounded-2xl shadow-xl shadow-primary-200 transition-all hover:bg-primary-700 active:scale-95 uppercase tracking-widest text-xs">Salvar Alterações</button>
-                </div>
-            </form>
+            </div>
+            
+            <div class="p-10 bg-gray-50/50 border-t border-gray-50 flex gap-4">
+                <button type="button" onclick="document.getElementById('modal-anki-edit-card').classList.add('hidden')" class="px-8 py-5 bg-white border border-gray-100 text-gray-400 font-bold rounded-2xl transition-all hover:bg-gray-100 shadow-sm uppercase tracking-widest text-[10px]">Descartar</button>
+                <button type="button" onclick="window.ankiController.saveCardEdit()" class="flex-1 py-5 bg-gray-900 text-white font-black rounded-2xl shadow-xl transition-all hover:bg-primary-600 active:scale-95 uppercase tracking-widest text-[10px] flex items-center justify-center gap-3">
+                    <i class="ph-bold ph-check-circle"></i> Salvar Alterações
+                </button>
+            </div>
         </div>
     </div>
 </body>

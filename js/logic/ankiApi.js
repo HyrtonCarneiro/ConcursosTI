@@ -265,5 +265,23 @@ window.ankiApi = {
             console.error("Failed to get deck config:", e);
             return null;
         }
+    },
+
+    async undo() {
+        try {
+            return await this.invoke('guiUndo', 6);
+        } catch (e) {
+            console.error("Undo failed:", e);
+            throw e;
+        }
+    },
+
+    async deleteNotes(noteIds) {
+        try {
+            return await this.invoke('deleteNotes', 6, { notes: noteIds });
+        } catch (e) {
+            console.error("Delete failed:", e);
+            throw e;
+        }
     }
 };

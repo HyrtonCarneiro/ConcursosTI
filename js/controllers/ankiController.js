@@ -33,22 +33,39 @@ window.ankiController = {
         
         document.getElementById('btn-anki-edit-card')?.addEventListener('click', () => this.openEditModal());
         
-        document.getElementById('form-anki-edit-card')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveCardEdit();
-        });
-
         window.removeEventListener('keydown', this._handleKeydown);
         this._handleKeydown = (e) => {
             if (!this.initialized || document.getElementById('page-anki').classList.contains('hidden')) return;
-            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+            
+            // Allow native undo/redo and formatting inside editor without card shortcuts interference
+            if (document.activeElement.contentEditable === 'true' || 
+                document.activeElement.tagName === 'INPUT' || 
+                document.activeElement.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            // Ctrl + Delete to Delete
+            if (e.ctrlKey && e.key === 'Delete') {
+                e.preventDefault();
+                this.deleteCurrentCard();
+                return;
+            }
+
+            // Ctrl + Z to Undo
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                this.undoLastAction();
+                return;
+            }
 
             if (e.code === 'Space') {
                 e.preventDefault();
                 this.revealAnswer();
             } else if (['1', '2', '3', '4'].includes(e.key)) {
-                const ease = parseInt(e.key);
-                this.submitAnswer(ease);
+                const isButtonsHidden = document.getElementById('anki-answer-buttons').classList.contains('hidden');
+                if (!isButtonsHidden) {
+                    this.submitAnswer(parseInt(e.key));
+                }
             }
         };
         window.addEventListener('keydown', this._handleKeydown);
@@ -283,6 +300,56 @@ window.ankiController = {
         }
     },
 
+    deleteCurrentCard: async function() {
+        if (!this.currentCard) return;
+        
+        const result = await Swal.fire({
+            title: 'Excluir Card?',
+            text: 'Isso removerá a nota permanentemente do seu Anki.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'SIM, EXCLUIR',
+            cancelButtonText: 'CANCELAR',
+            background: '#ffffff',
+            customClass: {
+                popup: 'rounded-[2rem]',
+                confirmButton: 'rounded-xl font-black uppercase tracking-widest text-[10px] py-4 px-6 border-none',
+                cancelButton: 'rounded-xl font-black uppercase tracking-widest text-[10px] py-4 px-6 border-none'
+            }
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await window.ankiApi.deleteNotes([this.currentCard.note]);
+                this.showNotification('Card excluído');
+                await this.startStudySession();
+            } catch (e) {
+                this.showNotification('Erro ao excluir card', 'error');
+            }
+        }
+    },
+
+    undoLastAction: async function() {
+        try {
+            const success = await window.ankiApi.undo();
+            if (success) {
+                this.showNotification('Ação desfeita');
+                await this.startStudySession();
+                await this.updateStats();
+            } else {
+                this.showNotification('Nada para desfazer', 'info');
+            }
+        } catch (e) {
+            this.showNotification('Não foi possível desfazer', 'error');
+        }
+    },
+
+    execEditorCmd: function(cmd, value = null) {
+        document.execCommand(cmd, false, value);
+    },
+
     openEditModal: function() {
         if (!this.currentCard) return;
         
@@ -290,58 +357,40 @@ window.ankiController = {
         const back = this.getCardField(this.currentCard, 'a');
 
         document.getElementById('anki-edit-note-id').value = this.currentCard.note;
-        document.getElementById('anki-edit-front').value = front;
-        document.getElementById('anki-edit-back').value = back;
+        document.getElementById('anki-edit-front').innerHTML = front;
+        document.getElementById('anki-edit-back').innerHTML = back;
         
         document.getElementById('modal-anki-edit-card').classList.remove('hidden');
     },
 
     saveCardEdit: async function() {
         const noteId = document.getElementById('anki-edit-note-id').value;
-        const frontContent = document.getElementById('anki-edit-front').value;
-        const backContent = document.getElementById('anki-edit-back').value;
+        const frontContent = document.getElementById('anki-edit-front').innerHTML;
+        const backContent = document.getElementById('anki-edit-back').innerHTML;
 
         try {
-            // We need to know which field names to update. 
-            // In AnkiConnect updateNoteFields, we MUST specify the actual names.
             const fieldsToUpdate = {};
-            const fields = this.currentCard.fields;
-            const allKeys = Object.keys(fields);
+            const fNames = Object.keys(this.currentCard.fields);
             
-            // Try to map back intelligently
-            const qNames = ['Front', 'Frente', 'Text', 'Pergunta'];
-            const aNames = ['Back', 'Verso', 'Extra', 'Resposta'];
-            
-            let qField = allKeys.find(k => qNames.includes(k)) || allKeys[0];
-            let aField = allKeys.find(k => aNames.includes(k)) || (allKeys[1] || allKeys[0]);
+            // Map common field names
+            const qFieldName = fNames.find(f => ['Front', 'Frente', 'Pergunta', 'Text', 'Oclusão'].includes(f));
+            const aFieldName = fNames.find(f => ['Back', 'Verso', 'Resposta', 'Extra', 'Back Extra'].includes(f));
 
-            fieldsToUpdate[qField] = frontContent;
-            if (qField !== aField) fieldsToUpdate[aField] = backContent;
+            if (qFieldName) fieldsToUpdate[qFieldName] = frontContent;
+            if (aFieldName) fieldsToUpdate[aFieldName] = backContent;
 
-            await window.ankiApi.updateCardFields(noteId, fieldsToUpdate);
+            await window.ankiApi.updateCardFields(parseInt(noteId), fieldsToUpdate);
             
             document.getElementById('modal-anki-edit-card').classList.add('hidden');
+            this.showNotification('Card atualizado!');
             
-            // Update local state and UI
-            fields[qField].value = frontContent;
-            if (fields[aField]) fields[aField].value = backContent;
-            
+            // Refresh current UI
             document.getElementById('anki-card-question').innerHTML = this.formatContent(frontContent, true);
             if (!document.getElementById('anki-card-answer-container').classList.contains('hidden')) {
                 document.getElementById('anki-card-answer').innerHTML = backContent;
             }
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Card Atualizado!',
-                text: 'As alterações foram salvas no Anki Desktop.',
-                timer: 2000,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
-            });
         } catch (e) {
-            Swal.fire('Erro', 'Não foi possível salvar as alterações.', 'error');
+            this.showNotification('Erro ao salvar card', 'error');
         }
     },
 
