@@ -32,6 +32,20 @@ window.ankiApi = {
         });
     },
 
+    // Process lists of IDs in batches to avoid payload limits and timeouts
+    async invokeBatch(action, version, ids, keyName = 'cards', batchSize = 500) {
+        const results = [];
+        for (let i = 0; i < ids.length; i += batchSize) {
+            const batch = ids.slice(i, i + batchSize);
+            const params = {};
+            params[keyName] = batch;
+            const res = await this.invoke(action, version, params);
+            if (Array.isArray(res)) results.push(...res);
+            else if (typeof res === 'object') Object.assign(results, res); // for map returns
+        }
+        return results;
+    },
+
     async checkConnection() {
         try {
             await this.invoke('version', 6);
@@ -58,8 +72,8 @@ window.ankiApi = {
             const lapseCards = await this.invoke('findCards', 6, { query: 'prop:lapses>0' });
             if (!lapseCards || lapseCards.length === 0) return {};
 
-            // Get cards info
-            const cardsInfo = await this.invoke('cardsInfo', 6, { cards: lapseCards });
+            // Get cards info in batches
+            const cardsInfo = await this.invokeBatch('cardsInfo', 6, lapseCards);
             const tagErrors = {};
 
             cardsInfo.forEach(card => {
@@ -117,32 +131,37 @@ window.ankiApi = {
     
     async getTodayStats() {
         try {
-            const dueToday = await this.invoke('findCards', 6, { query: 'is:due is:review' });
-            const learnToday = await this.invoke('findCards', 6, { query: 'is:learn' });
-            const newToday = await this.invoke('findCards', 6, { query: 'is:new' });
+            // Fast counts
+            const dueRes = await this.invoke('findCards', 6, { query: 'is:due is:review' });
+            const learnRes = await this.invoke('findCards', 6, { query: 'is:learn' });
+            const newRes = await this.invoke('findCards', 6, { query: 'is:new' });
             
-            // Get today's reviews to calculate time
-            const reviewsToday = await this.invoke('getReviewsOfCards', 6, { 
-                cards: await this.invoke('findCards', 6, { query: 'rated:1' }) 
-            });
-
-            let studiedToday = 0;
+            // For time, we only get reviews of cards rated today
+            const ratedToday = await this.invoke('findCards', 6, { query: 'rated:1' });
+            
+            let studiedToday = ratedToday.length;
             let timeTodayMs = 0;
-            const todayStart = new Date().setHours(0,0,0,0);
 
-            Object.values(reviewsToday).forEach(cardReviews => {
-                cardReviews.forEach(rev => {
-                    if (rev.id >= todayStart) {
-                        studiedToday++;
-                        timeTodayMs += rev.time;
-                    }
+            // Only fetch review logs if there are reasonable number of reviews to avoid lag
+            // If > 1000 reviews, we might want to skip detailed time or batch it
+            if (studiedToday > 0 && studiedToday < 2000) {
+                const reviewsToday = await this.invokeBatch('getReviewsOfCards', 6, ratedToday);
+                const todayStart = new Date().setHours(0,0,0,0);
+
+                Object.values(reviewsToday).forEach(cardReviews => {
+                    if (!Array.isArray(cardReviews)) return;
+                    cardReviews.forEach(rev => {
+                        if (rev.id >= todayStart) {
+                            timeTodayMs += rev.time;
+                        }
+                    });
                 });
-            });
+            }
 
             return {
-                due: dueToday.length,
-                learn: learnToday.length,
-                newCards: newToday.length,
+                due: dueRes.length,
+                learn: learnRes.length,
+                newCards: newRes.length,
                 studied: studiedToday,
                 timeMs: timeTodayMs,
                 avgMs: studiedToday > 0 ? timeTodayMs / studiedToday : 0
@@ -156,7 +175,10 @@ window.ankiApi = {
     async getSyllabusData() {
         try {
             const materias = await this.invoke('findCards', 6, { query: 'tag:*' });
-            const cardsInfo = await this.invoke('cardsInfo', 6, { cards: materias });
+            if (materias.length === 0) return {};
+
+            // Fetch info in batches to prevent payload errors
+            const cardsInfo = await this.invokeBatch('cardsInfo', 6, materias);
             
             const syllabus = {};
             const ignoreTags = ['leech', 'marked', 'import'];

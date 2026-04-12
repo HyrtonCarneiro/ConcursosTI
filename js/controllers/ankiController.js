@@ -71,12 +71,27 @@ window.ankiController = {
 
         containerApp.classList.remove('hidden');
         
-        await this.startStudySession();
-        await this.updateStats();
-        await this.renderHeatmap();
-        await this.renderSyllabus();
-        await this.renderTagPerformance();
-        await this.renderWorkloadForecast();
+        // 1. Prioridade Máxima: Motor de Estudos (para não travar o usuário)
+        try {
+            await this.startStudySession();
+        } catch (e) {
+            console.error("Erro ao iniciar sessão de estudo:", e);
+        }
+
+        // 2. Carga em paralelo das estatísticas (não-bloqueante)
+        const loadStats = async (label, fn) => {
+            try {
+                await fn();
+            } catch (err) {
+                console.error(`Falha ao carregar ${label}:`, err);
+            }
+        };
+
+        loadStats("Stats Gerais", () => this.updateStats());
+        loadStats("Heatmap", () => this.renderHeatmap());
+        loadStats("Syllabus", () => this.renderSyllabus());
+        loadStats("Lapses", () => this.renderTagPerformance());
+        loadStats("Forecast", () => this.renderWorkloadForecast());
     },
 
     startStudySession: async function() {
