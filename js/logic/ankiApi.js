@@ -1,5 +1,5 @@
 window.ankiApi = {
-    url: 'http://127.0.0.1:8765',
+    url: 'http://192.168.0.9:8765',
 
     async invoke(action, version, params = {}) {
         return new Promise((resolve, reject) => {
