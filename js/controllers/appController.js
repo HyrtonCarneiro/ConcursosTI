@@ -30,8 +30,12 @@ window.appControllers = {
 
         // Toggle Admin Nav
         const navAdmin = document.getElementById('nav-admin');
+        const mobileNavAdmin = document.getElementById('mobile-nav-admin');
         if (navAdmin) {
             navAdmin.style.display = window.store.isAdmin() ? 'flex' : 'none';
+        }
+        if (mobileNavAdmin) {
+            mobileNavAdmin.style.display = window.store.isAdmin() ? 'flex' : 'none';
         }
     },
 
@@ -196,6 +200,16 @@ window.appControllers = {
                 el.textContent = window.utils.calculateCountdown(target);
             }
         });
+    },
+
+    logout: async function() {
+        try {
+            await window.authLogic.logout();
+            window.utils.showToast("Saindo...", "info");
+            setTimeout(() => window.location.reload(), 500);
+        } catch (err) {
+            window.utils.showToast("Erro ao sair: " + err.message, "error");
+        }
     },
 
     toggleMobileMoreMenu: function() {
