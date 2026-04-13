@@ -11,27 +11,36 @@ window.notificationService = {
             const state = window.store.getState();
             if (!state.isAuthenticated || !state.currentUser) return;
 
-            // Se já tem token, apenas configura o handler de foreground e sai
-            if (state.fcmToken) {
-                console.log("Push: Token já existe. Configurando handler de foreground.");
+            // Verificar se o browser REALMENTE tem uma assinatura ativa
+            // (o token na nuvem pode existir mas o browser pode ter perdido a assinatura)
+            const registration = await navigator.serviceWorker.ready;
+            const existingSub = await registration.pushManager.getSubscription();
+
+            if (state.fcmToken && existingSub) {
+                // Token na nuvem + assinatura local = tudo OK
+                console.log("Push: Token + assinatura ativos. Configurando foreground handler.");
                 this._setupForegroundHandler();
                 return;
             }
 
+            if (state.fcmToken && !existingSub) {
+                console.log("Push: Token na nuvem existe mas browser perdeu a assinatura. Re-registrando...");
+            }
+
             // Se a permissão ainda não foi pedida, pede agora
             if (Notification.permission === 'default') {
-                console.log("Push: Permissão ainda não foi pedida. Solicitando...");
+                console.log("Push: Solicitando permissão automaticamente...");
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
-                    console.log("Push: Permissão negada pelo usuário:", permission);
+                    console.log("Push: Permissão negada:", permission);
                     return;
                 }
             } else if (Notification.permission === 'denied') {
-                console.log("Push: Permissão foi negada anteriormente. Não é possível registrar.");
+                console.log("Push: Permissão negada anteriormente.");
                 return;
             }
 
-            // Registrar token
+            // Registrar token (novo ou renovar)
             await this._registerToken();
 
         } catch (error) {
