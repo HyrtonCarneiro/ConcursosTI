@@ -94,9 +94,10 @@ window.downloadsController = {
             window.utils.showToast("Instalador preparado!", "success");
         } catch (err) {
             console.error(err);
-            window.utils.showToast("Erro ao gerar instalador: " + err.message, "error");
         }
-     _gerarInstaladorBat: function(fcmToken, username, monitorKey) {
+    },
+
+    _gerarInstaladorBat: function(fcmToken, username, monitorKey) {
         // Helpers de codificação seguros para o Navegador
         const toB64 = (str) => btoa(unescape(encodeURIComponent(str)));
         
