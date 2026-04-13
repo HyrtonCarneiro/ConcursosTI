@@ -129,5 +129,44 @@ window.notificationService = {
             console.error("Push trigger erro:", error);
             return false;
         }
+    },
+
+    manualTestPush: async function() {
+        try {
+            const state = window.store.getState();
+            const token = state.fcmToken;
+
+            if (!token) {
+                window.utils.showToast("Ative as notificações primeiro clicando no botão Ativar.", "error");
+                return;
+            }
+
+            window.utils.showToast("Solicitando notificação de teste...", "info");
+
+            const host = window.location.protocol === "file:"
+                ? "https://concursosti.vercel.app"
+                : window.location.origin;
+
+            const response = await fetch(host + '/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    token: token,
+                    title: "Teste de Fogo! 🔥",
+                    body: "Se você recebeu isso, seu celular está configurado corretamente."
+                })
+            });
+
+            const resData = await response.json();
+
+            if (resData.success) {
+                window.utils.showToast("Comando enviado! Verifique o celular.", "success");
+            } else {
+                window.utils.showToast("Falha no servidor: " + (resData.error || "Erro desconhecido"), "error");
+            }
+        } catch (error) {
+            console.error("Erro no teste de push:", error);
+            window.utils.showToast("Erro de conexão: " + error.message, "error");
+        }
     }
 };
