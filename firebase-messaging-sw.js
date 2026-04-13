@@ -16,48 +16,109 @@ firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
-// Handler manual para garantir que a notificação apareça em segundo plano no Mobile
-messaging.onBackgroundMessage((payload) => {
-    console.log('Push: Recebido em segundo plano:', payload);
+// ============================================================
+// CACHE (mesma lógica que o antigo sw.js, agora unificado aqui)
+// ============================================================
+const CACHE_NAME = 'concursos-ti-v2';
+const ASSETS = [
+    '/',
+    '/index.html',
+    '/manifest.json',
+    '/icon-192.png',
+    '/icon-512.png'
+];
 
-    const notificationTitle = payload.data?.title || payload.notification?.title || 'Estudaqui TI';
-    const notificationOptions = {
-        body: payload.data?.body || payload.notification?.body || 'Nova atualização disponível',
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        data: {
-            url: payload.data?.click_action || '/'
-        }
-    };
-
-    return self.registration.showNotification(notificationTitle, notificationOptions);
-});
-
-// Forçar atualização do Service Worker imediatamente após nova versão
-self.addEventListener('install', () => {
+// ============================================================
+// SERVICE WORKER LIFECYCLE
+// ============================================================
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    );
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(clients.claim());
+    // Limpar caches antigos
+    event.waitUntil(
+        caches.keys().then((names) => {
+            return Promise.all(
+                names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+            );
+        }).then(() => clients.claim())
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        caches.match(event.request).then((response) => {
+            return response || fetch(event.request);
+        })
+    );
+});
+
+// ============================================================
+// PUSH NOTIFICATIONS (Background)
+// ============================================================
+messaging.onBackgroundMessage((payload) => {
+    console.log('[SW] Push recebido em background:', payload);
+
+    const title = payload.data?.title || payload.notification?.title || 'Estudaqui TI';
+    const options = {
+        body: payload.data?.body || payload.notification?.body || 'Nova atualização disponível',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        vibrate: [200, 100, 200],
+        tag: 'estudaqui-push',
+        renotify: true,
+        data: {
+            url: payload.data?.click_action || 'https://concursosti.vercel.app'
+        }
+    };
+
+    return self.registration.showNotification(title, options);
+});
+
+// Fallback: push event direto (caso o FCM não passe pelo onBackgroundMessage)
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+
+    let payload;
+    try {
+        payload = event.data.json();
+    } catch (e) {
+        payload = { notification: { title: 'Estudaqui TI', body: event.data.text() } };
+    }
+
+    // Se o FCM já tratou via onBackgroundMessage, o 'notification' do payload
+    // já terá sido exibido automaticamente. Este listener é apenas um fallback.
+    const isFromFCM = payload.firebaseMessaging || payload.from;
+    if (isFromFCM) return; // Já tratado pelo onBackgroundMessage
+
+    const title = payload.notification?.title || payload.data?.title || 'Estudaqui TI';
+    const options = {
+        body: payload.notification?.body || payload.data?.body || '',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        vibrate: [200, 100, 200],
+        tag: 'estudaqui-push',
+        renotify: true
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
 });
 
 // Ao clicar na notificação
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const urlToOpen = event.notification.data?.url || '/';
+    const urlToOpen = event.notification.data?.url || 'https://concursosti.vercel.app';
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-            for (let i = 0; i < windowClients.length; i++) {
-                const client = windowClients[i];
-                if (client.url === urlToOpen && 'focus' in client) {
-                    return client.focus();
-                }
+            for (const client of windowClients) {
+                if ('focus' in client) return client.focus();
             }
-            if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
-            }
+            return clients.openWindow(urlToOpen);
         })
     );
 });

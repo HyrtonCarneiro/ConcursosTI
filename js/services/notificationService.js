@@ -14,51 +14,25 @@ window.notificationService = {
 
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
-                window.utils.showToast("Permissão negada: " + permission, "error");
+                window.utils.showToast("Permissão negada pelo navegador: '" + permission + "'. Vá em Configurações do Chrome > Notificações e permita este site.", "error");
                 return;
             }
 
-            window.utils.showToast("Testando conexão push (pode levar ~10s)...", "success");
+            window.utils.showToast("Registrando push (pode levar ~10s)...", "success");
 
+            // Aguardar o Service Worker ficar pronto
             const registration = await navigator.serviceWorker.ready;
-            console.log("Push: SW pronto:", registration.scope);
+            console.log("Push: SW pronto. Scope:", registration.scope, "Active:", registration.active?.scriptURL);
+
+            // Verificar se o SW correto está ativo (deve ser firebase-messaging-sw.js)
+            if (registration.active && !registration.active.scriptURL.includes('firebase-messaging')) {
+                console.warn("Push: SW ativo NÃO é o firebase-messaging-sw.js! É:", registration.active.scriptURL);
+                window.utils.showToast("ERRO: Service Worker errado ativo (" + registration.active.scriptURL + "). Limpe o cache do navegador e recarregue.", "error");
+                return;
+            }
 
             const VAPID_KEY = 'BHDkjfknKZxGgd6sRIQ7YemXZBzOjp9oyztTgGsho5DKH-PBQN_GUYQ6qy4ZiHU3XsNqx5kmSmxLSdIoHmLbB-s';
 
-            // === DIAGNÓSTICO: Testar PushManager diretamente (sem Firebase) ===
-            try {
-                console.log("Push: Teste direto do PushManager...");
-                const existingSub = await registration.pushManager.getSubscription();
-                if (existingSub) {
-                    console.log("Push: Assinatura existente encontrada, removendo...");
-                    await existingSub.unsubscribe();
-                }
-
-                // Converter VAPID key para Uint8Array
-                const applicationServerKey = this._urlBase64ToUint8Array(VAPID_KEY);
-
-                const testSub = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: applicationServerKey
-                });
-                console.log("Push: PushManager.subscribe SUCESSO!", testSub.endpoint);
-                // Se chegou aqui, o PushManager funciona. Desfazer e deixar Firebase fazer.
-                await testSub.unsubscribe();
-            } catch (pushTestError) {
-                console.error("Push: PushManager.subscribe FALHOU:", pushTestError.message);
-                window.utils.showToast(
-                    "O Chrome do seu celular não consegue se conectar ao serviço de push do Google. " +
-                    "Isso é um problema do aparelho, não do site. Tente: " +
-                    "1) Reiniciar o celular. " +
-                    "2) Verificar se o Chrome está atualizado. " +
-                    "3) Ir em Config do Chrome > Notificações e certificar que estão ativas. " +
-                    "4) Limpar dados do Chrome: Configurações > Apps > Chrome > Limpar Cache.",
-                    "error"
-                );
-                return;
-            }
-
-            // === Se o teste acima passou, Firebase vai funcionar ===
             const messaging = firebase.messaging();
             const token = await messaging.getToken({
                 serviceWorkerRegistration: registration,
@@ -66,20 +40,52 @@ window.notificationService = {
             });
 
             if (token) {
+                console.log("Push: Token obtido com sucesso. Prefix:", token.substring(0, 20) + "...");
+
                 // Salvar no estado da store (que cuida do merge no save)
                 window.store.getState().fcmToken = token;
                 await window.store.save();
 
-                window.utils.showToast("Notificações ativadas com sucesso! 🎉", "success");
+                window.utils.showToast("Notificações ativadas com sucesso! 🎉 Token salvo.", "success");
                 const btn = document.getElementById('btn-enable-notifications');
-                if (btn) btn.style.display = 'none';
+                if (btn) btn.textContent = '✅ Notificações Ativas';
+
+                // Registrar handler de foreground para mostrar notificações enquanto o app está aberto
+                this._setupForegroundHandler(messaging);
             } else {
-                window.utils.showToast("Token vazio. Firebase getToken retornou null.", "error");
+                window.utils.showToast("ERRO CRÍTICO: Firebase getToken() retornou null. Isso pode significar que a VAPID Key está errada ou o PushManager não consegue se conectar ao Google.", "error");
             }
 
         } catch (error) {
-            console.error("Push ERRO:", error);
-            window.utils.showToast("ERRO: " + error.message, "error");
+            console.error("Push ERRO completo:", error);
+            window.utils.showToast("ERRO no registro: " + error.message, "error");
+        }
+    },
+
+    _setupForegroundHandler: function(messaging) {
+        try {
+            messaging.onMessage((payload) => {
+                console.log("Push: Mensagem recebida em FOREGROUND:", payload);
+
+                const title = payload.data?.title || payload.notification?.title || 'Estudaqui TI';
+                const body = payload.data?.body || payload.notification?.body || '';
+
+                // Usar a Notification API diretamente (funciona quando o app está aberto)
+                if (Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: body,
+                        icon: '/icon-192.png',
+                        tag: 'estudaqui-foreground',
+                        renotify: true
+                    });
+                }
+
+                // Também mostrar um toast no app
+                window.utils.showToast("🔔 " + title + ": " + body, "success");
+            });
+            console.log("Push: Handler de foreground registrado.");
+        } catch (e) {
+            console.warn("Push: Não foi possível registrar onMessage:", e.message);
         }
     },
 
@@ -137,11 +143,25 @@ window.notificationService = {
             const token = state.fcmToken;
 
             if (!token) {
-                window.utils.showToast("Ative as notificações primeiro clicando no botão Ativar.", "error");
+                window.utils.showToast("ERRO: Nenhum token FCM salvo. Clique em 'Ativar Notificações' primeiro.", "error");
                 return;
             }
 
-            window.utils.showToast("Solicitando notificação de teste...", "info");
+            // Diagnóstico: mostrar informações sobre o estado do push
+            const swReg = await navigator.serviceWorker.getRegistration();
+            const swInfo = swReg ? swReg.active?.scriptURL || 'nenhum ativo' : 'não registrado';
+            const permStatus = Notification.permission;
+
+            console.log("Push Teste - Token prefix:", token.substring(0, 20));
+            console.log("Push Teste - SW:", swInfo);
+            console.log("Push Teste - Permissão:", permStatus);
+
+            if (permStatus !== 'granted') {
+                window.utils.showToast("ERRO: Permissão de notificação é '" + permStatus + "'. Vá em Configurações > Notificações e permita este site.", "error");
+                return;
+            }
+
+            window.utils.showToast("Enviando teste... (Token: " + token.substring(0, 15) + "...)", "info");
 
             const host = window.location.protocol === "file:"
                 ? "https://concursosti.vercel.app"
@@ -160,9 +180,20 @@ window.notificationService = {
             const resData = await response.json();
 
             if (resData.success) {
-                window.utils.showToast("Comando enviado! Verifique o celular.", "success");
+                window.utils.showToast(
+                    "✅ Firebase aceitou! MessageId: " + (resData.messageId || '?').substring(0, 30) +
+                    ". Se NÃO aparecer a notificação: 1) Verifique Configurações > Apps > Chrome > Notificações. " +
+                    "2) Desative Economia de Bateria para o Chrome. " +
+                    "3) SW ativo: " + swInfo,
+                    "success"
+                );
             } else {
-                window.utils.showToast("Falha no servidor: " + (resData.error || "Erro desconhecido"), "error");
+                window.utils.showToast(
+                    "❌ Firebase REJEITOU: " + (resData.error || "Erro desconhecido") +
+                    " (código: " + (resData.code || '?') + "). " +
+                    "Se 'unregistered': clique 'Ativar Notificações' novamente.",
+                    "error"
+                );
             }
         } catch (error) {
             console.error("Erro no teste de push:", error);
