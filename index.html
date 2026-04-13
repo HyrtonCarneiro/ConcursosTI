@@ -1209,12 +1209,45 @@
                                 </div>
                             </div>
                             <p class="text-gray-500 text-sm mb-4 leading-relaxed">Roda silenciosamente no Windows e envia notificações push para o seu celular quando há cards pendentes no Anki — <strong>sem precisar abrir o navegador</strong>. Verifica a cada 30 minutos.</p>
-                            <div class="bg-gray-50 rounded-xl p-3 mb-6">
+                            <div class="bg-gray-50 rounded-xl p-3 mb-4">
                                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pré-requisitos</p>
                                 <ul class="text-xs text-gray-500 space-y-1">
                                     <li class="flex items-center gap-2"><i class="ph-bold ph-check-circle text-green-500"></i> Notificações ativadas no celular (via Dashboard)</li>
                                     <li class="flex items-center gap-2"><i class="ph-bold ph-check-circle text-green-500"></i> Anki com AnkiConnect instalado</li>
                                 </ul>
+                            </div>
+
+                            <!-- Botão de Instruções -->
+                            <button onclick="window.downloadsController.toggleAnkiInstructions()" class="w-full mb-4 py-3 bg-white border border-gray-100 text-primary-600 hover:bg-primary-50 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-info"></i> Como Instalar e Configurar?
+                            </button>
+
+                            <!-- Área de Instruções (Hidden by default) -->
+                            <div id="anki-instructions-area" class="hidden bg-primary-50/50 rounded-2xl p-5 mb-6 border border-primary-100">
+                                <h4 class="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-4">Guia de Instalação</h4>
+                                <div class="space-y-4 text-left">
+                                    <div class="flex gap-3">
+                                        <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">1</span>
+                                        <p class="text-[11px] text-gray-600 font-medium">No Anki, vá em <b class="text-gray-900">Ferramentas > Extensões > Obter extensões</b> e cole o código: <code class="bg-white px-1 rounded text-primary-600 font-bold leading-none">2055492159</code></p>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">2</span>
+                                        <p class="text-[11px] text-gray-600 font-medium">Clique na extensão <b class="text-gray-900">AnkiConnect > Configurar</b>.</p>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">3</span>
+                                        <div class="flex-1">
+                                            <p class="text-[11px] text-gray-600 font-medium mb-2">Clique no botão abaixo para copiar a configuração correta e <b class="text-gray-900">cole no lugar</b> de tudo que estiver lá:</p>
+                                            <button onclick="window.downloadsController.copyAnkiConfig()" class="w-full py-2 bg-white border border-primary-200 text-primary-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white transition-all shadow-sm">
+                                                <i class="ph-bold ph-copy"></i> Copiar JSON de Configuração
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">4</span>
+                                        <p class="text-[11px] text-gray-600 font-medium"><b class="text-gray-900">Reinicie o Anki</b> e prossiga com o download do monitor abaixo.</p>
+                                    </div>
+                                </div>
                             </div>
                             <button onclick="window.downloadsController.downloadMonitorAnki()" class="w-full bg-gray-900 hover:bg-primary-600 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3">
                                 <i class="ph-bold ph-download-simple"></i> Baixar Monitor Anki (.bat)

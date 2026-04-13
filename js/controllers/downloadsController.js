@@ -2,6 +2,37 @@ window.downloadsController = {
     render: function() {
     },
 
+    toggleAnkiInstructions: function() {
+        const el = document.getElementById('anki-instructions-area');
+        if (!el) return;
+        
+        if (el.classList.contains('hidden')) {
+            el.classList.remove('hidden');
+            el.classList.add('animate-fade-in');
+        } else {
+            el.classList.add('hidden');
+        }
+    },
+
+    copyAnkiConfig: function() {
+        const config = {
+            "apiKey": null,
+            "apiLogPath": null,
+            "ignoreOriginList": [],
+            "webBindAddress": "0.0.0.0",
+            "webBindPort": 8765,
+            "webCorsOriginList": ["*"],
+            "webExternalOrigins": ["*"]
+        };
+        const text = JSON.stringify(config, null, 4);
+        navigator.clipboard.writeText(text).then(() => {
+            window.utils.showToast("Configuração copiada!", "success");
+        }).catch(err => {
+            console.error('Erro ao copiar: ', err);
+            window.utils.showToast("Erro ao copiar. Selecione o texto manualmente.", "error");
+        });
+    },
+
     downloadProtocoloPastas: function() {
         const regContent = 
 `Windows Registry Editor Version 5.00\r\n` +
