@@ -62,6 +62,7 @@ module.exports = async (req, res) => {
     try {
         initFirebase();
         const { token, title, body } = req.body;
+        const host = req.headers.origin || 'https://concursosti.vercel.app';
 
         if (!token) {
             return res.status(400).json({ error: 'FCM Token ausente' });
