@@ -2,16 +2,22 @@ const admin = require('firebase-admin');
 
 function initFirebase() {
     if (!admin.apps.length) {
-        if (!process.env.FIREBASE_PRIVATE_KEY) {
-            throw new Error("FIREBASE_PRIVATE_KEY is missing in environment variables");
+        const required = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
+        const missing = required.filter(key => !process.env[key]);
+        if (missing.length > 0) {
+            throw new Error(`Missing environment variables: ${missing.join(', ')}`);
         }
-        admin.initializeApp({
-            credential: admin.credential.cert({
-                projectId: process.env.FIREBASE_PROJECT_ID,
-                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-            })
-        });
+        try {
+            admin.initializeApp({
+                credential: admin.credential.cert({
+                    projectId: process.env.FIREBASE_PROJECT_ID,
+                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                })
+            });
+        } catch (e) {
+            throw new Error(`Firebase initialization failed: ${e.message}`);
+        }
     }
     return admin.firestore();
 }
