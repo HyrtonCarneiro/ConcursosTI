@@ -37,6 +37,24 @@ module.exports = async (req, res) => {
         return;
     }
 
+    if (req.method === 'GET') {
+        try {
+            const envCheck = {
+                projectId: !!process.env.FIREBASE_PROJECT_ID,
+                clientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+                privateKeyLength: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.length : 0
+            };
+            return res.status(200).json({ 
+                version: "1.0.2", 
+                status: "Operational", 
+                envCheck 
+            });
+        } catch (e) {
+            return res.status(500).json({ error: e.message });
+        }
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Método não permitido' });
     }
