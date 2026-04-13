@@ -1,7 +1,7 @@
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
-// Configuração do Firebase para o Service Worker
+// Configuração unificada do Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyCXcmf8vYBZtBWhLP3k1HWDEUAC-_MSkwo",
     authDomain: "estudaqui-be0f5.firebaseapp.com",
@@ -13,112 +13,80 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const messaging = firebase.messaging();
 
-// ============================================================
-// CACHE (mesma lógica que o antigo sw.js, agora unificado aqui)
-// ============================================================
-const CACHE_NAME = 'concursos-ti-v2';
-const ASSETS = [
+// ---------------------------------------------------------
+// 1. CACHE E OFFLINE (Unificado)
+// ---------------------------------------------------------
+const CACHE_NAME = 'concursosti-v3'; // Versão incrementada para forçar limpeza
+const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/manifest.json',
-    '/icon-192.png',
-    '/icon-512.png'
+    '/icon-192.png'
 ];
 
-// ============================================================
-// SERVICE WORKER LIFECYCLE
-// ============================================================
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-    );
     self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    );
 });
 
 self.addEventListener('activate', (event) => {
-    // Limpar caches antigos
     event.waitUntil(
-        caches.keys().then((names) => {
-            return Promise.all(
-                names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
-            );
-        }).then(() => clients.claim())
+        Promise.all([
+            clients.claim(),
+            // Remove caches antigos
+            caches.keys().then((keys) => {
+                return Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null));
+            })
+        ])
     );
 });
 
+// ---------------------------------------------------------
+// 2. FILTRO DE FETCH (Evita travar requisições de API)
+// ---------------------------------------------------------
 self.addEventListener('fetch', (event) => {
+    // Não cachear requisições para a API ou Firebase
+    if (event.request.url.includes('/api/') || event.request.url.includes('google') || event.request.url.includes('firebase')) {
+        return;
+    }
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
-        })
+        caches.match(event.request).then((response) => response || fetch(event.request))
     );
 });
 
-// ============================================================
-// PUSH NOTIFICATIONS (Background)
-// ============================================================
+// ---------------------------------------------------------
+// 3. PUSH NOTIFICATIONS
+// ---------------------------------------------------------
+
+// Background Message Handler
 messaging.onBackgroundMessage((payload) => {
-    console.log('[SW] Push recebido em background:', payload);
-
-    const title = payload.data?.title || payload.notification?.title || 'Estudaqui TI';
+    console.log('[SW] Mensagem em background:', payload);
+    const title = payload.data?.title || payload.notification?.title || 'ConcursosTI';
     const options = {
-        body: payload.data?.body || payload.notification?.body || 'Nova atualização disponível',
+        body: payload.data?.body || payload.notification?.body || 'Você tem atualizações.',
         icon: '/icon-192.png',
         badge: '/icon-192.png',
-        vibrate: [200, 100, 200],
-        tag: 'estudaqui-push',
+        tag: 'revisao-anki',
         renotify: true,
-        data: {
-            url: payload.data?.click_action || 'https://concursosti.vercel.app'
-        }
+        data: { url: payload.data?.click_action || '/' }
     };
-
     return self.registration.showNotification(title, options);
-});
-
-// Fallback: push event direto (caso o FCM não passe pelo onBackgroundMessage)
-self.addEventListener('push', (event) => {
-    if (!event.data) return;
-
-    let payload;
-    try {
-        payload = event.data.json();
-    } catch (e) {
-        payload = { notification: { title: 'Estudaqui TI', body: event.data.text() } };
-    }
-
-    // Se o FCM já tratou via onBackgroundMessage, o 'notification' do payload
-    // já terá sido exibido automaticamente. Este listener é apenas um fallback.
-    const isFromFCM = payload.firebaseMessaging || payload.from;
-    if (isFromFCM) return; // Já tratado pelo onBackgroundMessage
-
-    const title = payload.notification?.title || payload.data?.title || 'Estudaqui TI';
-    const options = {
-        body: payload.notification?.body || payload.data?.body || '',
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        vibrate: [200, 100, 200],
-        tag: 'estudaqui-push',
-        renotify: true
-    };
-
-    event.waitUntil(self.registration.showNotification(title, options));
 });
 
 // Ao clicar na notificação
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const urlToOpen = event.notification.data?.url || 'https://concursosti.vercel.app';
-
+    const urlToOpen = event.notification.data?.url || '/';
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (const client of windowClients) {
                 if ('focus' in client) return client.focus();
             }
-            return clients.openWindow(urlToOpen);
+            if (clients.openWindow) return clients.openWindow(urlToOpen);
         })
     );
 });

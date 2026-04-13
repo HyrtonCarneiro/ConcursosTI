@@ -250,11 +250,16 @@
             <!-- Dashboard Page -->
             <section id="page-dashboard" class="page-section hidden page-transition">
                 <div class="mb-10 flex flex-wrap items-end justify-between gap-6">
-                    <div>
-                        <h2 class="text-3xl font-black text-gray-900 tracking-tight">Sua Evolução</h2>
-                        <p class="text-gray-400 text-sm font-medium">Resumo do seu desempenho e planejamento</p>
-                        <button onclick="window.notificationService.requestPermission()" id="btn-enable-notifications" class="mt-4 px-5 py-2 text-xs font-bold text-primary-500 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider lg:hidden"><i class="ph-bold ph-bell-ringing"></i> Ativar Notificações</button>
-                        <button onclick="window.notificationService.manualTestPush()" class="mt-2 px-5 py-2 text-xs font-bold text-gray-500 hover:text-primary-600 bg-gray-50 hover:bg-primary-50 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider lg:hidden"><i class="ph-bold ph-paper-plane-tilt"></i> Testar Notificação</button>
+                    <div class="flex items-center gap-3">
+                        <div id="push-status-dot" class="w-2 h-2 rounded-full bg-gray-300" title="Status das Notificações"></div>
+                        <div>
+                            <h2 class="text-3xl font-black text-gray-900 tracking-tight">Sua Evolução</h2>
+                            <p class="text-gray-400 text-sm font-medium">Resumo do seu desempenho e planejamento</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-4 lg:hidden">
+                        <button onclick="window.notificationService.requestPermission()" id="btn-enable-notifications" class="px-5 py-2 text-xs font-bold text-primary-500 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph-bold ph-bell-ringing"></i> Ativar Notificações</button>
+                        <button onclick="window.notificationService.manualTestPush()" class="px-5 py-2 text-xs font-bold text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all flex items-center gap-2 uppercase tracking-wider"><i class="ph-bold ph-paper-plane-tilt"></i> Enviar Teste</button>
                     </div>
                     <div id="dash-overall-progress-container" class="bg-white px-6 py-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
                         <div class="text-right">
