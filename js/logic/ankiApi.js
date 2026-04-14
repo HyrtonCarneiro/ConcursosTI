@@ -210,7 +210,7 @@ window.ankiApi = {
             const todayObj = new Date();
 
             for (let i = 0; i < days; i++) {
-                const query = (i === 0) ? 'is:new OR is:learn OR is:due' : `prop:due=${i}`;
+                const query = (i === 0) ? 'is:due' : `prop:due=${i}`;
                 const cards = await this.invoke('findCards', 6, { query });
                 
                 const nextDate = new Date(todayObj);
@@ -236,9 +236,9 @@ window.ankiApi = {
     async getTodayStats() {
         try {
             // Fast counts
-            const dueRes = await this.invoke('findCards', 6, { query: 'is:due is:review -is:suspended' });
-            const learnRes = await this.invoke('findCards', 6, { query: 'is:learn -is:suspended' });
-            const newRes = await this.invoke('findCards', 6, { query: 'is:new -is:suspended' });
+            const dueRes = await this.invoke('findCards', 6, { query: 'is:due' });
+            const learnRes = await this.invoke('findCards', 6, { query: 'is:learn' });
+            const newRes = await this.invoke('findCards', 6, { query: 'is:new' });
             
             // For time, we only get reviews of cards rated today
             const ratedToday = await this.invoke('findCards', 6, { query: 'rated:1' });
