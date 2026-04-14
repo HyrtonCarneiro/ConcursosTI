@@ -21,21 +21,28 @@ window.ankiController = {
         }
 
         const btnSaveUrl = document.getElementById('btn-save-anki-url');
+        const btnAddUrl = document.getElementById('btn-add-anki-url');
         const inputUrl = document.getElementById('input-anki-url');
-        
-        if (btnSaveUrl && inputUrl) {
-            // Pre-fill with current URL
-            inputUrl.value = window.ankiApi.url.replace('http://', '');
-            
-            btnSaveUrl.addEventListener('click', () => {
+
+        if (btnSaveUrl) {
+            btnSaveUrl.addEventListener('click', () => this.render());
+        }
+
+        if (btnAddUrl && inputUrl) {
+            const addUrlHandler = () => {
                 const newUrl = inputUrl.value.trim();
                 if (newUrl) {
-                    window.ankiApi.setUrl(newUrl);
-                    window.utils.showToast("URL do Anki atualizada!", "success");
-                    this.render();
+                    window.ankiApi.addUrl(newUrl);
+                    inputUrl.value = '';
+                    window.utils.showToast("Endereço adicionado!", "success");
+                    this.renderSavedUrls();
                 } else {
-                    window.utils.showToast("Informe uma URL válida.", "error");
+                    window.utils.showToast("Informe um endereço válido.", "error");
                 }
+            };
+            btnAddUrl.addEventListener('click', addUrlHandler);
+            inputUrl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); addUrlHandler(); }
             });
         }
     },
@@ -90,6 +97,38 @@ window.ankiController = {
         window.addEventListener('keydown', this._handleKeydown);
     },
 
+    renderSavedUrls: function() {
+        var container = document.getElementById('anki-saved-urls-list');
+        if (!container) return;
+
+        var urls = window.ankiApi.getUrls();
+        var lastWorking = localStorage.getItem('anki_connect_last_working');
+
+        container.innerHTML = urls.map(function(url) {
+            var display = url.replace('http://', '');
+            var isLast = (url === lastWorking);
+            var statusIcon = isLast ? 'ph-check-circle text-green-500' : 'ph-desktop text-gray-400';
+            var badge = isLast ? '<span class="text-[8px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full uppercase tracking-widest shrink-0">Último</span>' : '';
+
+            return '<div class="flex items-center justify-between bg-gray-50 px-3 py-2.5 rounded-xl border border-gray-100 group hover:border-primary-200 transition-all">'
+                + '<div class="flex items-center gap-2 min-w-0">'
+                + '<i class="ph-bold ' + statusIcon + ' text-sm shrink-0"></i>'
+                + '<span class="text-xs font-bold text-gray-700 truncate">' + display + '</span>'
+                + badge
+                + '</div>'
+                + '<button onclick="window.ankiController.removeAnkiUrl(\'' + url + '\')" class="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100">'
+                + '<i class="ph-bold ph-x text-xs"></i>'
+                + '</button>'
+                + '</div>';
+        }).join('');
+    },
+
+    removeAnkiUrl: function(url) {
+        window.ankiApi.removeUrl(url);
+        this.renderSavedUrls();
+        window.utils.showToast("Endereço removido.", "info");
+    },
+
     render: async function() {
         const containerApp = document.getElementById('anki-app-container');
         const containerError = document.getElementById('anki-error-container');
@@ -102,6 +141,7 @@ window.ankiController = {
         
         if (!isConnected) {
             containerError.classList.remove('hidden');
+            this.renderSavedUrls();
             return;
         }
 

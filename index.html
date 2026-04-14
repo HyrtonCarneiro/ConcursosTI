@@ -881,18 +881,26 @@
                         <i class="ph-fill ph-warning-circle text-4xl"></i>
                     </div>
                     <h3 class="text-xl font-black text-gray-800 mb-2">AnkiConnect Inacessível</h3>
-                    <p class="text-gray-500 text-sm max-w-md mb-8">Não foi possível conectar ao Anki. O aplicativo do Anki precisa estar <b>ABERTO</b> e o add-on AnkiConnect deve estar devidamente configurado na porta 8765 e o webCorsOriginList setado para `*`.</p>
+                    <p class="text-gray-500 text-sm max-w-md mb-8">Não foi possível conectar em nenhum endereço salvo. Verifique se o Anki está <b>ABERTO</b> no computador e se o AnkiConnect está configurado com <code class="bg-red-100 px-1.5 py-0.5 rounded text-red-600 text-[10px] font-bold">webBindAddress: "0.0.0.0"</code> e <code class="bg-red-100 px-1.5 py-0.5 rounded text-red-600 text-[10px] font-bold">webCorsOriginList: ["*"]</code>.</p>
                     
-                    <div class="bg-white p-6 rounded-3xl border border-red-100 shadow-sm w-full max-w-sm">
-                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Configurar URL do Anki</label>
-                        <div class="flex flex-col gap-3">
-                            <input type="text" id="input-anki-url" class="p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all text-xs" placeholder="Ex: localhost:8765">
-                            <button id="btn-save-anki-url" class="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-black rounded-2xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest">
-                                Salvar e Tentar Novamente
+                    <div class="bg-white p-6 rounded-3xl border border-red-100 shadow-sm w-full max-w-md">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Endereços Salvos</label>
+                        <div id="anki-saved-urls-list" class="space-y-2 mb-5 max-h-40 overflow-y-auto custom-scrollbar">
+                            <!-- Populado via JS -->
+                        </div>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Adicionar Novo Endereço</label>
+                        <div class="flex gap-2 mb-5">
+                            <input type="text" id="input-anki-url" class="flex-1 p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all text-xs" placeholder="Ex: 192.168.1.15:8765">
+                            <button id="btn-add-anki-url" class="px-4 bg-gray-900 hover:bg-primary-600 text-white font-black rounded-xl transition-all active:scale-95 text-sm shrink-0">
+                                <i class="ph-bold ph-plus"></i>
                             </button>
                         </div>
-                        <p class="text-[9px] text-gray-400 mt-4 font-medium italic">Padrão: localhost:8765</p>
+                        <button id="btn-save-anki-url" class="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-black rounded-2xl shadow-lg transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-arrows-clockwise"></i> Tentar Conectar
+                        </button>
+                        <p class="text-[9px] text-gray-400 mt-4 font-medium italic text-center">Adicione o IP do computador com o Anki aberto.<br>Celular e PC devem estar na mesma rede Wi-Fi.<br>No PC, descubra o IP com: <code class="bg-gray-100 px-1 rounded text-gray-600">ipconfig</code></p>
                     </div>
+
                 </div>
 
                 <!-- App State -->
@@ -1229,29 +1237,43 @@
                             </button>
 
                             <!-- Área de Instruções (Hidden by default) -->
-                            <div id="anki-instructions-area" class="hidden bg-primary-50/50 rounded-2xl p-5 mb-6 border border-primary-100">
-                                <h4 class="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-4">Guia de Instalação</h4>
-                                <div class="space-y-4 text-left">
+                            <div id="anki-instructions-area" class="hidden bg-primary-50/50 rounded-2xl p-6 mb-6 border border-primary-100">
+                                <h4 class="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-6 border-b border-primary-100 pb-2">Guia Mestre de Configuração</h4>
+                                <div class="space-y-6 text-left">
                                     <div class="flex gap-3">
                                         <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">1</span>
-                                        <p class="text-[11px] text-gray-600 font-medium">No Anki, vá em <b class="text-gray-900">Ferramentas > Extensões > Obter extensões</b> e cole o código: <code class="bg-white px-1 rounded text-primary-600 font-bold leading-none">2055492159</code></p>
+                                        <p class="text-[11px] text-gray-600 font-medium">Instale o Add-on no computador: <b class="text-gray-900">Ferramentas > Extensões > Obter extensões</b> e use o código: <code class="bg-primary-100 px-1.5 py-0.5 rounded text-primary-700 font-bold text-[10px]">2055492159</code></p>
                                     </div>
                                     <div class="flex gap-3">
                                         <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">2</span>
-                                        <p class="text-[11px] text-gray-600 font-medium">Clique na extensão <b class="text-gray-900">AnkiConnect > Configurar</b>.</p>
-                                    </div>
-                                    <div class="flex gap-3">
-                                        <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">3</span>
                                         <div class="flex-1">
-                                            <p class="text-[11px] text-gray-600 font-medium mb-2">Clique no botão abaixo para copiar a configuração correta e <b class="text-gray-900">cole no lugar</b> de tudo que estiver lá:</p>
-                                            <button onclick="window.downloadsController.copyAnkiConfig()" class="w-full py-2 bg-white border border-primary-200 text-primary-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white transition-all shadow-sm">
-                                                <i class="ph-bold ph-copy"></i> Copiar JSON de Configuração
+                                            <p class="text-[11px] text-gray-600 font-medium mb-3">Configure o acesso externo: Selecione <b class="text-gray-900">AnkiConnect > Configurar</b> e substitua o código pelo botão abaixo:</p>
+                                            <button onclick="window.downloadsController.copyAnkiConfig()" class="w-full py-3 bg-white border border-primary-200 text-primary-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-primary-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2">
+                                                <i class="ph-bold ph-copy"></i> Copiar Configuração (JSON)
                                             </button>
+                                            <p class="text-[8px] text-gray-400 mt-2 italic px-1">Isso libera a porta 8765 para que seu celular consiga conversar com o PC na rede Wi-Fi.</p>
                                         </div>
                                     </div>
                                     <div class="flex gap-3">
-                                        <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">4</span>
-                                        <p class="text-[11px] text-gray-600 font-medium"><b class="text-gray-900">Reinicie o Anki</b> e prossiga com o download do monitor abaixo.</p>
+                                        <span class="w-5 h-5 bg-primary-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shrink-0">3</span>
+                                        <p class="text-[11px] text-gray-600 font-medium"><b class="text-gray-900">Reinicie o Anki</b>. Se o Windows perguntar, clique em <b class="text-gray-900">"Permitir Acesso"</b> no Firewall para Redes Privadas.</p>
+                                    </div>
+                                    <div class="border-t border-primary-100 pt-4">
+                                        <p class="text-[9px] font-black text-primary-400 uppercase tracking-widest mb-4">Sincronizando com o Celular</p>
+                                        <div class="space-y-4">
+                                            <div class="flex gap-3">
+                                                <span class="w-5 h-5 bg-primary-200 text-primary-700 rounded-full flex items-center justify-center text-[10px] font-black shrink-0">4</span>
+                                                <p class="text-[11px] text-gray-600 font-medium">No PC, abra o terminal (Prompt) e digite <code class="bg-gray-100 px-1 rounded text-gray-800">ipconfig</code>. Anote o <b class="text-gray-900">Endereço IPv4</b> (ex: 192.168.1.15).</p>
+                                            </div>
+                                            <div class="flex gap-3">
+                                                <span class="w-5 h-5 bg-primary-200 text-primary-700 rounded-full flex items-center justify-center text-[10px] font-black shrink-0">5</span>
+                                                <p class="text-[11px] text-gray-600 font-medium">No seu celular, vá na aba <b class="text-gray-900">Anki</b> deste site e adicione o endereço: <code class="bg-gray-100 px-1 rounded text-gray-800 text-[10px] italic">SEU-IP:8765</code></p>
+                                            </div>
+                                            <div class="flex gap-3">
+                                                <span class="w-5 h-5 bg-primary-200 text-primary-700 rounded-full flex items-center justify-center text-[10px] font-black shrink-0">6</span>
+                                                <p class="text-[11px] text-gray-600 font-medium">Baixe o Monitor (.bat) abaixo, execute no Windows e use o arquivo <b class="text-gray-900">TESTAR-NOTIFICACAO</b> para validar.</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
