@@ -286,7 +286,7 @@ window.ankiApi = {
             const cardsInfo = await this.invokeBatch('cardsInfo', 6, allCards);
             
             const syllabus = {};
-            const ignoreTags = ['leech', 'marked', 'import'];
+            const systemTags = ['leech', 'marked'];
 
             cardsInfo.forEach(card => {
                 let subjects = [];
@@ -294,7 +294,7 @@ window.ankiApi = {
                 // 1. Tentar Tags primeiro
                 if (card.tags && card.tags.length > 0) {
                     card.tags.forEach(tag => {
-                        if (ignoreTags.some(t => tag.toLowerCase().includes(t))) return;
+                        if (systemTags.includes(tag.toLowerCase())) return;
                         const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
                         subjects.push(cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1));
                     });
