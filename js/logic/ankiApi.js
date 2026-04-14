@@ -278,23 +278,33 @@ window.ankiApi = {
 
     async getSyllabusData() {
         try {
-            // Busca todos os cards ativos (não apenas os com tag)
+            // 1. Busca todos os cards ativos
             const allCards = await this.invoke('findCards', 6, { query: '-is:suspended -is:buried' });
             if (allCards.length === 0) return {};
 
-            // Fetch info in batches to prevent payload errors
+            // 2. Busca informações dos cartões (para pegar note IDs e deckNames)
             const cardsInfo = await this.invokeBatch('cardsInfo', 6, allCards);
             
+            // 3. Extrai Note IDs únicos para buscar as etiquetas reais
+            const noteIds = [...new Set(cardsInfo.map(c => c.note))].filter(id => id);
+            const notesInfo = await this.invokeBatch('notesInfo', 6, noteIds);
+            
+            // 4. Cria mapa de NoteId -> Tags
+            const noteTagsMap = {};
+            notesInfo.forEach(n => {
+                noteTagsMap[n.noteId] = n.tags || [];
+            });
+
             const syllabus = {};
             const systemTags = ['leech', 'marked'];
 
             cardsInfo.forEach(card => {
                 let subjects = [];
 
-                // 1. Tentar Tags primeiro (checar raiz e objeto note)
-                let rawTags = card.tags || (card.note && card.note.tags) || [];
+                // 5. Tentar Tags vindas da Nota (caminho mais seguro)
+                let rawTags = noteTagsMap[card.note] || card.tags || [];
                 
-                // Garantir formato de array (caso venha string separada por espaço)
+                // Garantir formato de array
                 if (typeof rawTags === 'string') {
                     rawTags = rawTags.trim().split(/\s+/);
                 }
@@ -307,9 +317,8 @@ window.ankiApi = {
                     });
                 }
 
-                // 2. Se não houver tags válidas, usar o Deck como fallback
+                // 6. Se não houver tags legítimas, usar o Deck como fallback
                 if (subjects.length === 0 && card.deckName) {
-                    // Simplificar baralhos aninhados: "Matéria::Assunto" -> "Matéria"
                     const mainDeck = card.deckName.split('::')[0];
                     if (mainDeck !== 'Default') {
                         subjects.push(mainDeck);
@@ -324,8 +333,7 @@ window.ankiApi = {
                     syllabus[subjectName].total++;
                     syllabus[subjectName].lapses += (card.lapses || 0);
 
-                    // Determine status
-                    if (card.queue < 0) return; // suspended/buried
+                    if (card.queue < 0) return;
                     if (card.type === 0) syllabus[subjectName].new++;
                     else if (card.ivl >= 21) syllabus[subjectName].mature++;
                     else syllabus[subjectName].young++;
@@ -334,7 +342,7 @@ window.ankiApi = {
 
             return syllabus;
         } catch (e) {
-            console.warn("Local Syllabus failed, trying cloud...");
+            console.warn("Local Syllabus failed, trying cloud...", e);
             return await window.ankiService.getCloudSyllabusData();
         }
     },

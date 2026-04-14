@@ -119,28 +119,28 @@ def get_anki_data():
         # 4. Syllabus e Tag Lapses (Stats por Tag)
         syllabus = {}
         tag_lapses = {}
-        # SQL: Join entre cards e notes para obter as etiquetas (tags) corretas
-        cards = mw.col.db.all("SELECT c.did, n.tags, c.lapses, c.ivl, c.queue, c.type FROM cards c JOIN notes n ON c.nid = n.id")
+        # SQL robusto: Garantimos que buscamos n.tags no join com a tabela notes
+        cards = mw.col.db.all("SELECT c.did, n.tags as ntags, c.lapses, c.ivl, c.queue, c.type FROM cards c JOIN notes n ON c.nid = n.id")
         system_tags = {'leech', 'marked'}
         
-        for did, tags_str, lapses, ivl, queue, ctype in cards:
-            # No Anki DB moderno, tags são separadas por \x1f (Unit Separator)
-            # Substituímos por espaço para que o split() funcione corretamente
-            tags = [t for t in tags_str.replace('\x1f', ' ').strip().split() if t.lower() not in system_tags]
-            subjects = []
+        for did, ntags, lapses, ivl, queue, ctype in cards:
+            # No Anki, n.tags é uma string que pode conter \x1f ou espaços
+            if not ntags: ntags = ""
+            tag_list = ntags.replace('\x1f', ' ').strip().split()
             
-            # 1. Tentar Tags primeiro
-            for tag in tags:
-                subjects.append(tag.replace('_', ' ').replace('-', ' ').capitalize())
+            # Filtramos tags de sistema e normalizamos
+            tags = [t.replace('_', ' ').replace('-', ' ').capitalize() for t in tag_list if t.lower() not in system_tags]
+            
+            subjects = tags if tags else []
                 
-            # 2. Fallback para Deck se não houver tags legítimas
+            # Fallback para Deck se não houver tags legítimas
             if not subjects:
                 dname = mw.col.decks.name(did)
                 if dname and dname != 'Default':
                     subjects.append(dname.split('::')[0])
             
             for clean in subjects:
-                # Syllabus
+                # Syllabus (Estatísticas por Assunto)
                 if clean not in syllabus:
                     syllabus[clean] = {"new": 0, "young": 0, "mature": 0, "total": 0, "lapses": 0}
                 
@@ -153,7 +153,7 @@ def get_anki_data():
                     elif ivl >= 21: s["mature"] += 1
                     else: s["young"] += 1
                 
-                # Tag Lapses (somente os com erro)
+                # Tag Lapses (somente os com erro acumulado)
                 if lapses and lapses > 0:
                     tag_lapses[clean] = tag_lapses.get(clean, 0) + lapses
 
