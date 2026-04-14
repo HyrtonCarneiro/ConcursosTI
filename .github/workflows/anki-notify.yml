@@ -1,0 +1,15 @@
+name: Anki Cloud Notification Trigger
+
+on:
+  schedule:
+    # Executa a cada hora (Minuto 0)
+    - cron: '0 * * * *'
+  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel API
+        run: |
+          curl -X GET "https://concursosti.vercel.app/api/cron-notify"

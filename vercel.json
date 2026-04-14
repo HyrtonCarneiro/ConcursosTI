@@ -7,11 +7,5 @@
         { "key": "Cache-Control", "value": "no-cache" }
       ]
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron-notify",
-      "schedule": "0 * * * *"
-    }
   ]
 }
