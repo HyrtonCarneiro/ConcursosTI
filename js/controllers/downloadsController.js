@@ -75,6 +75,7 @@ window.downloadsController = {
 import urllib.request
 from aqt import mw, gui_hooks
 from aqt.utils import showInfo
+import datetime
 
 # === CONFIGURAÇÃO AUTOMÁTICA ===
 ENDPOINT = "https://concursosti.vercel.app/api/anki-sync/"
@@ -82,20 +83,95 @@ USERNAME = "${state.currentUser}"
 MONITOR_KEY = "${monitorKey}"
 # ===============================
 
-def get_anki_counts():
+def get_anki_data():
     try:
-        new = len(mw.col.find_cards("is:new"))
-        learn = len(mw.col.find_cards("is:learn"))
-        review = len(mw.col.find_cards("is:review is:due"))
-        return {"new": new, "learn": learn, "review": review}
+        # 1. Contagens básicas
+        new_cnt = len(mw.col.find_cards("is:new"))
+        learn_cnt = len(mw.col.find_cards("is:learn"))
+        review_cnt = len(mw.col.find_cards("is:review is:due"))
+        
+        # 2. Heatmap (últimos 365 dias)
+        # SQL: Agrupa revisões por data (formato YYYY-MM-DD)
+        heatmap = mw.col.db.all("""
+            select date(id/1000, 'unixepoch', 'localtime') as day, count() 
+            from revlog 
+            where id > (strftime('%s','now','-365 days') * 1000)
+            group by day 
+            order by day desc
+        """)
+        
+        # 3. Forecast (próximos 30 dias)
+        # Simplificado: busca cards por data de vencimento
+        # mw.col.sched.today é o dia 'zero' para o buscador
+        forecast = []
+        for i in range(30):
+            query = "is:due" if i == 0 else f"prop:due={i}"
+            cnt = len(mw.col.find_cards(query))
+            
+            # Formatar label compatível com o JS
+            d = datetime.date.today() + datetime.timedelta(days=i)
+            if i == 0: label = "Hoje"
+            elif i == 1: label = "Amanhã"
+            else: label = f"{d.day}/{d.month}"
+            
+            forecast.append({"day": label, "count": cnt})
+
+        # 4. Syllabus e Tag Lapses (Stats por Tag)
+        syllabus = {}
+        tag_lapses = {}
+        cards = mw.col.db.all("select tags, lapses, ivl, queue, type from cards where tags != ''")
+        ignore = ['leech', 'marked', 'import']
+        
+        for tags_str, lapses, ivl, queue, ctype in cards:
+            tags = tags_str.strip().split()
+            for tag in tags:
+                if any(x in tag.lower() for x in ignore): continue
+                
+                clean = tag.replace('_', ' ').replace('-', ' ').capitalize()
+                
+                # Syllabus
+                if clean not in syllabus:
+                    syllabus[clean] = {"new": 0, "young": 0, "mature": 0, "total": 0, "lapses": 0}
+                
+                s = syllabus[clean]
+                s["total"] += 1
+                s["lapses"] += (lapses or 0)
+                
+                if queue >= 0:
+                    if ctype == 0: s["new"] += 1
+                    elif ivl >= 21: s["mature"] += 1
+                    else: s["young"] += 1
+                
+                # Tag Lapses (somente os com erro)
+                if lapses and lapses > 0:
+                    tag_lapses[clean] = tag_lapses.get(clean, 0) + lapses
+
+        return {
+            "counts": {"new": new_cnt, "learn": learn_cnt, "review": review_cnt},
+            "heatmap": heatmap,
+            "forecast": forecast,
+            "syllabus": syllabus,
+            "tag_lapses": tag_lapses
+        }
     except Exception as e:
-        print(f"Erro ao contar cards: {e}")
+        print(f"Erro ao coletar dados Anki: {e}")
         return None
 
 def sync_to_cloud():
-    counts = get_anki_counts()
-    if not counts: return
-    data = {"username": USERNAME, "key": MONITOR_KEY, "newCount": counts["new"], "learnCount": counts["learn"], "reviewCount": counts["review"]}
+    all_data = get_anki_data()
+    if not all_data: return
+    
+    data = {
+        "username": USERNAME, 
+        "key": MONITOR_KEY, 
+        "newCount": all_data["counts"]["new"], 
+        "learnCount": all_data["counts"]["learn"], 
+        "reviewCount": all_data["counts"]["review"],
+        "heatmapData": all_data["heatmap"],
+        "forecastData": all_data["forecast"],
+        "syllabusData": all_data["syllabus"],
+        "tagLapses": all_data["tag_lapses"]
+    }
     
     req = urllib.request.Request(ENDPOINT)
     req.add_header('Content-Type', 'application/json; charset=utf-8')
@@ -103,16 +179,15 @@ def sync_to_cloud():
     jsondata = json.dumps(data).encode('utf-8')
     
     try:
-        with urllib.request.urlopen(req, jsondata, timeout=10) as response:
+        with urllib.request.urlopen(req, jsondata, timeout=15) as response:
             res_data = json.loads(response.read().decode('utf-8'))
             if res_data.get('success'):
+                # showInfo("Cloud Sync: Dados atualizados!", title="ConcursosTI")
                 print("Cloud Sync: Sucesso")
-                showInfo("Cloud Sync: Dados atualizados com sucesso!", title="ConcursosTI")
             else:
-                showInfo(f"Erro na Sincronização Cloud: {res_data.get('error')}", title="ConcursosTI")
+                print(f"Erro na Sincronização Cloud: {res_data.get('error')}")
     except Exception as e:
         print(f"Erro ao sincronizar nuvem: {e}")
-        showInfo(f"Falha ao conectar com o Servidor Cloud: {e}", title="ConcursosTI")
 
 gui_hooks.sync_did_finish.append(sync_to_cloud)`;
 

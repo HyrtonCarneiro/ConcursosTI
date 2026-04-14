@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
 
     try {
         initFirebase();
-        const { username, key, newCount, learnCount, reviewCount } = req.body;
+        const { username, key, newCount, learnCount, reviewCount, heatmapData, forecastData, syllabusData, tagLapses } = req.body;
 
         if (!username || !key) {
             return res.status(400).json({ error: 'Username e Key são obrigatórios' });
@@ -55,6 +55,10 @@ module.exports = async (req, res) => {
                 learn: parseInt(learnCount) || 0,
                 review: parseInt(reviewCount) || 0
             },
+            heatmap: heatmapData || [],
+            forecast: forecastData || [],
+            syllabus: syllabusData || {},
+            tagLapses: tagLapses || {},
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
 

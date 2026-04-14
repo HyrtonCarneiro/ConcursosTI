@@ -165,8 +165,8 @@ window.ankiApi = {
             const data = await this.invoke('getNumCardsReviewedByDay', 6);
             return data || [];
         } catch (e) {
-            console.error("Error getting heatmap data", e);
-            return [];
+            console.warn("Local Heatmap failed, trying cloud...");
+            return await window.ankiService.getCloudHeatmapData();
         }
     },
 
@@ -183,9 +183,9 @@ window.ankiApi = {
             cardsInfo.forEach(card => {
                 if (card.lapses > 0 && card.tags && card.tags.length > 0) {
                     // Filter system tags (like marked, leech, etc)
-                    const ignoreTags = ['leech', 'marked'];
+                    const ignoreTags = ['leech', 'marked', 'import'];
                     card.tags.forEach(tag => {
-                        if (ignoreTags.includes(tag.toLowerCase())) return;
+                        if (ignoreTags.some(t => tag.toLowerCase().includes(t))) return;
                         
                         // Capitalize and format tag nicely
                         const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
@@ -198,8 +198,8 @@ window.ankiApi = {
 
             return tagErrors;
         } catch (e) {
-            console.error("Error getting tag lapses", e);
-            return {};
+            console.warn("Local Tag Lapses failed, trying cloud...");
+            return await window.ankiService.getCloudTagLapses();
         }
     },
 
@@ -228,8 +228,8 @@ window.ankiApi = {
 
             return forecast;
         } catch (e) {
-            console.error("Error getting workload forecast", e);
-            return [];
+            console.warn("Local Forecast failed, trying cloud...");
+            return await window.ankiService.getCloudForecastData();
         }
     },
     
@@ -312,8 +312,8 @@ window.ankiApi = {
 
             return syllabus;
         } catch (e) {
-            console.error("Error getting syllabus data", e);
-            return {};
+            console.warn("Local Syllabus failed, trying cloud...");
+            return await window.ankiService.getCloudSyllabusData();
         }
     },
 

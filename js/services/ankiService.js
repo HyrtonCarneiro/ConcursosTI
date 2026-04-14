@@ -50,5 +50,55 @@ window.ankiService = {
 
             return { success: false, error: "Anki e Nuvem inacessíveis." };
         }
+    },
+
+    /**
+     * Obtém dados do Heatmap salvos na nuvem.
+     */
+    getCloudHeatmapData: async function() {
+        const data = await this._getSyncData();
+        return data ? (data.heatmap || []) : [];
+    },
+
+    /**
+     * Obtém dados de Previsão (Forecast) salvos na nuvem.
+     */
+    getCloudForecastData: async function() {
+        const data = await this._getSyncData();
+        return data ? (data.forecast || []) : [];
+    },
+
+    /**
+     * Obtém dados do Syllabus (Matérias) salvos na nuvem.
+     */
+    getCloudSyllabusData: async function() {
+        const data = await this._getSyncData();
+        return data ? (data.syllabus || {}) : {};
+    },
+
+    /**
+     * Obtém dados de falhas por Tag salvos na nuvem.
+     */
+    getCloudTagLapses: async function() {
+        const data = await this._getSyncData();
+        return data ? (data.tagLapses || {}) : {};
+    },
+
+    /**
+     * Helper interno para buscar ankiSyncData do Firestore
+     */
+    _getSyncData: async function() {
+        try {
+            const state = window.store.getState();
+            if (!state.currentUser) return null;
+
+            const userDoc = await window.db.collection('users').doc(state.currentUser).get();
+            if (userDoc.exists) {
+                return userDoc.data().ankiSyncData;
+            }
+        } catch (e) {
+            console.error("Erro ao buscar SyncData:", e);
+        }
+        return null;
     }
 };
