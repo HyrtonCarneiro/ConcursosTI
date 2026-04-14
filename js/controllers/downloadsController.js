@@ -124,8 +124,9 @@ def get_anki_data():
         system_tags = {'leech', 'marked'}
         
         for did, tags_str, lapses, ivl, queue, ctype in cards:
-            # No Anki DB, tags são armazenadas como " tag1 tag2 "
-            tags = [t for t in tags_str.strip().split() if t.lower() not in system_tags]
+            # No Anki DB moderno, tags são separadas por \x1f (Unit Separator)
+            # Substituímos por espaço para que o split() funcione corretamente
+            tags = [t for t in tags_str.replace('\x1f', ' ').strip().split() if t.lower() not in system_tags]
             subjects = []
             
             # 1. Tentar Tags primeiro

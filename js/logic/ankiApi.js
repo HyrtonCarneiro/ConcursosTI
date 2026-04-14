@@ -291,9 +291,16 @@ window.ankiApi = {
             cardsInfo.forEach(card => {
                 let subjects = [];
 
-                // 1. Tentar Tags primeiro
-                if (card.tags && card.tags.length > 0) {
-                    card.tags.forEach(tag => {
+                // 1. Tentar Tags primeiro (checar raiz e objeto note)
+                let rawTags = card.tags || (card.note && card.note.tags) || [];
+                
+                // Garantir formato de array (caso venha string separada por espaço)
+                if (typeof rawTags === 'string') {
+                    rawTags = rawTags.trim().split(/\s+/);
+                }
+
+                if (Array.isArray(rawTags) && rawTags.length > 0) {
+                    rawTags.forEach(tag => {
                         if (systemTags.includes(tag.toLowerCase())) return;
                         const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
                         subjects.push(cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1));
