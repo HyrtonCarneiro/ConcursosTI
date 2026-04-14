@@ -1,4 +1,5 @@
 {
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/firebase-messaging-sw.js",
@@ -7,5 +8,9 @@
         { "key": "Cache-Control", "value": "no-cache" }
       ]
     }
+  ],
+  "rewrites": [
+    { "source": "/api/anki-sync", "destination": "/api/anki-sync.js" },
+    { "source": "/api/cron-notify", "destination": "/api/cron-notify.js" }
   ]
 }
