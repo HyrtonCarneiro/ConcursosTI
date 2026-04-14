@@ -146,6 +146,7 @@ window.ankiController = {
             const youngPerc = Math.round((stats.young / stats.total) * 100);
             const maturePerc = Math.round((stats.mature / stats.total) * 100);
             const newPerc = 100 - youngPerc - maturePerc;
+            const newCards = stats.total - stats.young - stats.mature;
 
             matCard.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
@@ -157,9 +158,10 @@ window.ankiController = {
                     <div class="bg-blue-400 h-full" style="width: ${youngPerc}%"></div>
                     <div class="bg-gray-300 h-full" style="width: ${newPerc}%"></div>
                 </div>
-                <div class="flex justify-between text-[9px] font-bold">
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Maduros ${maturePerc}%</div>
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Jovens ${youngPerc}%</div>
+                <div class="flex flex-wrap gap-y-2 justify-between text-[9px] font-bold">
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Maduros ${maturePerc}% (${stats.mature})</div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Jovens ${youngPerc}% (${stats.young})</div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Novos ${newPerc}% (${newCards})</div>
                     <div class="flex items-center gap-1 text-red-500"><i class="ph-bold ph-warning"></i> ${stats.lapses} falhas</div>
                 </div>
             `;
