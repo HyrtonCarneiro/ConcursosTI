@@ -210,7 +210,7 @@ window.ankiApi = {
             const todayObj = new Date();
 
             for (let i = 0; i < days; i++) {
-                const query = (i === 0) ? 'is:due -is:new' : `prop:due=${i}`;
+                const query = (i === 0) ? '(is:new or is:learn or is:due) -is:suspended' : `prop:due=${i}`;
                 const cards = await this.invoke('findCards', 6, { query });
                 
                 const nextDate = new Date(todayObj);
