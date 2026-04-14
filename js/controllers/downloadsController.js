@@ -74,6 +74,7 @@ window.downloadsController = {
         const pyScript = `import json
 import urllib.request
 from aqt import mw, gui_hooks
+from aqt.utils import showInfo
 
 # === CONFIGURAÇÃO AUTOMÁTICA ===
 ENDPOINT = "https://concursosti.vercel.app/api/anki-sync/"
@@ -95,14 +96,23 @@ def sync_to_cloud():
     counts = get_anki_counts()
     if not counts: return
     data = {"username": USERNAME, "key": MONITOR_KEY, "newCount": counts["new"], "learnCount": counts["learn"], "reviewCount": counts["review"]}
+    
     req = urllib.request.Request(ENDPOINT)
     req.add_header('Content-Type', 'application/json; charset=utf-8')
+    req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AnkiSync/1.0')
     jsondata = json.dumps(data).encode('utf-8')
+    
     try:
-        urllib.request.urlopen(req, jsondata)
-        print("Cloud Sync: Sucesso")
+        with urllib.request.urlopen(req, jsondata, timeout=10) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            if res_data.get('success'):
+                print("Cloud Sync: Sucesso")
+                showInfo("Cloud Sync: Dados atualizados com sucesso!", title="ConcursosTI")
+            else:
+                showInfo(f"Erro na Sincronização Cloud: {res_data.get('error')}", title="ConcursosTI")
     except Exception as e:
         print(f"Erro ao sincronizar nuvem: {e}")
+        showInfo(f"Falha ao conectar com o Servidor Cloud: {e}", title="ConcursosTI")
 
 gui_hooks.sync_did_finish.append(sync_to_cloud)`;
 
