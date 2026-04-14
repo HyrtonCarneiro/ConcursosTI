@@ -76,7 +76,7 @@ import urllib.request
 from aqt import mw, gui_hooks
 
 # === CONFIGURAÇÃO AUTOMÁTICA ===
-ENDPOINT = "https://concursosti.vercel.app/api/anki-sync"
+ENDPOINT = "https://concursosti.vercel.app/api/anki-sync/"
 USERNAME = "${state.currentUser}"
 MONITOR_KEY = "${monitorKey}"
 # ===============================
