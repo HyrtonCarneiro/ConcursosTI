@@ -140,18 +140,28 @@ window.ankiController = {
         const isConnected = await window.ankiApi.checkConnection();
         
         if (!isConnected) {
-            containerError.classList.remove('hidden');
-            this.renderSavedUrls();
-            return;
+            // Se falhar o local, tentamos ver se existe dado na nuvem antes de mostrar o erro
+            const cloudCheck = await window.ankiService.getDueCardsCount();
+            if (!cloudCheck.success || cloudCheck.source !== 'cloud') {
+                containerError.classList.remove('hidden');
+                this.renderSavedUrls();
+                return;
+            }
+            console.log("Modo Nuvem Ativado: Anki Local offline, exibindo cache.");
         }
 
         containerApp.classList.remove('hidden');
         
-        // 1. Prioridade Máxima: Motor de Estudos (para não travar o usuário)
-        try {
-            await this.startStudySession();
-        } catch (e) {
-            console.error("Erro ao iniciar sessão de estudo:", e);
+        // Se estiver conectado, iniciamos a sessão de estudo. 
+        // Se estiver em modo Nuvem, ocultamos a área de estudo (pois requer Anki Local)
+        const studyArea = document.getElementById('anki-study-session');
+        if (isConnected) {
+            if (studyArea) studyArea.classList.remove('hidden');
+            try {
+                await this.startStudySession();
+            } catch (e) { console.error("Erro ao iniciar sessão local:", e); }
+        } else {
+            if (studyArea) studyArea.classList.add('hidden');
         }
 
         // 2. Carga em paralelo das estatísticas (não-bloqueante)
@@ -499,26 +509,43 @@ window.ankiController = {
     },
 
     updateStats: async function() {
-        const stats = await window.ankiApi.getTodayStats();
+        const res = await window.ankiService.getDueCardsCount();
         
         const elDue = document.getElementById('anki-stat-due');
         const elLearn = document.getElementById('anki-stat-learn');
         const elNew = document.getElementById('anki-stat-new');
         const elTime = document.getElementById('anki-stat-time');
         const elAvg = document.getElementById('anki-stat-avg');
+        const sourceIndicator = document.getElementById('anki-source-indicator');
 
-        if (elDue) elDue.textContent = stats.due;
-        if (elLearn) elLearn.textContent = stats.learn;
-        if (elNew) elNew.textContent = stats.newCards;
-        
-        if (elTime) {
-            const mins = Math.round(stats.timeMs / 60000);
-            elTime.textContent = mins + 'm';
+        if (res.success) {
+            if (elDue) elDue.textContent = res.breakdown.review || 0;
+            if (elLearn) elLearn.textContent = res.breakdown.learn || 0;
+            if (elNew) elNew.textContent = res.breakdown.new || 0;
+
+            if (res.source === 'cloud') {
+                if (sourceIndicator) {
+                    sourceIndicator.innerHTML = `<span class="flex items-center gap-1.5 text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full"><i class="ph-bold ph-cloud-slash"></i> Offline (Nuvem)</span>`;
+                    sourceIndicator.classList.remove('hidden');
+                }
+            } else {
+                if (sourceIndicator) {
+                    sourceIndicator.innerHTML = `<span class="flex items-center gap-1.5 text-[9px] font-black text-green-500 uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full"><i class="ph-bold ph-broadcast"></i> Local (Real-time)</span>`;
+                    sourceIndicator.classList.remove('hidden');
+                }
+            }
         }
         
-        if (elAvg) {
-            const secs = Math.round(stats.avgMs / 1000);
-            elAvg.textContent = secs + 's';
+        // Dados de tempo (apenas se local)
+        if (res.source === 'local') {
+            try {
+                const stats = await window.ankiApi.getTodayStats();
+                if (elTime) elTime.textContent = Math.round(stats.timeMs / 60000) + 'm';
+                if (elAvg) elAvg.textContent = Math.round(stats.avgMs / 1000) + 's';
+            } catch(e) {}
+        } else {
+            if (elTime) elTime.textContent = '--';
+            if (elAvg) elAvg.textContent = '--';
         }
     },
 
