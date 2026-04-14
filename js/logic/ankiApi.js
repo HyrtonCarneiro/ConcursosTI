@@ -278,35 +278,50 @@ window.ankiApi = {
 
     async getSyllabusData() {
         try {
-            const materias = await this.invoke('findCards', 6, { query: 'tag:*' });
-            if (materias.length === 0) return {};
+            // Busca todos os cards ativos (não apenas os com tag)
+            const allCards = await this.invoke('findCards', 6, { query: '-is:suspended -is:buried' });
+            if (allCards.length === 0) return {};
 
             // Fetch info in batches to prevent payload errors
-            const cardsInfo = await this.invokeBatch('cardsInfo', 6, materias);
+            const cardsInfo = await this.invokeBatch('cardsInfo', 6, allCards);
             
             const syllabus = {};
             const ignoreTags = ['leech', 'marked', 'import'];
 
             cardsInfo.forEach(card => {
-                if (!card.tags) return;
-                card.tags.forEach(tag => {
-                    if (ignoreTags.some(t => tag.toLowerCase().includes(t))) return;
+                let subjects = [];
 
-                    const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
-                    const finalTag = cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1);
+                // 1. Tentar Tags primeiro
+                if (card.tags && card.tags.length > 0) {
+                    card.tags.forEach(tag => {
+                        if (ignoreTags.some(t => tag.toLowerCase().includes(t))) return;
+                        const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
+                        subjects.push(cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1));
+                    });
+                }
 
-                    if (!syllabus[finalTag]) {
-                        syllabus[finalTag] = { new: 0, young: 0, mature: 0, total: 0, lapses: 0 };
+                // 2. Se não houver tags válidas, usar o Deck como fallback
+                if (subjects.length === 0 && card.deckName) {
+                    // Simplificar baralhos aninhados: "Matéria::Assunto" -> "Matéria"
+                    const mainDeck = card.deckName.split('::')[0];
+                    if (mainDeck !== 'Default') {
+                        subjects.push(mainDeck);
+                    }
+                }
+
+                subjects.forEach(subjectName => {
+                    if (!syllabus[subjectName]) {
+                        syllabus[subjectName] = { new: 0, young: 0, mature: 0, total: 0, lapses: 0 };
                     }
 
-                    syllabus[finalTag].total++;
-                    syllabus[finalTag].lapses += (card.lapses || 0);
+                    syllabus[subjectName].total++;
+                    syllabus[subjectName].lapses += (card.lapses || 0);
 
                     // Determine status
                     if (card.queue < 0) return; // suspended/buried
-                    if (card.type === 0) syllabus[finalTag].new++;
-                    else if (card.ivl >= 21) syllabus[finalTag].mature++;
-                    else syllabus[finalTag].young++;
+                    if (card.type === 0) syllabus[subjectName].new++;
+                    else if (card.ivl >= 21) syllabus[subjectName].mature++;
+                    else syllabus[subjectName].young++;
                 });
             });
 

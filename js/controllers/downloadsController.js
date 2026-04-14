@@ -119,16 +119,26 @@ def get_anki_data():
         # 4. Syllabus e Tag Lapses (Stats por Tag)
         syllabus = {}
         tag_lapses = {}
-        cards = mw.col.db.all("select tags, lapses, ivl, queue, type from cards where tags != ''")
+        # Busca did (Deck ID) para fallback se não houver tags
+        cards = mw.col.db.all("select did, tags, lapses, ivl, queue, type from cards")
         ignore = ['leech', 'marked', 'import']
         
-        for tags_str, lapses, ivl, queue, ctype in cards:
+        for did, tags_str, lapses, ivl, queue, ctype in cards:
             tags = tags_str.strip().split()
+            subjects = []
+            
+            # 1. Tentar Tags
             for tag in tags:
                 if any(x in tag.lower() for x in ignore): continue
+                subjects.append(tag.replace('_', ' ').replace('-', ' ').capitalize())
                 
-                clean = tag.replace('_', ' ').replace('-', ' ').capitalize()
-                
+            # 2. Fallback para Deck se não houver tags
+            if not subjects:
+                dname = mw.col.decks.name(did)
+                if dname and dname != 'Default':
+                    subjects.append(dname.split('::')[0])
+            
+            for clean in subjects:
                 # Syllabus
                 if clean not in syllabus:
                     syllabus[clean] = {"new": 0, "young": 0, "mature": 0, "total": 0, "lapses": 0}
