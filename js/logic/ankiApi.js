@@ -287,12 +287,14 @@ window.ankiApi = {
             
             // 3. Extrai Note IDs únicos para buscar as etiquetas reais
             const noteIds = [...new Set(cardsInfo.map(c => c.note))].filter(id => id);
-            const notesInfo = await this.invokeBatch('notesInfo', 6, noteIds);
+            const notesInfo = await this.invokeBatch('notesInfo', 6, noteIds, 'notes');
             
             // 4. Cria mapa de NoteId -> Tags
             const noteTagsMap = {};
             notesInfo.forEach(n => {
-                noteTagsMap[n.noteId] = n.tags || [];
+                if (n && n.noteId) {
+                    noteTagsMap[n.noteId] = n.tags || [];
+                }
             });
 
             const syllabus = {};
