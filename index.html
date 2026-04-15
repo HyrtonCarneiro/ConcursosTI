@@ -911,52 +911,52 @@
                         <!-- Conteúdo dinâmico via JS -->
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
-                        <!-- Novos -->
+                        <!-- Novos 7d -->
                         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
                             <div class="absolute -top-4 -right-4 w-20 h-20 bg-purple-50/50 rounded-full blur-xl group-hover:bg-purple-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Novos</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Novos (7d)</p>
                             <p id="anki-stat-new" class="text-4xl font-black text-purple-600 relative z-10">0</p>
                         </div>
-                        <!-- Em Aprendizado -->
+                        <!-- Revisados 7d -->
+                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
+                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-blue-50/50 rounded-full blur-xl group-hover:bg-blue-100 transition-colors"></div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Revisados (7d)</p>
+                            <p id="anki-stat-rev" class="text-4xl font-black text-blue-600 relative z-10">0</p>
+                        </div>
+                        <!-- Pendente Agora -->
                         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
                             <div class="absolute -top-4 -right-4 w-20 h-20 bg-orange-50/50 rounded-full blur-xl group-hover:bg-orange-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Aprender</p>
-                            <p id="anki-stat-learn" class="text-4xl font-black text-orange-600 relative z-10">0</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Pendente (Total)</p>
+                            <p id="anki-stat-pendente" class="text-4xl font-black text-orange-600 relative z-10">0</p>
                         </div>
-                        <!-- Revisões -->
-                        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-blue-50/50 rounded-full blur-xl group-hover:bg-blue-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Revisar</p>
-                            <p id="anki-stat-due" class="text-4xl font-black text-blue-600 relative z-10">0</p>
-                        </div>
-                        <!-- Taxa de Acerto -->
+                        <!-- Taxa de Acerto 7d -->
                         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
                             <div class="absolute -top-4 -right-4 w-20 h-20 bg-emerald-50/50 rounded-full blur-xl group-hover:bg-emerald-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Taxa de Acerto</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Taxa de Acerto (7d)</p>
                             <p id="anki-stat-accuracy" class="text-4xl font-black text-emerald-600 relative z-10">0%</p>
                         </div>
-                        <!-- Proporção de Erros -->
+                        <!-- Erros 7d -->
                         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
                             <div class="absolute -top-4 -right-4 w-20 h-20 bg-red-50/50 rounded-full blur-xl group-hover:bg-red-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Erros (Hoje)</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Erros (7d)</p>
                             <p id="anki-stat-wrong" class="text-4xl font-black text-red-500 relative z-10">0</p>
                         </div>
-                        <!-- Tempo Total -->
+                        <!-- Tempo Total 7d -->
                         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden bg-primary-600 group hover:bg-primary-700 transition-colors">
                             <div class="absolute -top-4 -right-4 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
-                            <p class="text-[10px] font-black text-white/60 uppercase tracking-widest mb-1 relative z-10">Tempo Hoje</p>
+                            <p class="text-[10px] font-black text-white/60 uppercase tracking-widest mb-1 relative z-10">Tempo (7d)</p>
                             <p id="anki-stat-time" class="text-4xl font-black text-white relative z-10">0m</p>
                         </div>
-                        <!-- Média por Card -->
+                        <!-- Média por Card 7d -->
                         <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden">
                             <div class="absolute -top-4 -right-4 w-20 h-20 bg-gray-50/50 rounded-full blur-xl"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Média/Card</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Média (7d)</p>
                             <p id="anki-stat-avg" class="text-4xl font-black text-gray-700 relative z-10">0s</p>
                         </div>
-                        <!-- Desempenho Geral -->
+                        <!-- Desempenho Geral 7d -->
                         <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
                             <div class="absolute -top-4 -right-4 w-20 h-20 bg-amber-50/50 rounded-full blur-xl group-hover:bg-amber-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Desempenho Geral</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Desempenho (7d)</p>
                             <p id="anki-stat-performance" class="text-4xl font-black text-amber-500 relative z-10">--</p>
                         </div>
                     </div>

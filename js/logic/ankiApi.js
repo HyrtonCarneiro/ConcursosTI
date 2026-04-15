@@ -233,56 +233,66 @@ window.ankiApi = {
         }
     },
     
-    async getTodayStats() {
+    async getSevenDayStats() {
         try {
-            // Fast counts
+            // 1. Current Queue (what is pending NOW)
             const dueRes = await this.invoke('findCards', 6, { query: 'is:due' });
             const learnRes = await this.invoke('findCards', 6, { query: 'is:learn' });
-            const newRes = await this.invoke('findCards', 6, { query: 'is:new' });
+            const currentPendente = dueRes.length + learnRes.length;
             
-            // For time, we only get reviews of cards rated today
-            const ratedToday = await this.invoke('findCards', 6, { query: 'rated:1' });
+            // 2. Performance (History of last 7 days)
+            const ratedLast7Days = await this.invoke('findCards', 6, { query: 'rated:7' });
             
-            let studiedToday = ratedToday.length;
-            let timeTodayMs = 0;
+            let totalStudied = 0;
+            let timeTotalMs = 0;
             let correctCount = 0;
             let wrongCount = 0;
+            let newCardsCount = 0;
+            let reviewsCount = 0;
 
-            // Only fetch review logs if there are reasonable number of reviews to avoid lag
-            if (studiedToday > 0 && studiedToday < 2000) {
-                const reviewsTodayMap = await this.invokeBatch('getReviewsOfCards', 6, ratedToday);
-                const todayStart = new Date().setHours(0,0,0,0);
+            if (ratedLast7Days.length > 0) {
+                const reviewsMap = await this.invokeBatch('getReviewsOfCards', 6, ratedLast7Days);
+                const sevenDaysAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
 
-                Object.values(reviewsTodayMap).forEach(cardReviews => {
+                Object.values(reviewsMap).forEach(cardReviews => {
                     if (!Array.isArray(cardReviews)) return;
+                    
+                    // Track if this card was "introduced" (first new review) in this period
+                    let wasNewInPeriod = false;
+
                     cardReviews.forEach(rev => {
-                        if (rev.id >= todayStart) {
-                            timeTodayMs += rev.time;
-                            if (rev.button === 1) {
-                                wrongCount++;
-                            } else {
-                                correctCount++;
-                            }
+                        if (rev.id >= sevenDaysAgo) {
+                            totalStudied++;
+                            timeTotalMs += rev.time;
+                            
+                            if (rev.button === 1) wrongCount++;
+                            else correctCount++;
+
+                            // Anki review types: 0=new, 1=lrn, 2=rev, 3=relrn
+                            if (rev.type === 0) wasNewInPeriod = true;
+                            if (rev.type === 2) reviewsCount++;
                         }
                     });
+                    
+                    if (wasNewInPeriod) newCardsCount++;
                 });
             }
 
             const totalActions = correctCount + wrongCount;
             return {
-                due: dueRes.length,
-                learn: learnRes.length,
-                newCards: newRes.length,
-                studied: studiedToday,
-                timeMs: timeTodayMs,
-                avgMs: studiedToday > 0 ? timeTodayMs / studiedToday : 0,
+                pendente: currentPendente,
+                studied7d: totalStudied,
+                new7d: newCardsCount,
+                rev7d: reviewsCount,
+                timeMs: timeTotalMs,
+                avgMs: totalActions > 0 ? timeTotalMs / totalActions : 0,
                 correct: correctCount,
                 wrong: wrongCount,
                 accuracy: totalActions > 0 ? (correctCount / totalActions) * 100 : 0
             };
         } catch (e) {
-            console.warn("Could not get today's stats fully: ", e);
-            return { due: 0, learn: 0, newCards: 0, studied: 0, timeMs: 0, avgMs: 0, correct: 0, wrong: 0, accuracy: 0 };
+            console.warn("Could not get 7-day stats fully: ", e);
+            return { pendente: 0, studied7d: 0, new7d: 0, rev7d: 0, timeMs: 0, avgMs: 0, correct: 0, wrong: 0, accuracy: 0 };
         }
     },
 

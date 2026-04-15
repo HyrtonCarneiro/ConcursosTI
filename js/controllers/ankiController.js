@@ -170,11 +170,9 @@ window.ankiController = {
     },
 
     updateStats: async function() {
-        const res = await window.ankiService.getDueCardsCount();
-        
-        const elDue = document.getElementById('anki-stat-due');
-        const elLearn = document.getElementById('anki-stat-learn');
         const elNew = document.getElementById('anki-stat-new');
+        const elRev = document.getElementById('anki-stat-rev');
+        const elPendente = document.getElementById('anki-stat-pendente');
         const elTime = document.getElementById('anki-stat-time');
         const elAvg = document.getElementById('anki-stat-avg');
         const elAccuracy = document.getElementById('anki-stat-accuracy');
@@ -182,36 +180,22 @@ window.ankiController = {
         const elPerformance = document.getElementById('anki-stat-performance');
         const sourceIndicator = document.getElementById('anki-source-indicator');
 
-        if (res.success) {
-            if (elDue) elDue.textContent = res.breakdown.review || 0;
-            if (elLearn) elLearn.textContent = res.breakdown.learn || 0;
-            if (elNew) elNew.textContent = res.breakdown.new || 0;
-
-            if (res.source === 'cloud') {
-                if (sourceIndicator) {
-                    sourceIndicator.innerHTML = `<span class="flex items-center gap-1.5 text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full"><i class="ph-bold ph-cloud-slash"></i> Offline (Nuvem)</span>`;
-                    sourceIndicator.classList.remove('hidden');
-                }
-            } else {
-                if (sourceIndicator) {
-                    sourceIndicator.innerHTML = `<span class="flex items-center gap-1.5 text-[9px] font-black text-green-500 uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full"><i class="ph-bold ph-broadcast"></i> Local (Real-time)</span>`;
-                    sourceIndicator.classList.remove('hidden');
-                }
-            }
-        }
-        
-        // Dados detalhados (apenas se local ou se temos cache estendido)
         try {
-            const stats = await window.ankiApi.getTodayStats();
-            if (elTime) elTime.textContent = Math.round(stats.timeMs / 60000) + 'm';
-            if (elAvg) elAvg.textContent = Math.round(stats.avgMs / 1000) + 's';
+            const stats = await window.ankiApi.getSevenDayStats();
+            
+            // Update counts (7d history and current pending)
+            if (elNew) elNew.textContent = stats.new7d || 0;
+            if (elRev) elRev.textContent = stats.rev7d || 0;
+            if (elPendente) elPendente.textContent = stats.pendente || 0;
             if (elAccuracy) elAccuracy.textContent = Math.round(stats.accuracy) + '%';
             if (elWrong) elWrong.textContent = stats.wrong || 0;
-            
+            if (elTime) elTime.textContent = Math.round(stats.timeMs / 60000) + 'm';
+            if (elAvg) elAvg.textContent = Math.round(stats.avgMs / 1000) + 's';
+
             if (elPerformance) {
                 const score = Math.round(stats.accuracy);
                 let label = '--';
-                if (stats.studied > 0) {
+                if (stats.studied7d > 0) {
                     if (score >= 90) label = 'Elite';
                     else if (score >= 80) label = 'Sólido';
                     else if (score >= 70) label = 'Bom';
@@ -219,10 +203,18 @@ window.ankiController = {
                     else label = 'Crítico';
                 }
                 elPerformance.textContent = label;
-                elPerformance.className = `text-4xl font-black relative z-10 ${stats.studied > 0 ? (score >= 80 ? 'text-amber-500' : 'text-gray-400') : 'text-gray-300'}`;
+                elPerformance.className = `text-4xl font-black relative z-10 ${stats.studied7d > 0 ? (score >= 80 ? 'text-amber-500' : 'text-gray-400') : 'text-gray-300'}`;
             }
+
+            // Simple indicator for source (since we can't easily check 'success' state from the flattened stats object)
+            // But usually, if stats returned, we are connected.
+            if (sourceIndicator) {
+                sourceIndicator.innerHTML = `<span class="flex items-center gap-1.5 text-[9px] font-black text-green-500 uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full"><i class="ph-bold ph-calendar"></i> Métricas dos últimos 7 dias</span>`;
+                sourceIndicator.classList.remove('hidden');
+            }
+
         } catch(e) {
-            console.error("Error updating detailed stats:", e);
+            console.error("Error updating 7-day stats:", e);
         }
     },
 
