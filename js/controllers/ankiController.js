@@ -177,6 +177,9 @@ window.ankiController = {
         const elNew = document.getElementById('anki-stat-new');
         const elTime = document.getElementById('anki-stat-time');
         const elAvg = document.getElementById('anki-stat-avg');
+        const elAccuracy = document.getElementById('anki-stat-accuracy');
+        const elWrong = document.getElementById('anki-stat-wrong');
+        const elPerformance = document.getElementById('anki-stat-performance');
         const sourceIndicator = document.getElementById('anki-source-indicator');
 
         if (res.success) {
@@ -197,16 +200,29 @@ window.ankiController = {
             }
         }
         
-        // Dados de tempo (apenas se local)
-        if (res.source === 'local') {
-            try {
-                const stats = await window.ankiApi.getTodayStats();
-                if (elTime) elTime.textContent = Math.round(stats.timeMs / 60000) + 'm';
-                if (elAvg) elAvg.textContent = Math.round(stats.avgMs / 1000) + 's';
-            } catch(e) {}
-        } else {
-            if (elTime) elTime.textContent = '--';
-            if (elAvg) elAvg.textContent = '--';
+        // Dados detalhados (apenas se local ou se temos cache estendido)
+        try {
+            const stats = await window.ankiApi.getTodayStats();
+            if (elTime) elTime.textContent = Math.round(stats.timeMs / 60000) + 'm';
+            if (elAvg) elAvg.textContent = Math.round(stats.avgMs / 1000) + 's';
+            if (elAccuracy) elAccuracy.textContent = Math.round(stats.accuracy) + '%';
+            if (elWrong) elWrong.textContent = stats.wrong || 0;
+            
+            if (elPerformance) {
+                const score = Math.round(stats.accuracy);
+                let label = '--';
+                if (stats.studied > 0) {
+                    if (score >= 90) label = 'Elite';
+                    else if (score >= 80) label = 'Sólido';
+                    else if (score >= 70) label = 'Bom';
+                    else if (score >= 50) label = 'Regular';
+                    else label = 'Crítico';
+                }
+                elPerformance.textContent = label;
+                elPerformance.className = `text-4xl font-black relative z-10 ${stats.studied > 0 ? (score >= 80 ? 'text-amber-500' : 'text-gray-400') : 'text-gray-300'}`;
+            }
+        } catch(e) {
+            console.error("Error updating detailed stats:", e);
         }
     },
 
@@ -220,7 +236,6 @@ window.ankiController = {
         container.innerHTML = '';
         
         let totalReviews = 0;
-        let streak = 0;
         let currentStreakCount = 0;
         
         // Transform array to a map for easy lookup
@@ -243,6 +258,18 @@ window.ankiController = {
         if (elStreak) elStreak.textContent = currentStreakCount;
         if (elTotal) elTotal.textContent = totalReviews >= 1000 ? (totalReviews/1000).toFixed(1) + 'k' : totalReviews;
 
+        // More vibrant emerald/green palette (8 levels)
+        const colors = [
+            '#ecfdf5', // 50
+            '#d1fae5', // 100
+            '#a7f3d0', // 200
+            '#6ee7b7', // 300
+            '#34d399', // 400
+            '#10b981', // 500
+            '#059669', // 600
+            '#047857'  // 700
+        ];
+
         const daysToRender = 180;
         for (let i = daysToRender; i >= 0; i--) {
             const d = new Date(today);
@@ -253,21 +280,27 @@ window.ankiController = {
             
             const count = records[formatStr] || 0;
             const box = document.createElement('div');
-            box.className = 'w-3 h-3 rounded-sm transition-all hover:scale-125 hover:z-10 cursor-pointer relative group';
+            box.className = 'w-3 h-3 rounded-[3px] transition-all hover:scale-150 hover:z-10 cursor-pointer relative group';
             
             if (count === 0) {
-                box.classList.add('bg-gray-100');
+                box.style.backgroundColor = '#f3f4f6'; // Gray-100
             } else {
+                // Determine level 0-7
                 const ratio = count / maxReviews;
-                if (ratio < 0.25) box.classList.add('bg-green-200');
-                else if (ratio < 0.5) box.classList.add('bg-green-400');
-                else if (ratio < 0.75) box.classList.add('bg-green-600');
-                else box.classList.add('bg-green-800');
+                const level = Math.min(Math.floor(ratio * colors.length), colors.length - 1);
+                box.style.backgroundColor = colors[level];
+                box.style.boxShadow = `0 0 10px ${colors[level]}33`;
             }
 
             const tooltip = document.createElement('div');
-            tooltip.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-[9px] whitespace-nowrap rounded font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20';
-            tooltip.textContent = `${count} revs em ${displayStr}`;
+            tooltip.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-gray-900 text-white text-[10px] whitespace-nowrap rounded-lg font-bold opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 shadow-xl border border-white/10 translate-y-2 group-hover:translate-y-0';
+            tooltip.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full" style="background: ${count > 0 ? colors[Math.min(Math.floor((count/maxReviews) * 8), 7)] : '#d1d5db'}"></span>
+                    <span>${count} revisões</span>
+                </div>
+                <div class="text-[8px] text-gray-400 mt-0.5">${displayStr}</div>
+            `;
             box.appendChild(tooltip);
             container.appendChild(box);
         }

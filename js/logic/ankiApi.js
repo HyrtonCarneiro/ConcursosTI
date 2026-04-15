@@ -245,18 +245,24 @@ window.ankiApi = {
             
             let studiedToday = ratedToday.length;
             let timeTodayMs = 0;
+            let correctCount = 0;
+            let wrongCount = 0;
 
             // Only fetch review logs if there are reasonable number of reviews to avoid lag
-            // If > 1000 reviews, we might want to skip detailed time or batch it
             if (studiedToday > 0 && studiedToday < 2000) {
-                const reviewsToday = await this.invokeBatch('getReviewsOfCards', 6, ratedToday);
+                const reviewsTodayMap = await this.invokeBatch('getReviewsOfCards', 6, ratedToday);
                 const todayStart = new Date().setHours(0,0,0,0);
 
-                Object.values(reviewsToday).forEach(cardReviews => {
+                Object.values(reviewsTodayMap).forEach(cardReviews => {
                     if (!Array.isArray(cardReviews)) return;
                     cardReviews.forEach(rev => {
                         if (rev.id >= todayStart) {
                             timeTodayMs += rev.time;
+                            if (rev.button === 1) {
+                                wrongCount++;
+                            } else {
+                                correctCount++;
+                            }
                         }
                     });
                 });
@@ -268,11 +274,14 @@ window.ankiApi = {
                 newCards: newRes.length,
                 studied: studiedToday,
                 timeMs: timeTodayMs,
-                avgMs: studiedToday > 0 ? timeTodayMs / studiedToday : 0
+                avgMs: studiedToday > 0 ? timeTodayMs / studiedToday : 0,
+                correct: correctCount,
+                wrong: wrongCount,
+                accuracy: studiedToday > 0 ? (correctCount / studiedToday) * 100 : 0
             };
         } catch (e) {
             console.warn("Could not get today's stats fully: ", e);
-            return { due: 0, learn: 0, newCards: 0, studied: 0, timeMs: 0, avgMs: 0 };
+            return { due: 0, learn: 0, newCards: 0, studied: 0, timeMs: 0, avgMs: 0, correct: 0, wrong: 0, accuracy: 0 };
         }
     },
 
