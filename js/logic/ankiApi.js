@@ -268,6 +268,7 @@ window.ankiApi = {
                 });
             }
 
+            const totalActions = correctCount + wrongCount;
             return {
                 due: dueRes.length,
                 learn: learnRes.length,
@@ -277,7 +278,7 @@ window.ankiApi = {
                 avgMs: studiedToday > 0 ? timeTodayMs / studiedToday : 0,
                 correct: correctCount,
                 wrong: wrongCount,
-                accuracy: studiedToday > 0 ? (correctCount / studiedToday) * 100 : 0
+                accuracy: totalActions > 0 ? (correctCount / totalActions) * 100 : 0
             };
         } catch (e) {
             console.warn("Could not get today's stats fully: ", e);
