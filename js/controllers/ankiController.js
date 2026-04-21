@@ -262,6 +262,14 @@ window.ankiController = {
             '#064e3b'
         ];
 
+        let globalTooltip = document.getElementById('anki-global-heatmap-tooltip');
+        if (!globalTooltip) {
+            globalTooltip = document.createElement('div');
+            globalTooltip.id = 'anki-global-heatmap-tooltip';
+            globalTooltip.className = 'fixed pointer-events-none z-[9999] px-2.5 py-1.5 bg-gray-900 text-white text-[10px] whitespace-nowrap rounded-lg font-bold shadow-xl border border-white/10 opacity-0 transition-opacity duration-200';
+            document.body.appendChild(globalTooltip);
+        }
+
         const daysToRender = 180;
         for (let i = daysToRender; i >= 0; i--) {
             const d = new Date(today);
@@ -272,7 +280,7 @@ window.ankiController = {
             
             const count = records[formatStr] || 0;
             const box = document.createElement('div');
-            box.className = 'w-3 h-3 rounded-[3px] transition-all hover:scale-150 hover:z-10 cursor-pointer relative group';
+            box.className = 'w-3 h-3 rounded-[3px] transition-all hover:scale-150 hover:z-10 cursor-pointer';
             
             let colorIndex = 0;
             if (count === 0) {
@@ -285,16 +293,37 @@ window.ankiController = {
                 box.style.boxShadow = `0 0 10px ${colors[colorIndex]}33`;
             }
 
-            const tooltip = document.createElement('div');
-            tooltip.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-gray-900 text-white text-[10px] whitespace-nowrap rounded-lg font-bold opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 shadow-xl border border-white/10 translate-y-2 group-hover:translate-y-0';
-            tooltip.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 rounded-full" style="background: ${count > 0 ? colors[colorIndex] : '#d1d5db'}"></span>
-                    <span>${count} revisões</span>
-                </div>
-                <div class="text-[8px] text-gray-400 mt-0.5">${displayStr}</div>
-            `;
-            box.appendChild(tooltip);
+            box.addEventListener('mouseenter', () => {
+                globalTooltip.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full" style="background: ${count > 0 ? colors[colorIndex] : '#d1d5db'}"></span>
+                        <span>${count} revisões</span>
+                    </div>
+                    <div class="text-[8px] text-gray-400 mt-0.5">${displayStr}</div>
+                `;
+                
+                // Allow DOM to update first for accurate measurements
+                setTimeout(() => {
+                    const rect = box.getBoundingClientRect();
+                    let left = rect.left + (rect.width / 2) - (globalTooltip.offsetWidth / 2);
+                    let top = rect.top - globalTooltip.offsetHeight - 8;
+                    
+                    if (top < 0) top = rect.bottom + 8; // flip to bottom if off top screen
+                    if (left < 0) left = 8;
+                    if (left + globalTooltip.offsetWidth > window.innerWidth) {
+                        left = window.innerWidth - globalTooltip.offsetWidth - 8;
+                    }
+                    
+                    globalTooltip.style.left = left + 'px';
+                    globalTooltip.style.top = top + 'px';
+                    globalTooltip.style.opacity = '1';
+                }, 0);
+            });
+
+            box.addEventListener('mouseleave', () => {
+                globalTooltip.style.opacity = '0';
+            });
+
             container.appendChild(box);
         }
     },
