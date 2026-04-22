@@ -180,18 +180,44 @@ window.ankiApi = {
             const cardsInfo = await this.invokeBatch('cardsInfo', 6, lapseCards);
             const tagErrors = {};
 
+            // Extract Note IDs to fetch real tags
+            const noteIds = [...new Set(cardsInfo.map(c => c.note))].filter(id => id);
+            const notesInfo = await this.invokeBatch('notesInfo', 6, noteIds, 'notes');
+            
+            const noteTagsMap = {};
+            notesInfo.forEach(n => {
+                if (n && n.noteId) {
+                    noteTagsMap[n.noteId] = n.tags || [];
+                }
+            });
+
+            const ignoreTags = ['leech', 'marked', 'import'];
+
             cardsInfo.forEach(card => {
-                if (card.lapses > 0 && card.tags && card.tags.length > 0) {
-                    // Filter system tags (like marked, leech, etc)
-                    const ignoreTags = ['leech', 'marked', 'import'];
-                    card.tags.forEach(tag => {
-                        if (ignoreTags.some(t => tag.toLowerCase().includes(t))) return;
-                        
-                        // Capitalize and format tag nicely
-                        const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
-                        const finalTag = cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1);
-                        
-                        tagErrors[finalTag] = (tagErrors[finalTag] || 0) + card.lapses;
+                if (card.lapses > 0) {
+                    let subjects = [];
+                    
+                    let rawTags = noteTagsMap[card.note] || card.tags || [];
+                    if (typeof rawTags === 'string') rawTags = rawTags.trim().split(/\s+/);
+
+                    if (Array.isArray(rawTags) && rawTags.length > 0) {
+                        rawTags.forEach(tag => {
+                            if (ignoreTags.some(t => tag.toLowerCase().includes(t))) return;
+                            const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
+                            subjects.push(cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1));
+                        });
+                    }
+
+                    // Fallback para o deck associado se não houver tags
+                    if (subjects.length === 0 && card.deckName) {
+                        const mainDeck = card.deckName.split('::')[0];
+                        if (mainDeck !== 'Default') {
+                            subjects.push(mainDeck);
+                        }
+                    }
+
+                    subjects.forEach(subjectName => {
+                        tagErrors[subjectName] = (tagErrors[subjectName] || 0) + card.lapses;
                     });
                 }
             });
