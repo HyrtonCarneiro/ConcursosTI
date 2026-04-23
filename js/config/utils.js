@@ -46,15 +46,22 @@ window.utils = {
         return `${yyyy}-${mm}-${dd}`;
     },
 
-    calculateCountdown: function(targetDate) {
+    calculateCountdown: function(targetDate, expiredText = "Prova Realizada") {
         if (!targetDate) return "";
-        const target = new Date(targetDate);
+        let target;
+        if (typeof targetDate === 'string' && targetDate.includes('-')) {
+            const [y, m, d] = targetDate.split('-').map(Number);
+            target = new Date(y, m - 1, d, 23, 59, 59); // End of the target day
+        } else {
+            target = new Date(targetDate);
+        }
+        
         if (isNaN(target.getTime())) return "";
         
         const now = new Date();
         const diff = target - now;
         
-        if (diff <= 0) return "Prova Realizada";
+        if (diff <= 0) return expiredText;
         
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));

@@ -148,8 +148,13 @@ window.editaisController = {
         editais.sort((a, b) => {
             const getNextEventDate = (ed) => {
                 const dates = [];
-                if (ed.dataProva) dates.push(new Date(ed.dataProva).getTime());
-                if (ed.dataInscricao) dates.push(new Date(ed.dataInscricao).getTime());
+                const parseDate = (dateStr) => {
+                    const [y, m, d] = dateStr.split('-').map(Number);
+                    return new Date(y, m - 1, d).getTime();
+                };
+                
+                if (ed.dataProva) dates.push(parseDate(ed.dataProva));
+                if (ed.dataInscricao) dates.push(parseDate(ed.dataInscricao));
                 
                 const upcoming = dates.filter(d => d >= now);
                 if (upcoming.length > 0) return Math.min(...upcoming);
@@ -179,9 +184,9 @@ window.editaisController = {
             card.className = 'bg-white p-5 rounded-[1.5rem] border border-gray-100 hover:border-primary-500 transition-all shadow-sm hover:shadow-lg hover:-translate-y-1 group relative overflow-hidden flex flex-col';
             
             const provaTxt = ed.dataProva ? window.utils.formatDateBR(ed.dataProva) : 'A definir';
-            const countdownProva = ed.dataProva ? window.utils.calculateCountdown(ed.dataProva) : null;
+            const countdownProva = ed.dataProva ? window.utils.calculateCountdown(ed.dataProva, "Prova Realizada") : null;
             const inscTxt = ed.dataInscricao ? window.utils.formatDateBR(ed.dataInscricao) : 'A definir';
-            const countdownInsc = ed.dataInscricao ? window.utils.calculateCountdown(ed.dataInscricao) : null;
+            const countdownInsc = ed.dataInscricao ? window.utils.calculateCountdown(ed.dataInscricao, "Encerrada") : null;
             
             let statusClass = 'bg-gray-100 text-gray-500';
             let statusLabel = ed.status;
@@ -220,12 +225,12 @@ window.editaisController = {
                         <div class="bg-gray-50/80 p-2 rounded-xl border border-gray-50">
                             <p class="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Inscrição</p>
                             <p class="text-[9px] font-bold text-gray-600">${inscTxt}</p>
-                            ${countdownInsc ? `<p class="text-[8px] font-black text-primary-500 mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataInscricao}">${countdownInsc}</p>` : ''}
+                            ${countdownInsc ? `<p class="text-[8px] font-black ${countdownInsc === 'Encerrada' ? 'text-red-500' : 'text-primary-500'} mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataInscricao}">${countdownInsc}</p>` : ''}
                         </div>
                         <div class="bg-gray-50/80 p-2 rounded-xl border border-gray-50">
                             <p class="text-[7px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Prova</p>
                             <p class="text-[9px] font-bold text-gray-800">${provaTxt}</p>
-                            ${countdownProva ? `<p class="text-[8px] font-black text-orange-500 mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataProva}">${countdownProva}</p>` : ''}
+                            ${countdownProva ? `<p class="text-[8px] font-black ${countdownProva === 'Prova Realizada' ? 'text-gray-500' : 'text-orange-500'} mt-0.5 uppercase tracking-tighter edital-countdown" data-date="${ed.dataProva}">${countdownProva}</p>` : ''}
                         </div>
                     </div>
 
