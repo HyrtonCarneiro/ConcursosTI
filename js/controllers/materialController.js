@@ -141,23 +141,27 @@ window.materialController = {
                         ` : ''}
                     </div>
 
-                    <div class="space-y-1.5 mb-6">
+                    <div class="space-y-2 mb-4 flex-1">
                         ${material.links.slice(0, 3).map(l => {
                             const isLocal = /^[a-zA-Z]:[\\\/]/.test(l);
                             const finalHref = isLocal ? `abrir-pasta:${l}` : l;
                             const icon = getIcon(l);
+                            const nameDisplay = isLocal ? l.split('\\').pop().split('/').pop() : l.replace('https://', '').replace('http://', '').substring(0, 40);
                             return `
-                                <a href="${finalHref}" ${isLocal ? '' : 'target="_blank"'} class="flex items-center gap-2 text-[10px] font-bold text-gray-600 hover:text-primary-600 truncate bg-gray-50/50 p-2 rounded-xl border border-gray-100/50 hover:border-primary-200 transition-all">
-                                    <i class="ph ${icon}"></i> 
-                                    ${l.replace('https://', '').replace('http://', '').substring(0, 40)}
+                                <a href="${finalHref}" ${isLocal ? '' : 'target="_blank"'} class="flex items-center gap-3 text-xs font-bold text-gray-800 hover:text-primary-700 bg-white p-3.5 rounded-2xl border-2 border-gray-100 hover:border-primary-300 hover:shadow-md transition-all group/link">
+                                    <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover/link:bg-primary-50 transition-colors">
+                                        <i class="ph ${icon} text-lg"></i>
+                                    </div>
+                                    <span class="truncate flex-1">${nameDisplay}</span>
+                                    <i class="ph-bold ph-arrow-up-right text-gray-300 group-hover/link:text-primary-500 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5 transition-all"></i>
                                 </a>
                             `;
                         }).join('')}
-                        ${material.links.length === 0 ? '<p class="text-[10px] text-gray-300 italic py-2">Nenhum recurso salvo.</p>' : ''}
+                        ${material.links.length === 0 ? '<div class="text-center py-5 bg-gray-50 rounded-2xl border border-dashed border-gray-200"><p class="text-xs text-gray-400 font-bold italic">Nenhum recurso salvo.</p></div>' : ''}
                     </div>
 
-                    <button onclick="window.materialController.abrirModal('${m.id}')" class="w-full py-3.5 bg-primary-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-700 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-primary-100">
-                        <i class="ph-bold ph-pencil-simple-line"></i> Gerenciar Matéria
+                    <button onclick="window.materialController.abrirModal('${m.id}')" class="w-full py-2.5 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-gray-200 hover:text-gray-800 transition-all flex items-center justify-center gap-2 mt-auto border border-transparent">
+                        <i class="ph-bold ph-pencil-simple-line text-base"></i> Gerenciar Matéria
                     </button>
                 </div>
             `;
