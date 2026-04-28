@@ -18,7 +18,7 @@ const messaging = firebase.messaging();
 // ---------------------------------------------------------
 // 1. CACHE E OFFLINE (Unificado)
 // ---------------------------------------------------------
-const CACHE_NAME = 'concursosti-v3'; // Versão incrementada para forçar limpeza
+const CACHE_NAME = 'concursosti-v4'; // Versão incrementada para forçar limpeza
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -50,11 +50,19 @@ self.addEventListener('activate', (event) => {
 // ---------------------------------------------------------
 self.addEventListener('fetch', (event) => {
     // Não cachear requisições para a API ou Firebase
-    if (event.request.url.includes('/api/') || event.request.url.includes('google') || event.request.url.includes('firebase')) {
+    if (event.request.url.includes('/api/') || event.request.url.includes('google') || event.request.url.includes('firebase') || event.request.method !== 'GET') {
         return;
     }
     event.respondWith(
-        caches.match(event.request).then((response) => response || fetch(event.request))
+        fetch(event.request)
+            .then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+                }
+                return networkResponse;
+            })
+            .catch(() => caches.match(event.request))
     );
 });
 
