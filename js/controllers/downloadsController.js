@@ -109,7 +109,7 @@ def get_anki_data():
         # 3. Forecast (próximos 30 dias)
         forecast = []
         for i in range(30):
-            query = "prop:due=0" if i == 0 else f"prop:due={i}"
+            query = "prop:due<=1" if i == 0 else f"prop:due={i + 1}"
             cnt = len(col.find_cards(query))
             
             d = datetime.date.today() + datetime.timedelta(days=i)

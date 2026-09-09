@@ -1074,43 +1074,90 @@
                     <!-- Heatmap e Workload -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
                         <!-- Heatmap -->
-                        <div class="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 relative">
-                            <div class="flex items-center justify-between mb-8">
-                                <div>
-                                    <h3 class="text-lg font-black text-gray-800 mb-2 flex items-center gap-2">
-                                        <i class="ph-fill ph-calendar-check text-green-500"></i> Frequência de Revisões
-                                    </h3>
-                                    <p class="text-xs text-gray-400 font-medium">Histórico de atividade (Heatmap)</p>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="text-center px-3 border-r border-gray-100">
-                                        <p id="anki-heatmap-streak" class="text-xl font-black text-gray-900">0</p>
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Streak<span class="anki-info-trigger" data-tooltip="Dias consecutivos em que você revisou cards no Anki, contando de hoje para trás. Se ontem não houve revisão, o streak zera.">ⓘ</span></p>
+                        <div class="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 class="text-lg font-black text-gray-800 mb-1 flex items-center gap-2">
+                                            <i class="ph-fill ph-calendar-check text-green-500"></i> Frequência de Revisões
+                                        </h3>
+                                        <p id="anki-heatmap-today-summary" class="text-xs text-gray-500 font-medium">Histórico de atividade (Heatmap)</p>
                                     </div>
-                                    <div class="text-center px-3">
-                                        <p id="anki-heatmap-total" class="text-xl font-black text-gray-900">0</p>
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total<span class="anki-info-trigger tip-left" data-tooltip="Número total de cards revisados nos últimos 180 dias exibidos no heatmap.">ⓘ</span></p>
+                                    <div class="flex items-center gap-4">
+                                        <div class="text-center px-3 border-r border-gray-100">
+                                            <p id="anki-heatmap-streak" class="text-xl font-black text-gray-900">0</p>
+                                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Streak<span class="anki-info-trigger" data-tooltip="Dias consecutivos em que você revisou cards no Anki, contando de hoje para trás. Se ontem não houve revisão, o streak zera.">ⓘ</span></p>
+                                        </div>
+                                        <div class="text-center px-3">
+                                            <p id="anki-heatmap-total" class="text-xl font-black text-gray-900">0</p>
+                                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total<span class="anki-info-trigger tip-left" data-tooltip="Número total de cards revisados nos últimos 180 dias exibidos no heatmap.">ⓘ</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="w-full overflow-x-auto pb-4 pt-2 custom-scrollbar">
+                                    <div id="anki-heatmap-grid" class="flex flex-col flex-wrap gap-1 content-start" style="height: 100px;">
+                                        <!-- Dinâmico JS -->
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="w-full overflow-x-auto pb-4 pt-12 custom-scrollbar">
-                                <div id="anki-heatmap-grid" class="flex flex-col flex-wrap gap-1 content-start" style="height: 100px;">
-                                    <!-- Dinâmico JS -->
+
+                            <!-- Métricas Detalhadas do Heatmap (como na extensão do Anki) -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 mt-4 border-t border-gray-100">
+                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Média Diária<span class="anki-info-trigger" data-tooltip="Média de cartões revisados por dia em que houve estudo.">ⓘ</span></p>
+                                    <p id="anki-heatmap-daily-avg" class="text-base font-black text-gray-800 mt-1">0 cards</p>
+                                </div>
+                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dias com Estudo<span class="anki-info-trigger" data-tooltip="Porcentagem de dias do histórico em que você realizou pelo menos uma revisão.">ⓘ</span></p>
+                                    <p id="anki-heatmap-days-learned" class="text-base font-black text-gray-800 mt-1">0%</p>
+                                </div>
+                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Maior Streak<span class="anki-info-trigger" data-tooltip="Maior sequência histórica ininterrupta de dias estudados.">ⓘ</span></p>
+                                    <p id="anki-heatmap-longest-streak" class="text-base font-black text-gray-800 mt-1">0 dias</p>
+                                </div>
+                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Streak Atual<span class="anki-info-trigger" data-tooltip="Sequência atual de dias consecutivos com revisão.">ⓘ</span></p>
+                                    <p id="anki-heatmap-current-streak" class="text-base font-black text-emerald-600 mt-1">0 dias</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Workload -->
-                        <div class="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100">
-                            <h3 class="text-lg font-black text-gray-800 mb-2 flex items-center gap-2">
-                                <i class="ph-fill ph-trend-up text-blue-500"></i> Previsão de Carga
-                                <span class="anki-info-trigger" data-tooltip="Estimativa de quantos cards terão a revisão vencida em cada dia futuro, baseada nos intervalos atuais. Ajuda a planejar sua carga de estudo.">ⓘ</span>
-                            </h3>
-                            <p class="text-xs text-gray-400 mb-8 font-medium">Revisões agendadas para as próximas semanas</p>
-                            
-                            <div class="h-48 relative">
-                                <canvas id="chart-anki-workload"></canvas>
+                        <div class="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="text-lg font-black text-gray-800 flex items-center gap-2">
+                                        <i class="ph-fill ph-trend-up text-blue-500"></i> Previsão de Carga
+                                        <span class="anki-info-trigger" data-tooltip="Estimativa de quantos cards terão a revisão vencida em cada dia futuro, baseada nos intervalos atuais. Ajuda a planejar sua carga de estudo.">ⓘ</span>
+                                    </h3>
+                                    <span id="anki-workload-period" class="text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100">Próximos 28 dias</span>
+                                </div>
+                                <p id="anki-workload-subtitle" class="text-xs text-gray-400 mb-6 font-medium">Revisões agendadas por data específica</p>
+                                
+                                <div class="h-48 relative mb-4">
+                                    <canvas id="chart-anki-workload"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Métricas da Previsão de Carga com Datas Claras -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 mt-4 border-t border-gray-100">
+                                <div class="bg-blue-50/70 rounded-2xl p-3 border border-blue-100 text-center">
+                                    <p class="text-[9px] font-black text-blue-600 uppercase tracking-widest" id="anki-forecast-label-today">Hoje</p>
+                                    <p id="anki-forecast-count-today" class="text-base font-black text-blue-700 mt-1">0</p>
+                                </div>
+                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest" id="anki-forecast-label-tomorrow">Amanhã</p>
+                                    <p id="anki-forecast-count-tomorrow" class="text-base font-black text-gray-800 mt-1">0</p>
+                                </div>
+                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Próx. 7 Dias</p>
+                                    <p id="anki-forecast-count-7d" class="text-base font-black text-gray-800 mt-1">0</p>
+                                </div>
+                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Pico (Data)</p>
+                                    <p id="anki-forecast-count-peak" class="text-base font-black text-gray-800 mt-1">0</p>
+                                </div>
                             </div>
                         </div>
                     </div>

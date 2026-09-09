@@ -236,20 +236,42 @@ window.ankiApi = {
             const todayObj = new Date();
 
             for (let i = 0; i < days; i++) {
-                const query = `prop:due=${i}`;
+                // No Anki, cartões devidos hoje e pendências anteriores correspondem a prop:due<=1.
+                // Amanhã é prop:due=2, dia seguinte prop:due=3, etc.
+                const query = i === 0 ? 'prop:due<=1' : `prop:due=${i + 1}`;
                 const cards = await this.invoke('findCards', 6, { query });
                 
                 const nextDate = new Date(todayObj);
                 nextDate.setDate(todayObj.getDate() + i);
                 
+                const dDay = String(nextDate.getDate()).padStart(2, '0');
+                const dMonth = String(nextDate.getMonth() + 1).padStart(2, '0');
+                const dateShort = `${dDay}/${dMonth}`;
+                
+                const weekday = nextDate.toLocaleDateString('pt-BR', { weekday: 'long' });
+                const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+                const fullDate = `${capitalizedWeekday}, ${nextDate.getDate()} de ${nextDate.toLocaleDateString('pt-BR', { month: 'long' })} de ${nextDate.getFullYear()}`;
+                
                 let dayLabel;
-                if (i === 0) dayLabel = 'Hoje';
-                else if (i === 1) dayLabel = 'Amanhã';
-                else {
-                    dayLabel = `${nextDate.getDate()}/${nextDate.getMonth() + 1}`;
+                let fullTitle;
+                if (i === 0) {
+                    dayLabel = `Hoje (${dateShort})`;
+                    fullTitle = `Hoje · ${fullDate}`;
+                } else if (i === 1) {
+                    dayLabel = `Amanhã (${dateShort})`;
+                    fullTitle = `Amanhã · ${fullDate}`;
+                } else {
+                    dayLabel = dateShort;
+                    fullTitle = fullDate;
                 }
 
-                forecast.push({ day: dayLabel, count: cards.length });
+                forecast.push({ 
+                    day: dayLabel, 
+                    fullDate: fullTitle,
+                    dateShort: dateShort,
+                    dayIndex: i,
+                    count: cards.length 
+                });
             }
 
             return forecast;

@@ -236,7 +236,6 @@ window.ankiController = {
         container.innerHTML = '';
         
         let totalReviews = 0;
-        let currentStreakCount = 0;
         
         // Transform array to a map for easy lookup
         const records = {};
@@ -247,20 +246,91 @@ window.ankiController = {
             if (entry[1] > maxReviews) maxReviews = entry[1];
         });
 
-        // Calculate current streak
+        // 1. Calculate streaks & stats (exact Review Heatmap extension methodology)
+        const entries = Object.entries(records).filter(e => e[1] > 0);
+        const daysLearnedCount = entries.length;
+        
+        // Chronologically sorted dates
+        const sortedDates = entries.map(e => e[0]).sort();
+        
+        // Longest Streak calculation
+        let longestStreak = 0;
+        let currentRun = 0;
+        let prevDate = null;
+        
+        sortedDates.forEach(dateStr => {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const curDate = new Date(y, m - 1, d);
+            
+            if (prevDate) {
+                const diffDays = Math.round((curDate - prevDate) / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) {
+                    currentRun++;
+                } else {
+                    currentRun = 1;
+                }
+            } else {
+                currentRun = 1;
+            }
+            if (currentRun > longestStreak) longestStreak = currentRun;
+            prevDate = curDate;
+        });
+
+        // Current Streak calculation
         const today = new Date();
-        const checkDate = new Date(today);
-        while (records[`${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`] > 0) {
-            currentStreakCount++;
+        let curStreak = 0;
+        let checkDate = new Date(today);
+        
+        // If nothing studied today yet, check from yesterday so streak doesn't prematurely drop to 0
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        if (!records[todayStr] || records[todayStr] === 0) {
             checkDate.setDate(checkDate.getDate() - 1);
         }
         
-        if (elStreak) elStreak.textContent = currentStreakCount;
+        while (true) {
+            const dateKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+            if (records[dateKey] > 0) {
+                curStreak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+
+        // Total span and percentage
+        const daysToRender = 180;
+        const totalSpanDays = sortedDates.length > 0 ? Math.max(daysToRender, Math.round((today - new Date(sortedDates[0])) / (1000 * 60 * 60 * 24)) + 1) : daysToRender;
+        const pctLearned = totalSpanDays > 0 ? Math.round((daysLearnedCount / totalSpanDays) * 100) : 0;
+        const dailyAvg = daysLearnedCount > 0 ? Math.round(totalReviews / daysLearnedCount) : 0;
+
+        // Populate header metrics
+        if (elStreak) elStreak.textContent = curStreak;
         if (elTotal) elTotal.textContent = totalReviews >= 1000 ? (totalReviews/1000).toFixed(1) + 'k' : totalReviews;
 
-        // More vibrant emerald/green palette (8 levels)
+        // Populate bottom extension cards
+        const elDailyAvg = document.getElementById('anki-heatmap-daily-avg');
+        const elDaysLearned = document.getElementById('anki-heatmap-days-learned');
+        const elLongestStreak = document.getElementById('anki-heatmap-longest-streak');
+        const elCurrentStreak = document.getElementById('anki-heatmap-current-streak');
+        const elTodaySummary = document.getElementById('anki-heatmap-today-summary');
+
+        if (elDailyAvg) elDailyAvg.textContent = `${dailyAvg} cards`;
+        if (elDaysLearned) elDaysLearned.textContent = `${pctLearned}% (${daysLearnedCount}d)`;
+        if (elLongestStreak) elLongestStreak.textContent = `${longestStreak} dias`;
+        if (elCurrentStreak) elCurrentStreak.textContent = `${curStreak} dias`;
+
+        const studiedToday = records[todayStr] || 0;
+        if (elTodaySummary) {
+            if (studiedToday > 0) {
+                elTodaySummary.innerHTML = `Estudado(s) <span class="text-emerald-600 font-black">${studiedToday} cartões</span> hoje`;
+            } else {
+                elTodaySummary.textContent = `Nenhum cartão revisado hoje ainda · ${totalReviews} no histórico`;
+            }
+        }
+
+        // Vibrant emerald/green palette (8 levels)
         const colors = [
-            '#a7f3d0', // stronger base level
+            '#a7f3d0', 
             '#6ee7b7', 
             '#34d399', 
             '#10b981', 
@@ -278,7 +348,6 @@ window.ankiController = {
             document.body.appendChild(globalTooltip);
         }
 
-        const daysToRender = 180;
         for (let i = daysToRender; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
@@ -286,15 +355,17 @@ window.ankiController = {
             const formatStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const displayStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             
+            const weekday = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+            const capWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+            
             const count = records[formatStr] || 0;
             const box = document.createElement('div');
             box.className = 'w-3 h-3 rounded-[3px] transition-all hover:scale-150 hover:z-10 cursor-pointer';
             
             let colorIndex = 0;
             if (count === 0) {
-                box.style.backgroundColor = '#e5e7eb'; // Gray-200 explicitly to stand out better than Gray-100 against white background
+                box.style.backgroundColor = '#e5e7eb';
             } else {
-                // Determine level 0-7, using Math.sqrt to avoid outliers pushing normal days into the weakest color
                 const ratio = Math.sqrt(count / maxReviews);
                 colorIndex = Math.min(Math.floor(ratio * colors.length), colors.length - 1);
                 box.style.backgroundColor = colors[colorIndex];
@@ -305,18 +376,17 @@ window.ankiController = {
                 globalTooltip.innerHTML = `
                     <div class="flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full" style="background: ${count > 0 ? colors[colorIndex] : '#d1d5db'}"></span>
-                        <span>${count} revisões</span>
+                        <span>${count} ${count === 1 ? 'revisão' : 'revisões'}</span>
                     </div>
-                    <div class="text-[8px] text-gray-400 mt-0.5">${displayStr}</div>
+                    <div class="text-[8.5px] text-gray-400 mt-0.5">${capWeekday}, ${displayStr}</div>
                 `;
                 
-                // Allow DOM to update first for accurate measurements
                 setTimeout(() => {
                     const rect = box.getBoundingClientRect();
                     let left = rect.left + (rect.width / 2) - (globalTooltip.offsetWidth / 2);
                     let top = rect.top - globalTooltip.offsetHeight - 8;
                     
-                    if (top < 0) top = rect.bottom + 8; // flip to bottom if off top screen
+                    if (top < 0) top = rect.bottom + 8;
                     if (left < 0) left = 8;
                     if (left + globalTooltip.offsetWidth > window.innerWidth) {
                         left = window.innerWidth - globalTooltip.offsetWidth - 8;
@@ -353,7 +423,7 @@ window.ankiController = {
                 emptyMsg.id = emptyMsgId;
                 emptyMsg.className = 'flex flex-col items-center justify-center text-gray-400 w-full h-full';
                 emptyMsg.innerHTML = '<i class="ph-fill ph-check-circle text-4xl mb-2 text-green-500"></i><p class="text-sm font-bold text-center">Nenhum erro crítico detectado!</p><p class="text-xs text-center mt-1 leading-relaxed">Você ainda não errou cartões repetidas vezes nas revisões<br>ou seus cartões no Anki não possuem <b>Tags</b>.</p>';
-                ctx.parentElement.appendChild(emptyMsg);
+                ctx.parentNode.appendChild(emptyMsg);
             } else {
                 emptyMsg.style.display = 'flex';
             }
@@ -456,11 +526,12 @@ window.ankiController = {
                     x: { 
                         grid: { display: false }, 
                         ticks: { 
-                            font: { size: 10, family: 'Outfit' },
+                            font: { size: 9.5, family: 'Outfit' },
                             color: '#64748b',
                             maxRotation: 0,
                             callback: function(val, index) {
-                                // Show only every 3rd label for better readability if many days
+                                // Always show index 0 (Hoje) with date, then every 3rd day
+                                if (index === 0) return forecastData[0] ? forecastData[0].day : 'Hoje';
                                 return index % 3 === 0 ? this.getLabelForValue(val) : '';
                             }
                         } 
@@ -475,8 +546,14 @@ window.ankiController = {
                         bodyFont: { size: 12, family: 'Outfit' },
                         displayColors: false,
                         callbacks: { 
-                            title: function(items) { return items[0].label; },
-                            label: function(context) { return ' ' + context.raw + ' cartões devidos'; } 
+                            title: function(items) { 
+                                const item = forecastData[items[0].dataIndex];
+                                return item ? (item.fullDate || item.day) : items[0].label; 
+                            },
+                            label: function(context) { 
+                                const val = context.raw;
+                                return ' ' + val + (val === 1 ? ' cartão devido' : ' cartões devidos'); 
+                            } 
                         }
                     },
                     datalabels: {
@@ -499,5 +576,46 @@ window.ankiController = {
                 }
             }
         });
+
+        // Populate bottom forecast metric cards with explicit dates
+        if (forecastData.length > 0) {
+            const todayItem = forecastData[0];
+            const tomItem = forecastData[1] || { day: 'Amanhã', count: 0, dateShort: '' };
+            
+            const elTodayLabel = document.getElementById('anki-forecast-label-today');
+            const elTodayCount = document.getElementById('anki-forecast-count-today');
+            const elTomLabel = document.getElementById('anki-forecast-label-tomorrow');
+            const elTomCount = document.getElementById('anki-forecast-count-tomorrow');
+            const el7dCount = document.getElementById('anki-forecast-count-7d');
+            const elPeakCount = document.getElementById('anki-forecast-count-peak');
+            const elPeriod = document.getElementById('anki-workload-period');
+            const elSubtitle = document.getElementById('anki-workload-subtitle');
+
+            if (elTodayLabel) elTodayLabel.textContent = `Hoje (${todayItem.dateShort})`;
+            if (elTodayCount) elTodayCount.textContent = todayItem.count;
+
+            if (elTomLabel) elTomLabel.textContent = `Amanhã (${tomItem.dateShort})`;
+            if (elTomCount) elTomCount.textContent = tomItem.count;
+
+            // Total in next 7 days
+            const next7Total = forecastData.slice(0, 7).reduce((acc, curr) => acc + curr.count, 0);
+            if (el7dCount) el7dCount.textContent = `${next7Total} cards`;
+
+            // Peak in 28 days
+            let peakItem = forecastData[0];
+            forecastData.forEach(item => {
+                if (item.count > peakItem.count) peakItem = item;
+            });
+            if (elPeakCount) {
+                elPeakCount.textContent = peakItem.count > 0 ? `${peakItem.count} (${peakItem.dateShort})` : '0';
+            }
+
+            if (elPeriod) {
+                elPeriod.textContent = `${todayItem.dateShort} a ${forecastData[forecastData.length - 1].dateShort}`;
+            }
+            if (elSubtitle) {
+                elSubtitle.textContent = `Revisões agendadas de ${todayItem.dateShort} a ${forecastData[forecastData.length - 1].dateShort} (próximas 4 semanas)`;
+            }
+        }
     }
 };
