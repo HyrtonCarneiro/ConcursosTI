@@ -149,20 +149,20 @@ window.ankiController = {
             const newCards = stats.total - stats.young - stats.mature;
 
             matCard.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-tight">${subject}</h4>
-                    <span class="text-[9px] font-bold text-gray-400">${stats.total} cards</span>
+                <div class="flex justify-between items-start mb-2 gap-2">
+                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-tight truncate" title="${subject}">${subject}</h4>
+                    <span class="text-[9px] font-bold text-gray-400 shrink-0">${stats.total} cards</span>
                 </div>
                 <div class="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-200 mb-2">
                     <div class="bg-green-500 h-full" style="width: ${maturePerc}%"></div>
                     <div class="bg-blue-400 h-full" style="width: ${youngPerc}%"></div>
                     <div class="bg-gray-300 h-full" style="width: ${newPerc}%"></div>
                 </div>
-                <div class="flex flex-wrap gap-y-2 justify-between text-[9px] font-bold">
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Maduros ${maturePerc}% (${stats.mature})<span class="anki-info-trigger" data-tooltip="Cards com intervalo de revisão ≥ 21 dias. O Anki considera que você já memorizou esse conteúdo de forma sólida.">ⓘ</span></div>
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Jovens ${youngPerc}% (${stats.young})<span class="anki-info-trigger" data-tooltip="Cards já estudados com intervalo < 21 dias. Estão na fase de consolidação — você já os viu, mas ainda precisam de reforço frequente.">ⓘ</span></div>
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Novos ${newPerc}% (${newCards})<span class="anki-info-trigger" data-tooltip="Cards que nunca foram estudados. Estão no deck esperando para serem introduzidos na sua rotina de estudo.">ⓘ</span></div>
-                    <div class="flex items-center gap-1 text-red-500"><i class="ph-bold ph-warning"></i> ${stats.lapses} falhas<span class="anki-info-trigger" data-tooltip="Total acumulado de vezes que cards desta matéria foram respondidos como 'Errei' (Lapses). Quanto maior, mais difícil está sendo memorizar esse assunto.">ⓘ</span></div>
+                <div class="flex flex-wrap gap-x-3 gap-y-2 justify-between text-[9px] font-bold">
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span> Maduros ${maturePerc}% (${stats.mature})<span class="anki-info-trigger" data-tooltip="Cards com intervalo de revisão ≥ 21 dias. O Anki considera que você já memorizou esse conteúdo de forma sólida.">ⓘ</span></div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span> Jovens ${youngPerc}% (${stats.young})<span class="anki-info-trigger" data-tooltip="Cards já estudados com intervalo < 21 dias. Estão na fase de consolidação — você já os viu, mas ainda precisam de reforço frequente.">ⓘ</span></div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0"></span> Novos ${newPerc}% (${newCards})<span class="anki-info-trigger" data-tooltip="Cards que nunca foram estudados. Estão no deck esperando para serem introduzidos na sua rotina de estudo.">ⓘ</span></div>
+                    <div class="flex items-center gap-1 text-red-500"><i class="ph-bold ph-warning shrink-0"></i> ${stats.lapses} falhas<span class="anki-info-trigger" data-tooltip="Total acumulado de vezes que cards desta matéria foram respondidos como 'Errei' (Lapses). Quanto maior, mais difícil está sendo memorizar esse assunto.">ⓘ</span></div>
                 </div>
             `;
             container.appendChild(matCard);

@@ -73,5 +73,95 @@ window.utils = {
     formatDateBR: function(dateString) {
         const [yyyy, mm, dd] = dateString.split('-');
         return `${dd}/${mm}/${yyyy}`;
+    },
+
+    initGlobalTooltips: function() {
+        if (document.getElementById('global-floating-tooltip')) return;
+
+        const tooltip = document.createElement('div');
+        tooltip.id = 'global-floating-tooltip';
+        document.body.appendChild(tooltip);
+
+        let activeTarget = null;
+
+        const showTooltip = (target) => {
+            const text = target.getAttribute('data-tooltip');
+            if (!text) return;
+
+            activeTarget = target;
+            tooltip.textContent = text;
+
+            // Make it visible to measure layout
+            tooltip.style.left = '-9999px';
+            tooltip.style.top = '-9999px';
+            tooltip.classList.add('active');
+
+            const targetRect = target.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const margin = 12;
+
+            // Horizontal alignment: center on target, clamp to screen boundaries
+            let left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+            if (left < margin) {
+                left = margin;
+            } else if (left + tooltipRect.width > window.innerWidth - margin) {
+                left = window.innerWidth - margin - tooltipRect.width;
+            }
+
+            // Vertical alignment: default above target
+            let top = targetRect.top - tooltipRect.height - 8;
+            // If it overflows top of screen, flip below target
+            if (top < margin) {
+                top = targetRect.bottom + 8;
+            }
+
+            tooltip.style.left = `${Math.round(left)}px`;
+            tooltip.style.top = `${Math.round(top)}px`;
+        };
+
+        const hideTooltip = () => {
+            if (!activeTarget) return;
+            activeTarget = null;
+            tooltip.classList.remove('active');
+        };
+
+        document.addEventListener('mouseover', (e) => {
+            const trigger = e.target.closest('[data-tooltip]');
+            if (trigger) {
+                showTooltip(trigger);
+            }
+        });
+
+        document.addEventListener('mouseout', (e) => {
+            const trigger = e.target.closest('[data-tooltip]');
+            if (trigger && (!e.relatedTarget || !trigger.contains(e.relatedTarget))) {
+                hideTooltip();
+            }
+        });
+
+        // Click / tap support for mobile devices
+        document.addEventListener('click', (e) => {
+            const trigger = e.target.closest('[data-tooltip]');
+            if (trigger) {
+                if (activeTarget === trigger) {
+                    hideTooltip();
+                } else {
+                    showTooltip(trigger);
+                }
+            } else {
+                hideTooltip();
+            }
+        });
+
+        // Hide on scroll or window resize to prevent floating detaches
+        window.addEventListener('scroll', hideTooltip, { passive: true, capture: true });
+        window.addEventListener('resize', hideTooltip, { passive: true });
     }
 };
+
+// Auto-initialize tooltips when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => window.utils.initGlobalTooltips());
+} else {
+    window.utils.initGlobalTooltips();
+}

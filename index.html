@@ -141,7 +141,7 @@
             #desktop-nav-pills::-webkit-scrollbar { display: none; }
         }
 
-        /* ===== Tooltip System (CSS Pure) ===== */
+        /* ===== Global Floating Tooltip System ===== */
         .anki-info-trigger {
             display: inline-flex;
             align-items: center;
@@ -150,28 +150,31 @@
             height: 15px;
             border-radius: 50%;
             background: transparent;
-            color: #c0c7d1;
+            color: #9ca3af;
             font-size: 11px;
-            font-weight: 900;
-            cursor: help;
+            font-weight: 800;
+            cursor: pointer;
             position: relative;
             vertical-align: middle;
             margin-left: 4px;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             flex-shrink: 0;
             line-height: 1;
+            user-select: none;
         }
         .anki-info-trigger:hover {
             color: #3b5df5;
-            background: rgba(59, 93, 245, 0.08);
+            background: rgba(59, 93, 245, 0.1);
             transform: scale(1.15);
         }
-        .anki-info-trigger::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: calc(100% + 10px);
-            left: 50%;
-            transform: translateX(-50%) translateY(6px);
+
+        #global-floating-tooltip {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 999999;
+            max-width: 290px;
             background: #111827;
             color: #f3f4f6;
             font-size: 11.5px;
@@ -180,41 +183,22 @@
             line-height: 1.55;
             padding: 10px 14px;
             border-radius: 12px;
-            width: max-content;
-            max-width: 280px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: scale(0.96);
+            transition: opacity 0.15s ease-out, transform 0.15s ease-out;
             white-space: normal;
             text-align: left;
-            pointer-events: none;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
-            z-index: 9999;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-            border: 1px solid rgba(255,255,255,0.08);
-            letter-spacing: 0 !important;
-            text-transform: none !important;
         }
-        .anki-info-trigger:hover::after {
+        #global-floating-tooltip.active {
             opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(0);
+            transform: scale(1);
         }
-        /* Right-aligned tooltips for cards near right edge */
-        .anki-info-trigger.tip-left::after {
-            left: auto;
-            right: 0;
-            transform: translateX(0) translateY(6px);
-        }
-        .anki-info-trigger.tip-left:hover::after {
-            transform: translateX(0) translateY(0);
-        }
-        /* Left-aligned tooltips for cards near left edge */
-        .anki-info-trigger.tip-right::after {
-            left: 0;
-            transform: translateX(0) translateY(6px);
-        }
-        .anki-info-trigger.tip-right:hover::after {
-            transform: translateX(0) translateY(0);
+
+        /* Prevent unwanted horizontal scroll on Health Check list */
+        #anki-syllabus-list {
+            overflow-x: hidden !important;
         }
     </style>
 
@@ -1117,7 +1101,7 @@
                             </h3>
                             <p class="text-xs text-gray-400 mb-8 font-medium">Distribuição de conhecimento por assunto</p>
                             
-                            <div id="anki-syllabus-list" class="space-y-4 max-h-[20rem] overflow-y-auto custom-scrollbar pr-2">
+                            <div id="anki-syllabus-list" class="space-y-4 max-h-[20rem] overflow-y-auto overflow-x-hidden custom-scrollbar pr-2">
                                 <!-- Dinâmico via JS -->
                             </div>
                         </div>
