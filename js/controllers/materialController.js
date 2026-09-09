@@ -148,7 +148,7 @@ window.materialController = {
                             const icon = getIcon(l);
                             const nameDisplay = isLocal ? l.split('\\').pop().split('/').pop() : l.replace('https://', '').replace('http://', '').substring(0, 40);
                             return `
-                                <a href="${finalHref}" ${isLocal ? '' : 'target="_blank"'} class="flex items-center gap-3 text-xs font-bold text-gray-800 hover:text-primary-700 bg-white p-3.5 rounded-2xl border-2 border-gray-100 hover:border-primary-300 hover:shadow-md transition-all group/link">
+                                <a href="${finalHref}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 text-xs font-bold text-gray-800 hover:text-primary-700 bg-white p-3.5 rounded-2xl border-2 border-gray-100 hover:border-primary-300 hover:shadow-md transition-all group/link">
                                     <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover/link:bg-primary-50 transition-colors">
                                         <i class="ph ${icon} text-lg"></i>
                                     </div>
@@ -208,7 +208,7 @@ window.materialController = {
             
             return `
                 <div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl hover:border-primary-300 transition-all group">
-                    <a href="${finalHref}" ${isLocal ? '' : 'target="_blank"'} class="text-xs font-bold text-gray-700 hover:text-primary-600 truncate flex-1 flex items-center gap-3 pr-4">
+                    <a href="${finalHref}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-gray-700 hover:text-primary-600 truncate flex-1 flex items-center gap-3 pr-4">
                         <i class="${icon}"></i> ${l}
                     </a>
                     <div class="flex gap-1">

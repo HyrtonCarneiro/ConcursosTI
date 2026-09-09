@@ -317,7 +317,7 @@ window.linksController = {
         const categoriaNome = (link.categoria && link.categoria.trim()) ? link.categoria.trim() : 'Geral';
 
         card.innerHTML = `
-            <a href="${this.escapeHtml(finalHref)}" ${isLocal ? '' : 'target="_blank" rel="noopener noreferrer"'} class="absolute inset-0 rounded-[2rem] z-0" title="Abrir ${this.escapeHtml(link.titulo)}"></a>
+            <a href="${this.escapeHtml(finalHref)}" target="_blank" rel="noopener noreferrer" class="absolute inset-0 rounded-[2rem] z-0" title="Abrir ${this.escapeHtml(link.titulo)}"></a>
             <div class="w-12 h-12 ${iconBg} rounded-2xl flex items-center justify-center text-xl shrink-0 transition-transform group-hover:scale-110 z-10 pointer-events-none">
                 <i class="${iconClass}"></i>
             </div>

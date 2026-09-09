@@ -159,10 +159,10 @@ window.ankiController = {
                     <div class="bg-gray-300 h-full" style="width: ${newPerc}%"></div>
                 </div>
                 <div class="flex flex-wrap gap-y-2 justify-between text-[9px] font-bold">
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Maduros ${maturePerc}% (${stats.mature})</div>
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Jovens ${youngPerc}% (${stats.young})</div>
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Novos ${newPerc}% (${newCards})</div>
-                    <div class="flex items-center gap-1 text-red-500"><i class="ph-bold ph-warning"></i> ${stats.lapses} falhas</div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Maduros ${maturePerc}% (${stats.mature})<span class="anki-info-trigger" data-tooltip="Cards com intervalo de revisão ≥ 21 dias. O Anki considera que você já memorizou esse conteúdo de forma sólida.">ⓘ</span></div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Jovens ${youngPerc}% (${stats.young})<span class="anki-info-trigger" data-tooltip="Cards já estudados com intervalo < 21 dias. Estão na fase de consolidação — você já os viu, mas ainda precisam de reforço frequente.">ⓘ</span></div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span> Novos ${newPerc}% (${newCards})<span class="anki-info-trigger" data-tooltip="Cards que nunca foram estudados. Estão no deck esperando para serem introduzidos na sua rotina de estudo.">ⓘ</span></div>
+                    <div class="flex items-center gap-1 text-red-500"><i class="ph-bold ph-warning"></i> ${stats.lapses} falhas<span class="anki-info-trigger" data-tooltip="Total acumulado de vezes que cards desta matéria foram respondidos como 'Errei' (Lapses). Quanto maior, mais difícil está sendo memorizar esse assunto.">ⓘ</span></div>
                 </div>
             `;
             container.appendChild(matCard);
