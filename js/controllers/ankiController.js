@@ -410,6 +410,11 @@ window.ankiController = {
         const ctx = document.getElementById('chart-anki-workload');
         if (!ctx) return;
 
+        // Ensure datalabels plugin is registered if available
+        if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+            try { Chart.register(ChartDataLabels); } catch(e) {}
+        }
+
         const forecastData = await window.ankiApi.getWorkloadForecast(28); // 28 days forecast
         
         const labels = forecastData.map(d => d.day);
@@ -426,25 +431,33 @@ window.ankiController = {
                 datasets: [{
                     label: 'Revisões Devidas',
                     data: data,
-                    backgroundColor: forecastData.map((d, i) => i === 0 ? '#3b82f6' : '#e5e7eb'),
-                    hoverBackgroundColor: '#3b82f6',
-                    borderRadius: 4,
+                    backgroundColor: forecastData.map((d, i) => i === 0 ? '#253ee8' : '#3b5df5'),
+                    hoverBackgroundColor: '#1d2eca',
+                    borderRadius: 5,
+                    borderSkipped: false,
                     barPercentage: 0.8
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        top: 22
+                    }
+                },
                 scales: {
                     y: { 
                         beginAtZero: true, 
-                        grid: { color: '#f9fafb' }, 
-                        ticks: { font: { size: 9, family: 'Outfit' } } 
+                        grace: '15%',
+                        grid: { color: '#f1f5f9' }, 
+                        ticks: { font: { size: 10, family: 'Outfit' }, color: '#64748b' } 
                     },
                     x: { 
                         grid: { display: false }, 
                         ticks: { 
-                            font: { size: 9, family: 'Outfit' },
+                            font: { size: 10, family: 'Outfit' },
+                            color: '#64748b',
                             maxRotation: 0,
                             callback: function(val, index) {
                                 // Show only every 3rd label for better readability if many days
@@ -458,7 +471,7 @@ window.ankiController = {
                     tooltip: {
                         backgroundColor: '#111827',
                         padding: 12,
-                        titleFont: { size: 10, family: 'Outfit', weight: '900' },
+                        titleFont: { size: 11, family: 'Outfit', weight: '700' },
                         bodyFont: { size: 12, family: 'Outfit' },
                         displayColors: false,
                         callbacks: { 
@@ -466,7 +479,23 @@ window.ankiController = {
                             label: function(context) { return ' ' + context.raw + ' cartões devidos'; } 
                         }
                     },
-                    datalabels: { display: false }
+                    datalabels: {
+                        display: function(context) {
+                            return context.dataset.data[context.dataIndex] > 0;
+                        },
+                        align: 'top',
+                        anchor: 'end',
+                        offset: 3,
+                        color: '#1e293b',
+                        font: {
+                            family: 'Outfit',
+                            size: 10,
+                            weight: '700'
+                        },
+                        formatter: function(value) {
+                            return value > 0 ? value : '';
+                        }
+                    }
                 }
             }
         });

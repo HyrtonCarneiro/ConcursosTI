@@ -29,7 +29,7 @@
                         sans: ['Outfit', 'sans-serif'],
                     },
                     colors: {
-                        background: '#fcfdfe',
+                        background: '#f5f7fb',
                         primary: {
                             50: '#f0f4ff',
                             100: '#dbe4fe',
@@ -44,7 +44,7 @@
                         }
                     },
                     boxShadow: {
-                        'premium': '0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02)',
+                        'premium': '0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03)',
                         'xl-primary': '0 20px 25px -5px rgba(59, 93, 245, 0.1), 0 10px 10px -5px rgba(59, 93, 245, 0.04)',
                     }
                 }
@@ -53,6 +53,30 @@
     </script>
     
     <style>
+        /* ===== Card & Panel Definition & Framing (All Tabs) ===== */
+        .border-gray-50,
+        .border-gray-100 {
+            border-color: #dbe3ed !important; /* Crisp, elegant slate-blue border frame */
+        }
+        .border-gray-200 {
+            border-color: #cbd5e1 !important;
+        }
+
+        /* Clean defined elevation for panels and cards */
+        .shadow-premium {
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03) !important;
+        }
+        .shadow-sm {
+            box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.05), 0 1px 3px 0 rgba(15, 23, 42, 0.03) !important;
+        }
+
+        /* Distinct border framing for all white panels and cards */
+        .bg-white.border-gray-100,
+        .bg-white.border-gray-50,
+        .bg-white.border {
+            border-color: #dbe3ed !important;
+        }
+
         .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.4); }
         .nav-active { background: #3b5df5 !important; color: white !important; box-shadow: 0 4px 12px rgba(59, 93, 245, 0.25); }
         .page-transition { animation: fadeIn 0.4s ease-out; }
