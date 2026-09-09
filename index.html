@@ -1076,12 +1076,20 @@
                         <!-- Heatmap -->
                         <div class="bg-white p-8 rounded-[2.5rem] shadow-premium border border-gray-100 flex flex-col justify-between">
                             <div>
-                                <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
                                     <div>
                                         <h3 class="text-lg font-black text-gray-800 mb-1 flex items-center gap-2">
                                             <i class="ph-fill ph-calendar-check text-green-500"></i> Frequência de Revisões
                                         </h3>
-                                        <p id="anki-heatmap-today-summary" class="text-xs text-gray-500 font-medium">Histórico de atividade (Heatmap)</p>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <p id="anki-heatmap-today-summary" class="text-xs text-gray-500 font-medium">Histórico de atividade (Heatmap)</p>
+                                            <div class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2 py-0.5 rounded-lg text-[10px] text-slate-500 hover:border-slate-300 transition-colors" title="Ignorar revisões anteriores a esta data (como na extensão do Anki)">
+                                                <i class="ph-bold ph-funnel text-indigo-500"></i>
+                                                <span class="font-bold">Ignorar antes de:</span>
+                                                <input type="date" id="anki-heatmap-ignore-before" value="2026-09-01" class="bg-transparent font-black text-slate-700 outline-none cursor-pointer border-none p-0 text-[10px]">
+                                                <button id="anki-heatmap-clear-ignore" type="button" class="text-slate-400 hover:text-rose-500 transition-colors ml-0.5 font-bold" title="Limpar filtro e exibir todo o histórico">✕</button>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="flex items-center gap-4">
                                         <div class="text-center px-3 border-r border-gray-100">
@@ -1090,7 +1098,7 @@
                                         </div>
                                         <div class="text-center px-3">
                                             <p id="anki-heatmap-total" class="text-xl font-black text-gray-900">0</p>
-                                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total<span class="anki-info-trigger tip-left" data-tooltip="Número total de cards revisados nos últimos 180 dias exibidos no heatmap.">ⓘ</span></p>
+                                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total<span class="anki-info-trigger tip-left" data-tooltip="Total de cards revisados no período ativo (a partir da data de corte configurada).">ⓘ</span></p>
                                         </div>
                                     </div>
                                 </div>

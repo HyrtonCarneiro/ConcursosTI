@@ -44,6 +44,26 @@ window.ankiController = {
                 if (e.key === 'Enter') { e.preventDefault(); addUrlHandler(); }
             });
         }
+
+        const inputIgnoreBefore = document.getElementById('anki-heatmap-ignore-before');
+        const btnClearIgnore = document.getElementById('anki-heatmap-clear-ignore');
+        if (inputIgnoreBefore) {
+            const saved = localStorage.getItem('anki_heatmap_ignore_before') !== null
+                ? localStorage.getItem('anki_heatmap_ignore_before')
+                : '2026-09-01';
+            inputIgnoreBefore.value = saved;
+            inputIgnoreBefore.addEventListener('change', (e) => {
+                localStorage.setItem('anki_heatmap_ignore_before', e.target.value);
+                this.renderHeatmap();
+            });
+        }
+        if (btnClearIgnore && inputIgnoreBefore) {
+            btnClearIgnore.addEventListener('click', () => {
+                inputIgnoreBefore.value = '';
+                localStorage.setItem('anki_heatmap_ignore_before', '');
+                this.renderHeatmap();
+            });
+        }
     },
 
     renderSavedUrls: function() {
@@ -235,18 +255,31 @@ window.ankiController = {
         
         container.innerHTML = '';
         
+        // 1. Cutoff date filter (Ignorar datas anteriores a...)
+        const inputIgnoreBefore = document.getElementById('anki-heatmap-ignore-before');
+        const ignoreBefore = localStorage.getItem('anki_heatmap_ignore_before') !== null
+            ? localStorage.getItem('anki_heatmap_ignore_before')
+            : '2026-09-01';
+
+        if (inputIgnoreBefore && inputIgnoreBefore.value !== ignoreBefore) {
+            inputIgnoreBefore.value = ignoreBefore;
+        }
+
+        // Filter out dates before cutoff (exact Review Heatmap addon methodology)
+        const filteredHeatmap = (ignoreBefore && ignoreBefore.trim() !== '')
+            ? heatmapData.filter(entry => entry[0] >= ignoreBefore)
+            : heatmapData;
+
         let totalReviews = 0;
-        
-        // Transform array to a map for easy lookup
         const records = {};
         let maxReviews = 1;
-        heatmapData.forEach(entry => {
+        filteredHeatmap.forEach(entry => {
             records[entry[0]] = entry[1];
             totalReviews += entry[1];
             if (entry[1] > maxReviews) maxReviews = entry[1];
         });
 
-        // 1. Calculate streaks & stats (exact Review Heatmap extension methodology)
+        // Calculate streaks & stats (exact Review Heatmap addon methodology)
         const entries = Object.entries(records).filter(e => e[1] > 0);
         const daysLearnedCount = entries.length;
         
@@ -281,7 +314,6 @@ window.ankiController = {
         let curStreak = 0;
         let checkDate = new Date(today);
         
-        // If nothing studied today yet, check from yesterday so streak doesn't prematurely drop to 0
         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         if (!records[todayStr] || records[todayStr] === 0) {
             checkDate.setDate(checkDate.getDate() - 1);
@@ -289,6 +321,7 @@ window.ankiController = {
         
         while (true) {
             const dateKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+            if (ignoreBefore && dateKey < ignoreBefore) break;
             if (records[dateKey] > 0) {
                 curStreak++;
                 checkDate.setDate(checkDate.getDate() - 1);
@@ -297,15 +330,23 @@ window.ankiController = {
             }
         }
 
-        // Total span and percentage
-        const daysToRender = 180;
-        const totalSpanDays = sortedDates.length > 0 ? Math.max(daysToRender, Math.round((today - new Date(sortedDates[0])) / (1000 * 60 * 60 * 24)) + 1) : daysToRender;
-        const pctLearned = totalSpanDays > 0 ? Math.round((daysLearnedCount / totalSpanDays) * 100) : 0;
+        // Daily average
         const dailyAvg = daysLearnedCount > 0 ? Math.round(totalReviews / daysLearnedCount) : 0;
+
+        // Days learned percentage (exact Review Heatmap addon formula)
+        let pctLearned = 0;
+        if (daysLearnedCount > 0) {
+            const firstStudyDate = new Date(sortedDates[0] + 'T00:00:00');
+            const lastStudyDate = new Date(sortedDates[sortedDates.length - 1] + 'T00:00:00');
+            const hasStudiedToday = (records[todayStr] || 0) > 0;
+            const endDate = hasStudiedToday ? new Date(todayStr + 'T00:00:00') : lastStudyDate;
+            const daysTotal = Math.max(1, Math.round((endDate - firstStudyDate) / (1000 * 60 * 60 * 24)) + 1);
+            pctLearned = Math.min(100, Math.round((daysLearnedCount / daysTotal) * 100));
+        }
 
         // Populate header metrics
         if (elStreak) elStreak.textContent = curStreak;
-        if (elTotal) elTotal.textContent = totalReviews >= 1000 ? (totalReviews/1000).toFixed(1) + 'k' : totalReviews;
+        if (elTotal) elTotal.textContent = totalReviews >= 1000 ? (totalReviews / 1000).toFixed(1) + 'k' : totalReviews;
 
         // Populate bottom extension cards
         const elDailyAvg = document.getElementById('anki-heatmap-daily-avg');
@@ -321,10 +362,11 @@ window.ankiController = {
 
         const studiedToday = records[todayStr] || 0;
         if (elTodaySummary) {
+            const periodStr = ignoreBefore ? `desde ${ignoreBefore.split('-').reverse().join('/')}` : 'no histórico';
             if (studiedToday > 0) {
-                elTodaySummary.innerHTML = `Estudado(s) <span class="text-emerald-600 font-black">${studiedToday} cartões</span> hoje`;
+                elTodaySummary.innerHTML = `Estudado(s) <span class="text-emerald-600 font-black">${studiedToday} cartões</span> hoje · ${totalReviews} no período (${periodStr})`;
             } else {
-                elTodaySummary.textContent = `Nenhum cartão revisado hoje ainda · ${totalReviews} no histórico`;
+                elTodaySummary.textContent = `Nenhum cartão revisado hoje ainda · ${totalReviews} no período (${periodStr})`;
             }
         }
 
@@ -348,6 +390,7 @@ window.ankiController = {
             document.body.appendChild(globalTooltip);
         }
 
+        const daysToRender = 90;
         for (let i = daysToRender; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
@@ -358,12 +401,16 @@ window.ankiController = {
             const weekday = d.toLocaleDateString('pt-BR', { weekday: 'long' });
             const capWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
             
+            const isIgnored = ignoreBefore && formatStr < ignoreBefore;
             const count = records[formatStr] || 0;
             const box = document.createElement('div');
             box.className = 'w-3 h-3 rounded-[3px] transition-all hover:scale-150 hover:z-10 cursor-pointer';
             
             let colorIndex = 0;
-            if (count === 0) {
+            if (isIgnored) {
+                box.style.backgroundColor = '#f1f5f9';
+                box.style.opacity = '0.45';
+            } else if (count === 0) {
                 box.style.backgroundColor = '#e5e7eb';
             } else {
                 const ratio = Math.sqrt(count / maxReviews);
@@ -373,13 +420,24 @@ window.ankiController = {
             }
 
             box.addEventListener('mouseenter', () => {
-                globalTooltip.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full" style="background: ${count > 0 ? colors[colorIndex] : '#d1d5db'}"></span>
-                        <span>${count} ${count === 1 ? 'revisão' : 'revisões'}</span>
-                    </div>
-                    <div class="text-[8.5px] text-gray-400 mt-0.5">${capWeekday}, ${displayStr}</div>
-                `;
+                if (isIgnored) {
+                    const formattedCutoff = ignoreBefore.split('-').reverse().join('/');
+                    globalTooltip.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                            <span class="text-slate-300">Ignorado (&lt; ${formattedCutoff})</span>
+                        </div>
+                        <div class="text-[8.5px] text-gray-400 mt-0.5">${capWeekday}, ${displayStr}</div>
+                    `;
+                } else {
+                    globalTooltip.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full" style="background: ${count > 0 ? colors[colorIndex] : '#d1d5db'}"></span>
+                            <span>${count} ${count === 1 ? 'revisão' : 'revisões'}</span>
+                        </div>
+                        <div class="text-[8.5px] text-gray-400 mt-0.5">${capWeekday}, ${displayStr}</div>
+                    `;
+                }
                 
                 setTimeout(() => {
                     const rect = box.getBoundingClientRect();
