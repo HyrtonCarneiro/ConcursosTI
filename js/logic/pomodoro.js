@@ -258,6 +258,9 @@ window.pomodoroLogic = {
 
             if (this.pomodorosCompleted >= this.totalPomodoros) {
                 this.mode = 'idle';
+                this.targetEndTime = null;
+                this.isActive = false;
+                this.isPaused = false;
                 this._updateTitle();
                 this._notifyStateChange();
                 if (this.onSessionComplete) this.onSessionComplete();
@@ -274,12 +277,16 @@ window.pomodoroLogic = {
                 this.totalTime = this.config.pausaCurta * 60;
             }
             this.timeLeft = this.totalTime;
-            this.targetEndTime = Date.now() + (this.timeLeft * 1000);
 
             if (this.config.autoStart) {
                 this.isPaused = false;
                 this.isActive = true;
+                this.targetEndTime = Date.now() + (this.timeLeft * 1000);
                 this._startInterval();
+            } else {
+                this.isPaused = false;
+                this.isActive = false;
+                this.targetEndTime = null; // Do NOT start counting until user explicitly starts this stage!
             }
         } else {
             // Break ended, start next focus
@@ -287,17 +294,39 @@ window.pomodoroLogic = {
             this.mode = 'focus';
             this.totalTime = this.config.duracaoFoco * 60;
             this.timeLeft = this.totalTime;
-            this.targetEndTime = Date.now() + (this.timeLeft * 1000);
             this.accumulatedFocusBeforePhase = this.totalFocusSeconds;
 
             if (this.config.autoStart) {
                 this.isPaused = false;
                 this.isActive = true;
+                this.targetEndTime = Date.now() + (this.timeLeft * 1000);
                 this._startInterval();
+            } else {
+                this.isPaused = false;
+                this.isActive = false;
+                this.targetEndTime = null; // Do NOT start counting until user explicitly starts this stage!
             }
         }
 
         this._updateTitle();
+        this._notifyStateChange();
+        this._persistActiveSession();
+    },
+
+    // Start the current stage countdown (for individual stage start when autoStart is off)
+    startCurrentPhase: function() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.isPaused = false;
+        this.isActive = true;
+        // Anchor end time to this exact millisecond so countdown is 100% full duration
+        this.targetEndTime = Date.now() + (this.timeLeft * 1000);
+        if (this.mode === 'focus') {
+            this.accumulatedFocusBeforePhase = this.totalFocusSeconds;
+        }
+        this._startInterval();
         this._notifyStateChange();
         this._persistActiveSession();
     },
@@ -339,6 +368,7 @@ window.pomodoroLogic = {
             clearInterval(this.timer);
             this.timer = null;
         }
+        this.targetEndTime = null;
         this.isActive = false;
         this.isPaused = false;
         this._restoreTitle();
@@ -378,6 +408,7 @@ window.pomodoroLogic = {
 
             if (this.pomodorosCompleted >= this.totalPomodoros) {
                 this.mode = 'idle';
+                this.targetEndTime = null;
                 this._updateTitle();
                 this._notifyStateChange();
                 if (this.onSessionComplete) this.onSessionComplete();
@@ -390,11 +421,19 @@ window.pomodoroLogic = {
             this.mode = isLonga ? 'longBreak' : 'shortBreak';
             this.totalTime = (isLonga ? this.config.pausaLonga : this.config.pausaCurta) * 60;
             this.timeLeft = this.totalTime;
-            this.targetEndTime = Date.now() + (this.timeLeft * 1000);
-            this.isActive = true;
+
+            if (this.config.autoStart) {
+                this.targetEndTime = Date.now() + (this.timeLeft * 1000);
+                this.isActive = true;
+                this.isPaused = false;
+                this._startInterval();
+            } else {
+                this.targetEndTime = null;
+                this.isActive = false;
+                this.isPaused = false;
+            }
             this._updateTitle();
             this._notifyStateChange();
-            this._startInterval();
             this._persistActiveSession();
         } else {
             // Skipping break -> go to next focus
@@ -402,11 +441,19 @@ window.pomodoroLogic = {
             this.mode = 'focus';
             this.totalTime = this.config.duracaoFoco * 60;
             this.timeLeft = this.totalTime;
-            this.targetEndTime = Date.now() + (this.timeLeft * 1000);
             this.accumulatedFocusBeforePhase = this.totalFocusSeconds;
-            this.isActive = true;
-            this.isPaused = false;
-            this._startInterval();
+
+            if (this.config.autoStart) {
+                this.targetEndTime = Date.now() + (this.timeLeft * 1000);
+                this.isActive = true;
+                this.isPaused = false;
+                this._startInterval();
+            } else {
+                this.targetEndTime = null;
+                this.isActive = false;
+                this.isPaused = false;
+            }
+            this._updateTitle();
             this._notifyStateChange();
             this._persistActiveSession();
         }
@@ -542,10 +589,10 @@ window.pomodoroLogic = {
 
         try {
             const title = completedMode === 'focus'
-                ? `🍅 Pomodoro ${this.pomodorosCompleted + 1} concluído!`
+                ? `🍅 Pomodoro ${this.pomodorosCompleted} concluído!`
                 : '☕ Pausa finalizada!';
             const body = completedMode === 'focus'
-                ? `Hora de descansar! ${this.pomodorosCompleted + 1}/${this.totalPomodoros} concluídos.`
+                ? `Hora de descansar! ${this.pomodorosCompleted}/${this.totalPomodoros} concluídos.`
                 : 'Hora de voltar ao foco!';
 
             new Notification(title, {
@@ -598,7 +645,7 @@ window.pomodoroLogic = {
                 mode: this.mode,
                 totalTime: this.totalTime,
                 timeLeft: this.timeLeft,
-                targetEndTime: this.isPaused ? (Date.now() + (this.timeLeft * 1000)) : (this.targetEndTime || (Date.now() + (this.timeLeft * 1000))),
+                targetEndTime: this.isActive ? this.targetEndTime : null,
                 isActive: this.isActive,
                 isPaused: this.isPaused,
                 currentPomodoro: this.currentPomodoro,
@@ -646,15 +693,17 @@ window.pomodoroLogic = {
             this.currentSessionLogs = saved.currentSessionLogs || [];
             if (saved.config) this.config = { ...this.config, ...saved.config };
 
+            // Case 1: Paused mid-run
             if (saved.isPaused) {
                 this.timeLeft = saved.timeLeft;
-                this.targetEndTime = Date.now() + (this.timeLeft * 1000);
+                this.targetEndTime = null;
                 this.isActive = false;
                 this.isPaused = true;
                 return true;
             }
 
-            if (saved.isActive) {
+            // Case 2: Actively running when closed/refreshed
+            if (saved.isActive && saved.targetEndTime) {
                 const now = Date.now();
                 const remaining = Math.max(0, Math.ceil((saved.targetEndTime - now) / 1000));
                 if (remaining > 0) {
@@ -691,20 +740,26 @@ window.pomodoroLogic = {
                         return true;
                     }
 
-                    // Prepare for break or next cycle
+                    // Prepare for break or next cycle (waiting for user to start!)
                     const usarLonga = this.config.usarPausaLonga !== false;
                     const isLonga = usarLonga && (this.pomodorosCompleted % this.config.pomodorosAtePausaLonga === 0);
                     this.mode = isLonga ? 'longBreak' : 'shortBreak';
                     this.totalTime = (isLonga ? this.config.pausaLonga : this.config.pausaCurta) * 60;
                     this.timeLeft = this.totalTime;
+                    this.targetEndTime = null;
                     this.isActive = false;
-                    this.isPaused = true; // Wait for user
+                    this.isPaused = false; // Waiting for user to start!
                     this._persistActiveSession();
                     return true;
                 }
             }
 
-            return false;
+            // Case 3: Waiting for user to start next phase (autoStart is false)
+            this.timeLeft = saved.timeLeft || this.totalTime;
+            this.targetEndTime = null;
+            this.isActive = false;
+            this.isPaused = false;
+            return true;
         } catch (e) {
             console.warn('Pomodoro restore error:', e);
             return false;

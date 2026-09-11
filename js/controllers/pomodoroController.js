@@ -383,7 +383,13 @@ window.pomodoroController = {
                         <i class="${logic.getModeIcon()} text-sm"></i>
                         ${logic.getModeLabel()} ${logic.mode === 'focus' ? `(${logic.currentPomodoro}/${logic.totalPomodoros})` : ''}
                     </span>
-                    ${logic.isPaused ? '<span class="ml-2 text-xs font-black text-amber-500 uppercase tracking-widest animate-pulse">⏸ Pausado</span>' : ''}
+                    ${logic.isActive ? `
+                        <span class="ml-2 text-xs font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 animate-pulse">● Em andamento</span>
+                    ` : logic.isPaused ? `
+                        <span class="ml-2 text-xs font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full border border-amber-200 animate-pulse">⏸ Pausado</span>
+                    ` : `
+                        <span class="ml-2 text-xs font-black text-primary-600 uppercase tracking-widest bg-primary-50 px-3 py-1 rounded-full border border-primary-200">⏳ Pronto para Iniciar</span>
+                    `}
                 </div>
 
                 <!-- Circular Timer Display -->
@@ -399,7 +405,9 @@ window.pomodoroController = {
                             ${logic.formatTime(logic.timeLeft)}
                         </span>
                         <span class="text-xs font-bold text-gray-400 mt-2 uppercase tracking-widest">
-                            Pomodoro ${logic.pomodorosCompleted + 1} de ${logic.totalPomodoros}
+                            ${isFocus 
+                                ? `Pomodoro ${logic.currentPomodoro} de ${logic.totalPomodoros}` 
+                                : (logic.mode === 'longBreak' ? 'Pausa Longa' : 'Pausa Curta') + ` • ${logic.pomodorosCompleted} de ${logic.totalPomodoros} concluídos`}
                         </span>
                     </div>
                 </div>
@@ -418,13 +426,17 @@ window.pomodoroController = {
 
                 <!-- Action Controls -->
                 <div class="flex items-center justify-center gap-3 mb-8 flex-wrap">
-                    ${logic.isPaused || !logic.isActive ? `
+                    ${logic.isActive ? `
+                        <button type="button" onclick="window.pomodoroController.pauseTimer()" class="bg-amber-500 hover:bg-amber-600 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-amber-200 active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2">
+                            <i class="ph-bold ph-pause text-lg"></i> Pausar
+                        </button>
+                    ` : logic.isPaused ? `
                         <button type="button" onclick="window.pomodoroController.resumeTimer()" class="bg-primary-600 hover:bg-primary-700 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-primary-200 active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2">
                             <i class="ph-bold ph-play text-lg"></i> Continuar
                         </button>
                     ` : `
-                        <button type="button" onclick="window.pomodoroController.pauseTimer()" class="bg-amber-500 hover:bg-amber-600 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-amber-200 active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2">
-                            <i class="ph-bold ph-pause text-lg"></i> Pausar
+                        <button type="button" onclick="window.pomodoroController.startCurrentPhase()" class="${isFocus ? 'bg-primary-600 hover:bg-primary-700 shadow-primary-200' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'} text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2">
+                            <i class="ph-bold ph-play text-lg"></i> ${isFocus ? 'Iniciar Foco' : 'Iniciar Pausa'}
                         </button>
                     `}
 
@@ -1452,6 +1464,13 @@ window.pomodoroController = {
         }
     },
 
+    startCurrentPhase: function() {
+        const logic = window.pomodoroLogic;
+        if (!logic) return;
+        logic.startCurrentPhase();
+        this.renderActive();
+    },
+
     resumeTimer: function() {
         const logic = window.pomodoroLogic;
         if (!logic) return;
@@ -1459,10 +1478,7 @@ window.pomodoroController = {
         if (logic.isPaused) {
             logic.resume();
         } else {
-            logic.isActive = true;
-            logic.isPaused = false;
-            logic._startInterval();
-            logic._notifyStateChange();
+            logic.startCurrentPhase();
         }
         this.renderActive();
     },
