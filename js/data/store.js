@@ -574,13 +574,17 @@ window.store = {
                 // Merge cloud data into state
                 this.state = { ...this.state, ...cloudData, isAuthenticated: true, hasLoadedFromCloud: true };
                 
-                // Purge invented default mock categories if present in existing cloud record
-                const mockCats = ['Simulados', 'Revisão Geral', 'Questões', 'Leitura'];
-                if (this.state.pomodoroCategorias && Array.isArray(this.state.pomodoroCategorias)) {
-                    const originalLength = this.state.pomodoroCategorias.length;
-                    this.state.pomodoroCategorias = this.state.pomodoroCategorias.filter(c => !mockCats.includes(c));
-                    if (this.state.pomodoroCategorias.length !== originalLength) {
-                        this.save(true);
+                // One-time purge of legacy mock categories only if account has the exact initial mock array and hasn't been migrated yet
+                if (!this.state.hasPurgedLegacyMockCats) {
+                    this.state.hasPurgedLegacyMockCats = true;
+                    if (this.state.pomodoroCategorias && Array.isArray(this.state.pomodoroCategorias)) {
+                        const legacyDefaults = ['Simulados', 'Revisão Geral', 'Questões', 'Leitura'];
+                        const isExactLegacyMock = this.state.pomodoroCategorias.length === 4 &&
+                            legacyDefaults.every(c => this.state.pomodoroCategorias.includes(c));
+                        if (isExactLegacyMock) {
+                            this.state.pomodoroCategorias = [];
+                            this.save(true);
+                        }
                     }
                 }
 

@@ -96,9 +96,8 @@ window.pomodoroController = {
             };
         });
 
-        // Custom Categories from store (only user-created, no mock defaults)
-        const mockCats = ['Simulados', 'Revisão Geral', 'Questões', 'Leitura'];
-        const customCategories = (state.pomodoroCategorias || []).filter(c => !mockCats.includes(c));
+        // Custom Categories from store
+        const customCategories = state.pomodoroCategorias || [];
         const currentCategory = ctx.categoria || (ctx.semana ? `Semana ${ctx.weekNum || ''}`.trim() : 'Livre');
 
         // Materias list
@@ -173,11 +172,14 @@ window.pomodoroController = {
                                 
                                 ${cronoWeeks.length > 0 ? `
                                     <optgroup label="Semanas do Cronograma">
-                                        ${cronoWeeks.map(w => `
-                                            <option value="${this._escapeHtml(w.value)}" data-semana="${w.semana}" data-weeknum="${w.weekNum}" ${(ctx.semana === w.semana || currentCategory === w.value) ? 'selected' : ''}>
-                                                📅 ${this._escapeHtml(w.label)}
-                                            </option>
-                                        `).join('')}
+                                        ${cronoWeeks.map(w => {
+                                            const isSelected = !customCategories.includes(currentCategory) && (ctx.semana === w.semana || currentCategory === w.value);
+                                            return `
+                                                <option value="${this._escapeHtml(w.value)}" data-semana="${w.semana}" data-weeknum="${w.weekNum}" ${isSelected ? 'selected' : ''}>
+                                                    📅 ${this._escapeHtml(w.label)}
+                                                </option>
+                                            `;
+                                        }).join('')}
                                     </optgroup>
                                 ` : ''}
 
@@ -1130,8 +1132,7 @@ window.pomodoroController = {
         const actionsContainer = document.getElementById('pomo-cat-actions');
         if (actionsContainer) {
             const state = window.store ? window.store.getState() : {};
-            const mockCats = ['Simulados', 'Revisão Geral', 'Questões', 'Leitura'];
-            const customCategories = (state.pomodoroCategorias || []).filter(c => !mockCats.includes(c));
+            const customCategories = state.pomodoroCategorias || [];
             if (customCategories.includes(val)) {
                 actionsContainer.innerHTML = `
                     <div class="flex items-center gap-2 mt-1.5">
@@ -1161,15 +1162,83 @@ window.pomodoroController = {
     },
 
     promptNewCategory: function() {
-        const nome = prompt('Digite o nome da sua nova categoria personalizada (ex: Discursivas, Jurisprudência, etc.):');
-        if (!nome || !nome.trim()) return;
-        const cleanName = nome.trim();
+        this.openNewCategoryModal();
+    },
+
+    openNewCategoryModal: function() {
+        let modal = document.getElementById('pomo-new-category-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'pomo-new-category-modal';
+            document.body.appendChild(modal);
+        }
+        modal.innerHTML = `
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onclick="if(event.target===this) window.pomodoroController.closeNewCategoryModal()">
+                <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-gray-100 space-y-6">
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-9 h-9 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-lg">
+                                <i class="ph-bold ph-plus-circle"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-base font-black text-gray-900">Nova Categoria</h3>
+                                <p class="text-xs text-gray-400 font-medium">Crie uma categoria para suas sessões</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="window.pomodoroController.closeNewCategoryModal()" class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center font-bold transition-all">
+                            <i class="ph-bold ph-x"></i>
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-2">Nome da Categoria</label>
+                        <input id="input-new-category-modal" type="text" placeholder="Ex: Questões, Simulados, Discursivas..." class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all" onkeydown="if(event.key==='Enter'){event.preventDefault();window.pomodoroController.submitNewCategoryModal();} if(event.key==='Escape'){window.pomodoroController.closeNewCategoryModal();}">
+                        <p class="text-[10px] text-gray-400 mt-2">Pressione <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-gray-600 font-mono text-[9px]">Enter</kbd> para criar.</p>
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <button type="button" onclick="window.pomodoroController.closeNewCategoryModal()" class="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-bold transition-all">
+                            Cancelar
+                        </button>
+                        <button type="button" onclick="window.pomodoroController.submitNewCategoryModal()" class="flex-[2] py-3.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-lg shadow-primary-200">
+                            <i class="ph-bold ph-check"></i> Criar Categoria
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        setTimeout(() => {
+            const input = document.getElementById('input-new-category-modal');
+            if (input) input.focus();
+        }, 50);
+    },
+
+    closeNewCategoryModal: function() {
+        const modal = document.getElementById('pomo-new-category-modal');
+        if (modal) modal.remove();
+    },
+
+    submitNewCategoryModal: function() {
+        const input = document.getElementById('input-new-category-modal');
+        if (!input || !input.value || !input.value.trim()) {
+            window.utils.showToast('Digite o nome da categoria', 'error');
+            return;
+        }
+        const cleanName = input.value.trim();
         if (window.store) {
             window.store.addPomodoroCategoria(cleanName);
             if (window.pomodoroLogic) {
                 window.pomodoroLogic.context.categoria = cleanName;
+                window.pomodoroLogic.context.semana = null;
+                window.pomodoroLogic.context.weekNum = null;
             }
+            this.closeNewCategoryModal();
             this.render(true);
+            const select = document.getElementById('pomo-select-categoria');
+            if (select) {
+                select.value = cleanName;
+                this.onCategoryChange(cleanName);
+            }
             window.utils.showToast(`Categoria "🏷️ ${cleanName}" criada com sucesso!`, 'success');
         }
     },
@@ -1214,8 +1283,7 @@ window.pomodoroController = {
         const modal = document.getElementById('pomo-category-manager-modal');
         if (!modal) return;
         const state = window.store ? window.store.getState() : {};
-        const mockCats = ['Simulados', 'Revisão Geral', 'Questões', 'Leitura'];
-        const categories = (state.pomodoroCategorias || []).filter(c => !mockCats.includes(c));
+        const categories = state.pomodoroCategorias || [];
 
         modal.innerHTML = `
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
@@ -1282,6 +1350,8 @@ window.pomodoroController = {
             window.store.addPomodoroCategoria(nome);
             if (window.pomodoroLogic) {
                 window.pomodoroLogic.context.categoria = nome;
+                window.pomodoroLogic.context.semana = null;
+                window.pomodoroLogic.context.weekNum = null;
             }
             this.render(true);
             this._renderCategoryManagerContent();
