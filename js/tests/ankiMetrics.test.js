@@ -107,6 +107,38 @@ async function runTests() {
     }
     console.log("✅ TESTE 3 PASSOU: Syllabus limpa tags hierárquicas, computa lapses vitálicios e ignora suspensos.");
 
+    // --- TEST 4: getSevenDayStats rev7d engloba todos os cards solucionados (inclusive novos) ---
+    console.log("Testando getSevenDayStats com rev7d inclusivo...");
+    const now = Date.now();
+    ankiApi.invoke = async function(action, version, params) {
+        if (action === 'findCards') {
+            if (params.query.includes('introduced')) return [1, 2];
+            if (params.query.includes('rated')) return [1, 2, 3];
+            return [];
+        }
+        return [];
+    };
+    ankiApi.invokeBatch = async function(action, version, ids) {
+        return {
+            1: [{ id: now - 1000, time: 5000, ease: 3, type: 0 }], // Novo (Learn) correto
+            2: [{ id: now - 2000, time: 10000, ease: 1, type: 0 }], // Novo (Learn) erro
+            3: [{ id: now - 3000, time: 8000, ease: 3, type: 1 }]   // Revisão normal correto
+        };
+    };
+
+    const stats7d = await ankiApi.getSevenDayStats();
+    // totalStudied is 3, rev7d must be 3 (inclusive), correct: 2, wrong: 1, accuracy: 66.6%
+    if (stats7d.rev7d !== 3) {
+        throw new Error(`FALHA: rev7d deveria ser 3 (incluindo cards novos estudados), mas foi ${stats7d.rev7d}`);
+    }
+    if (stats7d.wrong !== 1 || stats7d.correct !== 2) {
+        throw new Error(`FALHA: Contagem de acertos/erros incorreta: wrong=${stats7d.wrong}, correct=${stats7d.correct}`);
+    }
+    if (Math.round(stats7d.accuracy) !== 67) {
+        throw new Error(`FALHA: Acurácia esperada ~67%, obteve ${stats7d.accuracy}%`);
+    }
+    console.log("✅ TESTE 4 PASSOU: rev7d reflete com fidelidade todos os cards solucionados no Anki (inclusive novos).");
+
     console.log("\n🎉 TODOS OS TESTES DE MÉTRICAS DO ANKI PASSARAM COM SUCESSO!");
 }
 

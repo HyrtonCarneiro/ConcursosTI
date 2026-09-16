@@ -367,7 +367,7 @@ window.ankiApi = {
                 pendente: currentPendente,
                 studied7d: totalStudied,
                 new7d: introduced7dCount,
-                rev7d: reviewsCount,
+                rev7d: totalStudied, // Inclui absolutamente todos os cards solucionados (novos, aprendizado, revisões e reaprendizagem)
                 timeMs: timeTotalMs,
                 avgMs: totalActions > 0 ? timeTotalMs / totalActions : 0,
                 timeTodayMs: timeTodayMs,
