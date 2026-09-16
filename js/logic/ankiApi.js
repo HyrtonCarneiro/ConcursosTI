@@ -170,6 +170,29 @@ window.ankiApi = {
         }
     },
 
+    cleanSubjectName: function(name) {
+        if (!name) return '';
+        // Normaliza tags e decks hierárquicos como "BANCOS::DE::DADOS" ou "bancos::de::dados" -> "Bancos de Dados"
+        const parts = name.split('::').map(part => {
+            const cleaned = part.replace(/[_\-]+/g, ' ').trim();
+            return cleaned.split(/\s+/).map(word => {
+                if (!word) return '';
+                const lower = word.toLowerCase();
+                const minorWords = ['de', 'da', 'do', 'das', 'dos', 'em', 'no', 'na', 'nos', 'nas', 'e', 'ou', 'a', 'o', 'para', 'com', 'por'];
+                if (minorWords.includes(lower)) {
+                    return lower;
+                }
+                return lower.charAt(0).toUpperCase() + lower.slice(1);
+            }).join(' ');
+        });
+
+        let result = parts.join(' ');
+        if (result.length > 0) {
+            result = result.charAt(0).toUpperCase() + result.slice(1);
+        }
+        return result;
+    },
+
     async getTagLapses() {
         try {
             // Find cards with lapses > 0 to get the most problematic cards
@@ -203,16 +226,16 @@ window.ankiApi = {
                     if (Array.isArray(rawTags) && rawTags.length > 0) {
                         rawTags.forEach(tag => {
                             if (ignoreTags.some(t => tag.toLowerCase().includes(t))) return;
-                            const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
-                            subjects.push(cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1));
+                            const subject = this.cleanSubjectName(tag);
+                            if (subject) subjects.push(subject);
                         });
                     }
 
                     // Fallback para o deck associado se não houver tags
                     if (subjects.length === 0 && card.deckName) {
-                        const mainDeck = card.deckName.split('::')[0];
-                        if (mainDeck !== 'Default') {
-                            subjects.push(mainDeck);
+                        const subject = this.cleanSubjectName(card.deckName);
+                        if (subject && subject !== 'Default') {
+                            subjects.push(subject);
                         }
                     }
 
@@ -236,9 +259,9 @@ window.ankiApi = {
             const todayObj = new Date();
 
             for (let i = 0; i < days; i++) {
-                // No Anki, cartões devidos hoje e pendências anteriores correspondem a prop:due<=1.
-                // Amanhã é prop:due=2, dia seguinte prop:due=3, etc.
-                const query = i === 0 ? 'prop:due<=1' : `prop:due=${i + 1}`;
+                // No Anki, cartões devidos hoje e pendências anteriores correspondem a prop:due<=0.
+                // Amanhã é prop:due=1, dia seguinte prop:due=2, etc.
+                const query = i === 0 ? 'prop:due<=0' : `prop:due=${i}`;
                 const cards = await this.invoke('findCards', 6, { query });
                 
                 const nextDate = new Date(todayObj);
@@ -397,18 +420,21 @@ window.ankiApi = {
                 if (Array.isArray(rawTags) && rawTags.length > 0) {
                     rawTags.forEach(tag => {
                         if (systemTags.includes(tag.toLowerCase())) return;
-                        const cleanTag = tag.replace(/_/g, ' ').replace(/-/g, ' ');
-                        subjects.push(cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1));
+                        const subject = this.cleanSubjectName(tag);
+                        if (subject) subjects.push(subject);
                     });
                 }
 
                 // 6. Se não houver tags legítimas, usar o Deck como fallback
                 if (subjects.length === 0 && card.deckName) {
-                    const mainDeck = card.deckName.split('::')[0];
-                    if (mainDeck !== 'Default') {
-                        subjects.push(mainDeck);
+                    const subject = this.cleanSubjectName(card.deckName);
+                    if (subject && subject !== 'Default') {
+                        subjects.push(subject);
                     }
                 }
+
+                // Ignora cards suspensos ou enterrados na contagem ativa
+                if (card.queue < 0) return;
 
                 subjects.forEach(subjectName => {
                     if (!syllabus[subjectName]) {
@@ -418,7 +444,6 @@ window.ankiApi = {
                     syllabus[subjectName].total++;
                     syllabus[subjectName].lapses += (card.lapses || 0);
 
-                    if (card.queue < 0) return;
                     if (card.type === 0) syllabus[subjectName].new++;
                     else if (card.ivl >= 21) syllabus[subjectName].mature++;
                     else syllabus[subjectName].young++;

@@ -559,6 +559,10 @@ window.pomodoroController = {
         const logs = this._extractLogsForPeriod(period);
         const sessoes = (window.store ? window.store.getState().pomodoroSessoes : []) || [];
 
+        // Count unique sessions active in the chosen period
+        const periodSessionIds = new Set(logs.map(l => l.sessionId).filter(Boolean));
+        const totalSessoesPeriodo = periodSessionIds.size;
+
         // Overall calculations for the chosen period
         const totalPomos = logs.length;
         const totalFocoSeg = logs.reduce((sum, l) => sum + (l.duracaoSeg || (l.duracaoMin * 60) || 0), 0);
@@ -590,35 +594,56 @@ window.pomodoroController = {
             ...catTotals[k]
         })).sort((a, b) => b.timeSec - a.timeSec);
 
-        // Weekly 7-day Bar Chart
-        const dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-        const dayTotals = [0, 0, 0, 0, 0, 0, 0];
+        // 7-day rolling chart: uses ALL logs to guarantee stability regardless of which period tab is active
+        const allLogs = this._extractLogsForPeriod('geral');
+        const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
         const now = new Date();
-        logs.forEach(l => {
-            if (!l.completedAt) return;
-            const d = new Date(l.completedAt);
-            const diff = Math.floor((now - d) / (1000 * 60 * 60 * 24));
-            if (diff >= 0 && diff < 7) {
-                dayTotals[d.getDay()] += (l.duracaoSeg || (l.duracaoMin * 60) || 0);
+
+        // Build 7 rolling calendar days ending on today (chronological order: past -> today)
+        const rollingDays = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            rollingDays.push({
+                key: key,
+                label: dayNames[d.getDay()],
+                isToday: i === 0,
+                totalSec: 0
+            });
+        }
+
+        // Aggregate study time from allLogs into the matching calendar day
+        allLogs.forEach(l => {
+            const dateVal = l.completedAt || l.dataInicio;
+            if (!dateVal) return;
+            const d = new Date(dateVal);
+            if (isNaN(d.getTime())) return;
+            const logKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const target = rollingDays.find(rd => rd.key === logKey);
+            if (target) {
+                target.totalSec += (l.duracaoSeg || (l.duracaoMin * 60) || 0);
             }
         });
-        const maxDay = Math.max(...dayTotals, 1);
-        const todayDow = now.getDay();
+
+        const maxDay = Math.max(...rollingDays.map(rd => rd.totalSec), 1);
 
         let barsHtml = '';
-        for (let i = 0; i < 7; i++) {
-            const pct = Math.round((dayTotals[i] / maxDay) * 100);
-            const isToday = i === todayDow;
+        rollingDays.forEach(day => {
+            const minutes = Math.round(day.totalSec / 60);
+            const pct = day.totalSec > 0 ? Math.max(Math.round((day.totalSec / maxDay) * 100), 8) : 0;
             barsHtml += `
-                <div class="flex flex-col items-center gap-2 flex-1">
-                    <span class="text-xs font-bold text-gray-500 min-h-[1.25rem]">${dayTotals[i] > 0 ? Math.round(dayTotals[i]/60) + 'm' : ''}</span>
+                <div class="flex flex-col items-center gap-2 flex-1 group" title="${day.key}: ${day.totalSec > 0 ? (window.pomodoroLogic ? window.pomodoroLogic.formatDuration(day.totalSec) : minutes + 'min') : 'Sem estudos'}">
+                    <span class="text-xs font-bold text-gray-500 min-h-[1.25rem]">${day.totalSec > 0 ? minutes + 'm' : ''}</span>
                     <div class="w-full bg-gray-100 rounded-xl overflow-hidden h-32 flex flex-col justify-end p-0.5">
-                        <div class="w-full ${isToday ? 'bg-primary-600' : 'bg-primary-300'} rounded-lg transition-all duration-500" style="height: ${Math.max(pct, 5)}%"></div>
+                        <div class="w-full ${day.isToday ? 'bg-primary-600' : 'bg-primary-400'} rounded-lg transition-all duration-500" style="height: ${pct}%"></div>
                     </div>
-                    <span class="text-xs font-black ${isToday ? 'text-primary-600' : 'text-gray-600'} uppercase tracking-wider">${dayLabels[i]}</span>
+                    <div class="flex flex-col items-center">
+                        <span class="text-xs font-black ${day.isToday ? 'text-primary-600' : 'text-gray-600'} uppercase tracking-wider">${day.label}</span>
+                        ${day.isToday ? `<span class="text-[9px] font-black text-primary-600 uppercase tracking-widest leading-none mt-0.5">Hoje</span>` : ''}
+                    </div>
                 </div>
             `;
-        }
+        });
 
         const periodLabels = {
             'hoje': 'Hoje',
@@ -668,8 +693,8 @@ window.pomodoroController = {
                     </div>
                     <div class="bg-gray-50/70 rounded-2xl border border-gray-100 p-5 text-center">
                         <i class="ph-bold ph-fire text-purple-600 text-2xl mb-1.5"></i>
-                        <p class="text-2xl font-black text-gray-800 tabular-nums">${sessoes.length}</p>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sessões Totais</p>
+                        <p class="text-2xl font-black text-gray-800 tabular-nums">${totalSessoesPeriodo}</p>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sessões (${periodLabels[period]})</p>
                     </div>
                 </div>
 
@@ -792,19 +817,19 @@ window.pomodoroController = {
         const filterPeriod = this.historyFilterPeriod;
 
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
         const currentDay = now.getDay();
         const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-        const monday = new Date(now);
-        monday.setDate(now.getDate() + diffToMonday);
-        monday.setHours(0, 0, 0, 0);
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
 
         const filtered = sessoes.filter(s => {
+            const sDate = new Date(s.dataInicio);
             // Filter Period
-            if (filterPeriod === 'hoje' && !(s.dataInicio || '').startsWith(todayStr)) return false;
-            if (filterPeriod === 'semana' && new Date(s.dataInicio) < monday) return false;
-            if (filterPeriod === 'mes' && new Date(s.dataInicio) < startOfMonth) return false;
+            if (filterPeriod === 'hoje' && (sDate < startOfToday || sDate > endOfToday)) return false;
+            if (filterPeriod === 'semana' && sDate < monday) return false;
+            if (filterPeriod === 'mes' && sDate < startOfMonth) return false;
 
             // Filter Category
             if (filterCat !== 'todas') {
@@ -1659,17 +1684,18 @@ window.pomodoroController = {
     _extractLogsForPeriod: function(period) {
         const sessoes = (window.store ? window.store.getState().pomodoroSessoes : []) || [];
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
+
+        // Local boundaries to prevent UTC offset shifts (e.g. 21h+ in UTC-3)
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
         // Start of week (Monday)
         const currentDay = now.getDay();
         const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-        const monday = new Date(now);
-        monday.setDate(now.getDate() + diffToMonday);
-        monday.setHours(0, 0, 0, 0);
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
 
         // Start of month
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
 
         const logs = [];
         sessoes.forEach(s => {
@@ -1678,7 +1704,7 @@ window.pomodoroController = {
                     const logDate = new Date(log.completedAt || s.dataInicio);
                     let matches = true;
                     if (period === 'hoje') {
-                        matches = (log.completedAt || s.dataInicio || '').startsWith(todayStr);
+                        matches = logDate >= startOfToday && logDate <= endOfToday;
                     } else if (period === 'semana') {
                         matches = logDate >= monday;
                     } else if (period === 'mes') {
@@ -1698,7 +1724,7 @@ window.pomodoroController = {
                 const sessionDate = new Date(s.dataInicio);
                 let matches = true;
                 if (period === 'hoje') {
-                    matches = (s.dataInicio || '').startsWith(todayStr);
+                    matches = sessionDate >= startOfToday && sessionDate <= endOfToday;
                 } else if (period === 'semana') {
                     matches = sessionDate >= monday;
                 } else if (period === 'mes') {

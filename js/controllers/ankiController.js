@@ -163,15 +163,16 @@ window.ankiController = {
             const matCard = document.createElement('div');
             matCard.className = 'bg-gray-50 rounded-2xl p-4 border border-gray-100 hover:border-primary-200 transition-all group';
             
-            const youngPerc = Math.round((stats.young / stats.total) * 100);
-            const maturePerc = Math.round((stats.mature / stats.total) * 100);
-            const newPerc = 100 - youngPerc - maturePerc;
-            const newCards = stats.total - stats.young - stats.mature;
+            const total = stats.total || 0;
+            const newCards = stats.new !== undefined ? stats.new : Math.max(0, total - (stats.young || 0) - (stats.mature || 0));
+            const youngPerc = total > 0 ? Math.round(((stats.young || 0) / total) * 100) : 0;
+            const maturePerc = total > 0 ? Math.round(((stats.mature || 0) / total) * 100) : 0;
+            const newPerc = total > 0 ? Math.max(0, 100 - youngPerc - maturePerc) : 0;
 
             matCard.innerHTML = `
                 <div class="flex justify-between items-start mb-2 gap-2">
                     <h4 class="text-xs font-black text-gray-800 uppercase tracking-tight truncate" title="${subject}">${subject}</h4>
-                    <span class="text-[9px] font-bold text-gray-400 shrink-0">${stats.total} cards</span>
+                    <span class="text-[9px] font-bold text-gray-400 shrink-0">${total} cards</span>
                 </div>
                 <div class="flex h-1.5 w-full rounded-full overflow-hidden bg-gray-200 mb-2">
                     <div class="bg-green-500 h-full" style="width: ${maturePerc}%"></div>
@@ -179,10 +180,10 @@ window.ankiController = {
                     <div class="bg-gray-300 h-full" style="width: ${newPerc}%"></div>
                 </div>
                 <div class="flex flex-wrap gap-x-3 gap-y-2 justify-between text-[9px] font-bold">
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span> Maduros ${maturePerc}% (${stats.mature})<span class="anki-info-trigger" data-tooltip="Cards com intervalo de revisão ≥ 21 dias. O Anki considera que você já memorizou esse conteúdo de forma sólida.">ⓘ</span></div>
-                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span> Jovens ${youngPerc}% (${stats.young})<span class="anki-info-trigger" data-tooltip="Cards já estudados com intervalo < 21 dias. Estão na fase de consolidação — você já os viu, mas ainda precisam de reforço frequente.">ⓘ</span></div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span> Maduros ${maturePerc}% (${stats.mature || 0})<span class="anki-info-trigger" data-tooltip="Cards com intervalo de revisão ≥ 21 dias. O Anki considera que você já memorizou esse conteúdo de forma sólida.">ⓘ</span></div>
+                    <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></span> Jovens ${youngPerc}% (${stats.young || 0})<span class="anki-info-trigger" data-tooltip="Cards já estudados com intervalo < 21 dias. Estão na fase de consolidação — você já os viu, mas ainda precisam de reforço frequente.">ⓘ</span></div>
                     <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0"></span> Novos ${newPerc}% (${newCards})<span class="anki-info-trigger" data-tooltip="Cards que nunca foram estudados. Estão no deck esperando para serem introduzidos na sua rotina de estudo.">ⓘ</span></div>
-                    <div class="flex items-center gap-1 text-red-500"><i class="ph-bold ph-warning shrink-0"></i> ${stats.lapses} falhas<span class="anki-info-trigger" data-tooltip="Total acumulado de vezes que cards desta matéria foram respondidos como 'Errei' (Lapses). Quanto maior, mais difícil está sendo memorizar esse assunto.">ⓘ</span></div>
+                    <div class="flex items-center gap-1 text-red-500"><i class="ph-bold ph-warning shrink-0"></i> ${stats.lapses || 0} lapsos (vitalício)<span class="anki-info-trigger" data-tooltip="Total acumulado de lapsos de retenção (vezes que um card já memorizado foi esquecido e voltou ao aprendizado). Não contabiliza erros normais cometidos na fase inicial de aprendizado de novos cards.">ⓘ</span></div>
                 </div>
             `;
             container.appendChild(matCard);
@@ -526,7 +527,7 @@ window.ankiController = {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'right', labels: { boxWidth: 10, font: { family: 'Outfit' } } },
-                    tooltip: { callbacks: { label: function(context) { return ' ' + context.label + ': ' + context.raw + ' erros'; } } },
+                    tooltip: { callbacks: { label: function(context) { return ' ' + context.label + ': ' + context.raw + (context.raw === 1 ? ' lapso' : ' lapsos'); } } },
                     datalabels: { display: false } // hide external plugin text if used globally
                 },
                 cutout: '70%'
