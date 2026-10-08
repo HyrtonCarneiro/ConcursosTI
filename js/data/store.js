@@ -17,9 +17,11 @@ window.store = {
         pomodoroConfig: {
             duracaoFoco: 25,
             pausaCurta: 5,
+            duracaoPausa: 5,
+            totalPomodoros: 4,
             pausaLonga: 15,
             pomodorosAtePausaLonga: 4,
-            usarPausaLonga: true,
+            usarPausaLonga: false,
             autoStart: false,
             somAtivado: true
         },
@@ -497,9 +499,11 @@ window.store = {
                 pomodoroConfig: {
                     duracaoFoco: 25,
                     pausaCurta: 5,
+                    duracaoPausa: 5,
+                    totalPomodoros: 4,
                     pausaLonga: 15,
                     pomodorosAtePausaLonga: 4,
-                    usarPausaLonga: true,
+                    usarPausaLonga: false,
                     autoStart: false,
                     somAtivado: true
                 },

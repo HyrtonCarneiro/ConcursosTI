@@ -135,6 +135,28 @@ async function runTests() {
     if (logic.isActive) throw new Error(`Com autoStart=false, pular deve aguardar início`);
     if (logic.timeLeft !== 5 * 60) throw new Error(`Pausa após pular deve ter 300s`);
 
+    // Test 5: Verify uniform break time across multiple cycles (no long break)
+    logic.stop();
+    logic.initSession(4, { duracaoFoco: 25, pausaCurta: 5, pausaLonga: 20, pomodorosAtePausaLonga: 2 }, { categoria: 'Test' });
+    
+    // Cycle 1: Foco 1
+    logic.startNextPhase();
+    if (logic.mode !== 'focus') throw new Error(`Ciclo 1 deveria iniciar em foco`);
+    logic.timeLeft = 0;
+    logic._phaseComplete(); // Completes pomo 1 -> Break 1
+    if (logic.mode !== 'shortBreak') throw new Error(`Pausa 1 deveria ser break`);
+    if (logic.totalTime !== 5 * 60) throw new Error(`Pausa 1 deveria ter 300s (5min), mas tem ${logic.totalTime}s`);
+    if (logic.getModeLabel() !== 'Pausa') throw new Error(`getModeLabel deveria retornar 'Pausa', retornou ${logic.getModeLabel()}`);
+
+    // Cycle 2: Foco 2
+    logic.startNextPhase();
+    if (logic.mode !== 'focus') throw new Error(`Ciclo 2 deveria ser foco`);
+    logic.timeLeft = 0;
+    logic._phaseComplete(); // Completes pomo 2 (which previously would trigger longBreak)
+    if (logic.mode !== 'shortBreak') throw new Error(`Após pomo 2 (ponto de corte antigo de pausa longa), modo deveria continuar sendo pausa padrão ('shortBreak'), mas é ${logic.mode}`);
+    if (logic.totalTime !== 5 * 60) throw new Error(`Após pomo 2, duração da pausa DEVE ser 5 min (300s), mas foi ${logic.totalTime}s! Pausa longa foi indevidamente acionada.`);
+    if (logic.getModeLabel() !== 'Pausa') throw new Error(`getModeLabel após pomo 2 deveria ser 'Pausa', retornou ${logic.getModeLabel()}`);
+
     // Restore Date.now and stop timer
     logic.stop();
     Date.now = originalDateNow;

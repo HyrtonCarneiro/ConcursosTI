@@ -71,7 +71,7 @@ window.pomodoroController = {
     // --- SETUP VIEW ---
     renderSetup: function() {
         if (!this.container) return;
-        const config = window.pomodoroLogic ? window.pomodoroLogic.config : { duracaoFoco: 25, pausaCurta: 5, pausaLonga: 15, pomodorosAtePausaLonga: 4, usarPausaLonga: true, autoStart: false, somAtivado: true };
+        const config = window.pomodoroLogic ? window.pomodoroLogic.config : { duracaoFoco: 25, pausaCurta: 5, duracaoPausa: 5, totalPomodoros: 4, pomodorosAtePausaLonga: 4, pausaLonga: 15, usarPausaLonga: false, autoStart: false, somAtivado: true };
         const ctx = window.pomodoroLogic ? window.pomodoroLogic.context : {};
         const state = window.store ? window.store.getState() : { materias: [], cronograma: [], pomodoroCategorias: [] };
         
@@ -104,7 +104,6 @@ window.pomodoroController = {
         const materias = state.materias || [];
         const currentMateria = ctx.materia || (ctx.materias && ctx.materias.length === 1 ? ctx.materias[0] : '');
         const isLinkedToCronograma = !!ctx.semana;
-        const usarLonga = config.usarPausaLonga !== false;
 
         this.container.innerHTML = `
             <div class="max-w-3xl mx-auto animate-fade-in">
@@ -230,13 +229,13 @@ window.pomodoroController = {
                     </div>
 
                     <!-- Fluid Timers & Cycles Controls (With Direct Number Inputs) -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                         <!-- Total Pomodoros -->
                         <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 text-center transition-all">
                             <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pomodoros</label>
                             <div class="flex items-center justify-center gap-1.5">
                                 <button type="button" onclick="window.pomodoroController.stepConfig('totalPomodoros', -1)" class="w-8 h-8 rounded-xl bg-white shadow-sm hover:bg-gray-100 text-gray-700 flex items-center justify-center font-black transition-all active:scale-90">−</button>
-                                <input id="cfg-input-pomos" type="number" min="1" max="24" value="${config.pomodorosAtePausaLonga}" oninput="window.pomodoroController.onInputConfig('totalPomodoros', this.value)" class="text-xl font-black text-gray-800 w-12 text-center bg-transparent border-b-2 border-transparent focus:border-primary-500 outline-none tabular-nums" title="Digite a quantidade de pomodoros">
+                                <input id="cfg-input-pomos" type="number" min="1" max="24" value="${config.totalPomodoros || config.pomodorosAtePausaLonga || 4}" oninput="window.pomodoroController.onInputConfig('totalPomodoros', this.value)" class="text-xl font-black text-gray-800 w-12 text-center bg-transparent border-b-2 border-transparent focus:border-primary-500 outline-none tabular-nums" title="Digite a quantidade de pomodoros">
                                 <button type="button" onclick="window.pomodoroController.stepConfig('totalPomodoros', 1)" class="w-8 h-8 rounded-xl bg-white shadow-sm hover:bg-gray-100 text-gray-700 flex items-center justify-center font-black transition-all active:scale-90">+</button>
                             </div>
                             <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 block">Ciclos de foco</span>
@@ -253,47 +252,15 @@ window.pomodoroController = {
                             <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 block">Tempo de foco</span>
                         </div>
 
-                        <!-- Pausa Curta (min) -->
+                        <!-- Pausa (min) -->
                         <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 text-center transition-all">
-                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pausa Curta</label>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pausa (min)</label>
                             <div class="flex items-center justify-center gap-1.5">
                                 <button type="button" onclick="window.pomodoroController.stepConfig('pausaCurta', -1)" class="w-8 h-8 rounded-xl bg-white shadow-sm hover:bg-gray-100 text-gray-700 flex items-center justify-center font-black transition-all active:scale-90">−</button>
-                                <input id="cfg-input-curta" type="number" min="1" max="60" value="${config.pausaCurta}" oninput="window.pomodoroController.onInputConfig('pausaCurta', this.value)" class="text-xl font-black text-amber-600 w-14 text-center bg-transparent border-b-2 border-transparent focus:border-primary-500 outline-none tabular-nums" title="Digite os minutos de pausa curta">
+                                <input id="cfg-input-curta" type="number" min="1" max="60" value="${config.pausaCurta || config.duracaoPausa || 5}" oninput="window.pomodoroController.onInputConfig('pausaCurta', this.value)" class="text-xl font-black text-amber-600 w-14 text-center bg-transparent border-b-2 border-transparent focus:border-primary-500 outline-none tabular-nums" title="Digite os minutos de pausa">
                                 <button type="button" onclick="window.pomodoroController.stepConfig('pausaCurta', 1)" class="w-8 h-8 rounded-xl bg-white shadow-sm hover:bg-gray-100 text-gray-700 flex items-center justify-center font-black transition-all active:scale-90">+</button>
                             </div>
-                            <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 block">Entre cada pomo</span>
-                        </div>
-
-                        <!-- Pausa Longa (min) -->
-                        <div id="cfg-card-pausa-longa" class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 text-center transition-all ${!usarLonga ? 'opacity-50 grayscale' : ''}">
-                            <div class="flex items-center justify-between mb-1 px-1">
-                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pausa Longa</label>
-                                <span id="cfg-badge-longa" class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${usarLonga ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'}">
-                                    ${usarLonga ? 'Ativa' : 'Off'}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-center gap-1.5">
-                                <button type="button" onclick="window.pomodoroController.stepConfig('pausaLonga', -1)" class="w-8 h-8 rounded-xl bg-white shadow-sm hover:bg-gray-100 text-gray-700 flex items-center justify-center font-black transition-all active:scale-90">−</button>
-                                <input id="cfg-input-longa" type="number" min="1" max="120" value="${config.pausaLonga}" oninput="window.pomodoroController.onInputConfig('pausaLonga', this.value)" class="text-xl font-black text-emerald-600 w-14 text-center bg-transparent border-b-2 border-transparent focus:border-primary-500 outline-none tabular-nums" title="Digite os minutos de pausa longa">
-                                <button type="button" onclick="window.pomodoroController.stepConfig('pausaLonga', 1)" class="w-8 h-8 rounded-xl bg-white shadow-sm hover:bg-gray-100 text-gray-700 flex items-center justify-center font-black transition-all active:scale-90">+</button>
-                            </div>
-                            <span id="cfg-label-longa-freq" class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 block">A cada ${config.pomodorosAtePausaLonga} pomos</span>
-                        </div>
-                    </div>
-
-                    <!-- Explanatory Box: Como Funcionam as Pausas & Toggle da Pausa Longa -->
-                    <div class="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-5 mb-8 text-left transition-all">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 pb-2 border-b border-amber-200/60">
-                            <span class="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
-                                <i class="ph-bold ph-info text-amber-600 text-base"></i> Entenda como funcionam os descansos
-                            </span>
-                            <button type="button" onclick="window.pomodoroController.togglePausaLonga()" id="btn-toggle-pausa-longa" class="text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border transition-all active:scale-95 flex items-center gap-1.5 self-start sm:self-auto ${usarLonga ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-sm' : 'bg-gray-200 hover:bg-gray-300 text-gray-700 border-gray-300'}">
-                                <i class="ph-bold ${usarLonga ? 'ph-check-circle' : 'ph-x-circle'}"></i>
-                                Pausa Longa: ${usarLonga ? 'Ativada' : 'Desativada'}
-                            </button>
-                        </div>
-                        <div id="pomo-pausa-explainer-text" class="text-xs text-amber-900 leading-relaxed font-medium space-y-1">
-                            ${this._getPausaExplainerHtml(config)}
+                            <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 block">Tempo de pausa</span>
                         </div>
                     </div>
 
@@ -301,10 +268,10 @@ window.pomodoroController = {
                     <div class="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-gray-100 mb-8">
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">Presets Rápidos:</span>
-                            <button type="button" onclick="window.pomodoroController.applyPreset(25, 5, 15, 4)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 transition-all active:scale-95">Clássico 25/5</button>
-                            <button type="button" onclick="window.pomodoroController.applyPreset(50, 10, 20, 4)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 transition-all active:scale-95">Maratona 50/10</button>
-                            <button type="button" onclick="window.pomodoroController.applyPreset(15, 3, 10, 4)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 transition-all active:scale-95">Rápido 15/3</button>
-                            <button type="button" onclick="window.pomodoroController.applyPreset(45, 10, 25, 3)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 transition-all active:scale-95">Imersão 45/10</button>
+                            <button type="button" onclick="window.pomodoroController.applyPreset(25, 5, 4)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 transition-all active:scale-95">Clássico 25/5</button>
+                            <button type="button" onclick="window.pomodoroController.applyPreset(50, 10, 4)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 transition-all active:scale-95">Maratona 50/10</button>
+                            <button type="button" onclick="window.pomodoroController.applyPreset(15, 3, 4)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 transition-all active:scale-95">Rápido 15/3</button>
+                            <button type="button" onclick="window.pomodoroController.applyPreset(45, 10, 4)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gray-100 hover:bg-primary-50 hover:text-primary-600 text-gray-600 transition-all active:scale-95">Imersão 45/10</button>
                         </div>
                         <div class="flex items-center gap-2">
                             <button type="button" onclick="window.pomodoroController.toggleAutoStart()" id="btn-auto-start" class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 ${config.autoStart ? 'bg-primary-600 text-white shadow-md shadow-primary-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
@@ -334,7 +301,7 @@ window.pomodoroController = {
         const circumference = 2 * Math.PI * 54;
         const dashoffset = circumference - (progress / 100) * circumference;
 
-        const ringColor = isFocus ? '#3b5df5' : (logic.mode === 'longBreak' ? '#10b981' : '#f59e0b');
+        const ringColor = isFocus ? '#3b5df5' : '#f59e0b';
         const ctx = logic.context || {};
         const categoria = ctx.categoria || (ctx.semana ? `Semana ${ctx.weekNum || ''}`.trim() : 'Livre');
         const materia = ctx.materia || (ctx.materias && ctx.materias.length > 0 ? ctx.materias.join(', ') : 'Geral');
@@ -381,7 +348,7 @@ window.pomodoroController = {
 
                 <!-- Phase Label -->
                 <div class="mb-6">
-                    <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${isFocus ? 'bg-primary-50 text-primary-600 border border-primary-100' : (logic.mode === 'longBreak' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100')}">
+                    <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${isFocus ? 'bg-primary-50 text-primary-600 border border-primary-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}">
                         <i class="${logic.getModeIcon()} text-sm"></i>
                         ${logic.getModeLabel()} ${logic.mode === 'focus' ? `(${logic.currentPomodoro}/${logic.totalPomodoros})` : ''}
                     </span>
@@ -409,7 +376,7 @@ window.pomodoroController = {
                         <span class="text-xs font-bold text-gray-400 mt-2 uppercase tracking-widest">
                             ${isFocus 
                                 ? `Pomodoro ${logic.currentPomodoro} de ${logic.totalPomodoros}` 
-                                : (logic.mode === 'longBreak' ? 'Pausa Longa' : 'Pausa Curta') + ` • ${logic.pomodorosCompleted} de ${logic.totalPomodoros} concluídos`}
+                                : `Pausa • ${logic.pomodorosCompleted} de ${logic.totalPomodoros} concluídos`}
                         </span>
                     </div>
                 </div>
@@ -1012,114 +979,80 @@ window.pomodoroController = {
 
     // --- ACTIONS & CONFIG (FLUID WITHOUT FLICKER) ---
     stepConfig: function(field, delta) {
-        const config = window.pomodoroLogic.config;
+        const config = window.pomodoroLogic ? window.pomodoroLogic.config : {};
         const limits = {
             totalPomodoros: [1, 24],
+            pomodorosAtePausaLonga: [1, 24],
             duracaoFoco: [1, 180],
             pausaCurta: [1, 60],
+            duracaoPausa: [1, 60],
             pausaLonga: [1, 120]
         };
 
-        const [min, max] = limits[field] || [1, 120];
-        const targetProp = field === 'totalPomodoros' ? 'pomodorosAtePausaLonga' : field;
+        const targetProp = (field === 'totalPomodoros' || field === 'pomodorosAtePausaLonga') ? 'totalPomodoros' : field;
+        const [min, max] = limits[field] || limits[targetProp] || [1, 120];
         const inputMap = {
             totalPomodoros: 'cfg-input-pomos',
+            pomodorosAtePausaLonga: 'cfg-input-pomos',
             duracaoFoco: 'cfg-input-foco',
             pausaCurta: 'cfg-input-curta',
+            duracaoPausa: 'cfg-input-curta',
             pausaLonga: 'cfg-input-longa'
         };
-        const el = document.getElementById(inputMap[field]);
+        const el = document.getElementById(inputMap[field] || inputMap[targetProp]);
         const current = (el && !isNaN(parseInt(el.value, 10))) ? parseInt(el.value, 10) : (config[targetProp] || 25);
         const next = Math.max(min, Math.min(max, current + delta));
         config[targetProp] = next;
 
-        window.pomodoroLogic.saveConfig();
-
-        if (el) el.value = next;
-
-        // Update frequency label if pomos changed
-        if (field === 'totalPomodoros') {
-            const freqLabel = document.getElementById('cfg-label-longa-freq');
-            if (freqLabel) freqLabel.textContent = `A cada ${next} pomos`;
+        if (targetProp === 'totalPomodoros') {
+            config.pomodorosAtePausaLonga = next;
+        } else if (targetProp === 'pausaCurta' || targetProp === 'duracaoPausa') {
+            config.pausaCurta = next;
+            config.duracaoPausa = next;
         }
 
-        this._updatePausaExplainer();
+        if (window.pomodoroLogic && window.pomodoroLogic.saveConfig) {
+            window.pomodoroLogic.saveConfig();
+        }
+
+        if (el) el.value = next;
     },
 
     onInputConfig: function(field, rawVal) {
         const val = parseInt(rawVal, 10);
         if (isNaN(val) || val <= 0) return;
 
-        const config = window.pomodoroLogic.config;
-        const targetProp = field === 'totalPomodoros' ? 'pomodorosAtePausaLonga' : field;
+        const config = window.pomodoroLogic ? window.pomodoroLogic.config : {};
+        const targetProp = (field === 'totalPomodoros' || field === 'pomodorosAtePausaLonga') ? 'totalPomodoros' : field;
         config[targetProp] = val;
-        window.pomodoroLogic.saveConfig();
 
-        if (field === 'totalPomodoros') {
-            const freqLabel = document.getElementById('cfg-label-longa-freq');
-            if (freqLabel) freqLabel.textContent = `A cada ${val} pomos`;
+        if (targetProp === 'totalPomodoros') {
+            config.pomodorosAtePausaLonga = val;
+        } else if (targetProp === 'pausaCurta' || targetProp === 'duracaoPausa') {
+            config.pausaCurta = val;
+            config.duracaoPausa = val;
         }
 
-        this._updatePausaExplainer();
+        if (window.pomodoroLogic && window.pomodoroLogic.saveConfig) {
+            window.pomodoroLogic.saveConfig();
+        }
     },
 
     togglePausaLonga: function() {
-        const config = window.pomodoroLogic.config;
-        config.usarPausaLonga = config.usarPausaLonga === false ? true : false;
-        window.pomodoroLogic.saveConfig();
-
-        const usarLonga = config.usarPausaLonga !== false;
-
-        // Fluid DOM update without full page re-render
-        const cardLonga = document.getElementById('cfg-card-pausa-longa');
-        if (cardLonga) {
-            if (usarLonga) {
-                cardLonga.classList.remove('opacity-50', 'grayscale');
-            } else {
-                cardLonga.classList.add('opacity-50', 'grayscale');
-            }
+        // Pausa longa desativada permanentemente
+        if (window.utils && window.utils.showToast) {
+            window.utils.showToast('Opção de pausa longa desativada.', 'info');
         }
-
-        const badgeLonga = document.getElementById('cfg-badge-longa');
-        if (badgeLonga) {
-            badgeLonga.className = `text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${usarLonga ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'}`;
-            badgeLonga.textContent = usarLonga ? 'Ativa' : 'Off';
-        }
-
-        const btnToggle = document.getElementById('btn-toggle-pausa-longa');
-        if (btnToggle) {
-            btnToggle.className = `text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border transition-all active:scale-95 flex items-center gap-1.5 self-start sm:self-auto ${usarLonga ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-sm' : 'bg-gray-200 hover:bg-gray-300 text-gray-700 border-gray-300'}`;
-            btnToggle.innerHTML = `<i class="ph-bold ${usarLonga ? 'ph-check-circle' : 'ph-x-circle'}"></i> Pausa Longa: ${usarLonga ? 'Ativada' : 'Desativada'}`;
-        }
-
-        this._updatePausaExplainer();
-        window.utils.showToast(usarLonga ? 'Pausa longa ativada!' : 'Pausa longa desativada (apenas pausas curtas)', 'info');
     },
 
-    _getPausaExplainerHtml: function(config) {
-        const usarLonga = config.usarPausaLonga !== false;
-        if (usarLonga) {
-            return `
-                <p>• <b>Pausa Curta (${config.pausaCurta} min):</b> É o descanso padrão que ocorre após cada pomodoro de foco para você beber água e respirar.</p>
-                <p>• <b>Pausa Longa (${config.pausaLonga} min):</b> É um descanso estendido que ocorre <b>apenas a cada ${config.pomodorosAtePausaLonga} pomodoros concluídos</b> para recarregar a energia mental.</p>
-                <div class="mt-2 text-[11px] font-bold text-amber-800 bg-amber-100/60 p-2 rounded-xl flex items-center gap-1.5">
-                    <span>💡 <b>Seu ciclo:</b> Foco (${config.duracaoFoco}m) ➔ Pausa Curta (${config.pausaCurta}m) ... no ${config.pomodorosAtePausaLonga}º pomodoro ➔ <b>Pausa Longa (${config.pausaLonga}m)</b>.</span>
-                </div>
-            `;
-        } else {
-            return `
-                <p>• <b>Pausa Longa Desativada:</b> Todos os seus intervalos de descanso terão a duração fixa da <b>Pausa Curta (${config.pausaCurta} min)</b>, sem descanso estendido.</p>
-                <div class="mt-2 text-[11px] font-bold text-gray-700 bg-gray-100 p-2 rounded-xl flex items-center gap-1.5">
-                    <span>💡 <b>Seu ciclo contínuo:</b> Foco (${config.duracaoFoco}m) ➔ Pausa Curta (${config.pausaCurta}m) ➔ Foco (${config.duracaoFoco}m)...</span>
-                </div>
-            `;
-        }
+    _getPausaExplainerHtml: function() {
+        return '';
     },
 
     _updatePausaExplainer: function() {
         const explainer = document.getElementById('pomo-pausa-explainer-text');
-        if (explainer && window.pomodoroLogic) {
-            explainer.innerHTML = this._getPausaExplainerHtml(window.pomodoroLogic.config);
+        if (explainer) {
+            explainer.innerHTML = '';
         }
     },
 
@@ -1436,28 +1369,36 @@ window.pomodoroController = {
         }
     },
 
-    applyPreset: function(foco, pausa, longa, count) {
-        window.pomodoroLogic.config.duracaoFoco = foco;
-        window.pomodoroLogic.config.pausaCurta = pausa;
-        window.pomodoroLogic.config.pausaLonga = longa;
-        window.pomodoroLogic.config.pomodorosAtePausaLonga = count;
-        window.pomodoroLogic.saveConfig();
+    applyPreset: function(foco, pausa, count = 4) {
+        let totalCount = count;
+        if (arguments.length >= 4 && typeof arguments[3] === 'number') {
+            totalCount = arguments[3];
+        } else if (arguments.length === 3 && typeof arguments[2] === 'number') {
+            totalCount = arguments[2];
+        }
+
+        const logic = window.pomodoroLogic;
+        if (logic) {
+            logic.config.duracaoFoco = foco;
+            logic.config.pausaCurta = pausa;
+            logic.config.duracaoPausa = pausa;
+            logic.config.totalPomodoros = totalCount;
+            logic.config.pomodorosAtePausaLonga = totalCount;
+            logic.config.usarPausaLonga = false;
+            logic.saveConfig();
+        }
 
         // Update inputs directly
         const inPomos = document.getElementById('cfg-input-pomos');
         const inFoco = document.getElementById('cfg-input-foco');
         const inCurta = document.getElementById('cfg-input-curta');
-        const inLonga = document.getElementById('cfg-input-longa');
-        if (inPomos) inPomos.value = count;
+        if (inPomos) inPomos.value = totalCount;
         if (inFoco) inFoco.value = foco;
         if (inCurta) inCurta.value = pausa;
-        if (inLonga) inLonga.value = longa;
 
-        const freqLabel = document.getElementById('cfg-label-longa-freq');
-        if (freqLabel) freqLabel.textContent = `A cada ${count} pomos`;
-
-        this._updatePausaExplainer();
-        window.utils.showToast(`Preset aplicado: ${foco}/${pausa} min`, 'info');
+        if (window.utils && window.utils.showToast) {
+            window.utils.showToast(`Preset aplicado: ${foco}/${pausa} min`, 'info');
+        }
     },
 
     clearContext: function() {
@@ -1485,14 +1426,22 @@ window.pomodoroController = {
         const inPomos = document.getElementById('cfg-input-pomos');
         const inFoco = document.getElementById('cfg-input-foco');
         const inCurta = document.getElementById('cfg-input-curta');
-        const inLonga = document.getElementById('cfg-input-longa');
-        if (inPomos && parseInt(inPomos.value, 10)) logic.config.pomodorosAtePausaLonga = parseInt(inPomos.value, 10);
+        if (inPomos && parseInt(inPomos.value, 10)) {
+            const count = parseInt(inPomos.value, 10);
+            logic.config.totalPomodoros = count;
+            logic.config.pomodorosAtePausaLonga = count;
+        }
         if (inFoco && parseInt(inFoco.value, 10)) logic.config.duracaoFoco = parseInt(inFoco.value, 10);
-        if (inCurta && parseInt(inCurta.value, 10)) logic.config.pausaCurta = parseInt(inCurta.value, 10);
-        if (inLonga && parseInt(inLonga.value, 10)) logic.config.pausaLonga = parseInt(inLonga.value, 10);
+        if (inCurta && parseInt(inCurta.value, 10)) {
+            const pVal = parseInt(inCurta.value, 10);
+            logic.config.pausaCurta = pVal;
+            logic.config.duracaoPausa = pVal;
+        }
+        logic.config.usarPausaLonga = false;
 
+        const totalPomos = logic.config.totalPomodoros || logic.config.pomodorosAtePausaLonga || 4;
         logic.initSession(
-            logic.config.pomodorosAtePausaLonga,
+            totalPomos,
             logic.config,
             logic.context
         );

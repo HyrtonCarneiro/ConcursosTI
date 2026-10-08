@@ -20,9 +20,11 @@ window.pomodoroLogic = {
     config: {
         duracaoFoco: 25,
         pausaCurta: 5,
-        pausaLonga: 15,
+        duracaoPausa: 5,
+        totalPomodoros: 4,
         pomodorosAtePausaLonga: 4,
-        usarPausaLonga: true,
+        pausaLonga: 15,
+        usarPausaLonga: false,
         autoStart: false,
         somAtivado: true
     },
@@ -70,6 +72,11 @@ window.pomodoroLogic = {
                 this.config = { ...this.config, ...saved };
             }
         }
+        if (this.config.duracaoPausa && !this.config.pausaCurta) this.config.pausaCurta = this.config.duracaoPausa;
+        if (this.config.pausaCurta) this.config.duracaoPausa = this.config.pausaCurta;
+        if (this.config.totalPomodoros && !this.config.pomodorosAtePausaLonga) this.config.pomodorosAtePausaLonga = this.config.totalPomodoros;
+        if (this.config.pomodorosAtePausaLonga && !this.config.totalPomodoros) this.config.totalPomodoros = this.config.pomodorosAtePausaLonga;
+        this.config.usarPausaLonga = false;
     },
 
     saveConfig: function() {
@@ -89,7 +96,12 @@ window.pomodoroLogic = {
     initSession: function(totalPomodoros, config, context) {
         this.stop();
         this.config = { ...this.config, ...config };
-        this.totalPomodoros = totalPomodoros || this.config.pomodorosAtePausaLonga;
+        if (this.config.duracaoPausa) this.config.pausaCurta = this.config.duracaoPausa;
+        if (this.config.pausaCurta) this.config.duracaoPausa = this.config.pausaCurta;
+        this.config.usarPausaLonga = false;
+        this.totalPomodoros = totalPomodoros || this.config.totalPomodoros || this.config.pomodorosAtePausaLonga || 4;
+        this.config.totalPomodoros = this.totalPomodoros;
+        this.config.pomodorosAtePausaLonga = this.totalPomodoros;
         this.currentPomodoro = 0;
         this.pomodorosCompleted = 0;
         this.totalFocusSeconds = 0;
@@ -120,7 +132,7 @@ window.pomodoroLogic = {
             this.targetEndTime = Date.now() + (this.timeLeft * 1000);
             this.accumulatedFocusBeforePhase = this.totalFocusSeconds;
         } else if (this.mode === 'focus') {
-            // Focus just ended, decide on break type
+            // Focus just ended, proceed to break
             this.pomodorosCompleted++;
             
             if (this.pomodorosCompleted >= this.totalPomodoros) {
@@ -130,15 +142,9 @@ window.pomodoroLogic = {
                 return;
             }
 
-            // Determine break type
-            const usarLonga = this.config.usarPausaLonga !== false;
-            if (usarLonga && (this.pomodorosCompleted % this.config.pomodorosAtePausaLonga === 0)) {
-                this.mode = 'longBreak';
-                this.totalTime = this.config.pausaLonga * 60;
-            } else {
-                this.mode = 'shortBreak';
-                this.totalTime = this.config.pausaCurta * 60;
-            }
+            // Always standard break (using 'shortBreak' for backward compatibility)
+            this.mode = 'shortBreak';
+            this.totalTime = (this.config.pausaCurta || this.config.duracaoPausa || 5) * 60;
             this.timeLeft = this.totalTime;
             this.targetEndTime = Date.now() + (this.timeLeft * 1000);
         }
@@ -267,15 +273,9 @@ window.pomodoroLogic = {
                 return;
             }
 
-            // Determine break type
-            const usarLonga = this.config.usarPausaLonga !== false;
-            if (usarLonga && (this.pomodorosCompleted % this.config.pomodorosAtePausaLonga === 0)) {
-                this.mode = 'longBreak';
-                this.totalTime = this.config.pausaLonga * 60;
-            } else {
-                this.mode = 'shortBreak';
-                this.totalTime = this.config.pausaCurta * 60;
-            }
+            // Standard break
+            this.mode = 'shortBreak';
+            this.totalTime = (this.config.pausaCurta || this.config.duracaoPausa || 5) * 60;
             this.timeLeft = this.totalTime;
 
             if (this.config.autoStart) {
@@ -416,10 +416,8 @@ window.pomodoroLogic = {
             }
 
             // Advance to break
-            const usarLonga = this.config.usarPausaLonga !== false;
-            const isLonga = usarLonga && (this.pomodorosCompleted % this.config.pomodorosAtePausaLonga === 0);
-            this.mode = isLonga ? 'longBreak' : 'shortBreak';
-            this.totalTime = (isLonga ? this.config.pausaLonga : this.config.pausaCurta) * 60;
+            this.mode = 'shortBreak';
+            this.totalTime = (this.config.pausaCurta || this.config.duracaoPausa || 5) * 60;
             this.timeLeft = this.totalTime;
 
             if (this.config.autoStart) {
@@ -547,8 +545,9 @@ window.pomodoroLogic = {
     getModeLabel: function() {
         switch (this.mode) {
             case 'focus': return 'Foco';
-            case 'shortBreak': return 'Pausa Curta';
-            case 'longBreak': return 'Pausa Longa';
+            case 'shortBreak':
+            case 'longBreak':
+            case 'break': return 'Pausa';
             default: return 'Pronto';
         }
     },
@@ -556,8 +555,9 @@ window.pomodoroLogic = {
     getModeIcon: function() {
         switch (this.mode) {
             case 'focus': return 'ph-bold ph-brain';
-            case 'shortBreak': return 'ph-bold ph-coffee';
-            case 'longBreak': return 'ph-bold ph-park';
+            case 'shortBreak':
+            case 'longBreak':
+            case 'break': return 'ph-bold ph-coffee';
             default: return 'ph-bold ph-timer';
         }
     },
@@ -740,11 +740,9 @@ window.pomodoroLogic = {
                         return true;
                     }
 
-                    // Prepare for break or next cycle (waiting for user to start!)
-                    const usarLonga = this.config.usarPausaLonga !== false;
-                    const isLonga = usarLonga && (this.pomodorosCompleted % this.config.pomodorosAtePausaLonga === 0);
-                    this.mode = isLonga ? 'longBreak' : 'shortBreak';
-                    this.totalTime = (isLonga ? this.config.pausaLonga : this.config.pausaCurta) * 60;
+                    // Prepare for break (waiting for user to start!)
+                    this.mode = 'shortBreak';
+                    this.totalTime = (this.config.pausaCurta || this.config.duracaoPausa || 5) * 60;
                     this.timeLeft = this.totalTime;
                     this.targetEndTime = null;
                     this.isActive = false;
