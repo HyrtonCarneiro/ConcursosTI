@@ -2,6 +2,7 @@ window.ankiController = {
     initialized: false,
     chartWorkload: null,
     chartLapses: null,
+    chartTimeHistory: null,
 
     init: async function() {
         if (!this.initialized) {
@@ -190,12 +191,31 @@ window.ankiController = {
         });
     },
 
+    formatTimeDuration: function(ms) {
+        if (!ms || ms <= 0) return '0m';
+        const totalSec = Math.round(ms / 1000);
+        if (totalSec < 60) return `${totalSec}s`;
+        const totalMin = Math.round(ms / 60000);
+        if (totalMin < 60) return `${totalMin}m`;
+        const hours = Math.floor(totalMin / 60);
+        const mins = totalMin % 60;
+        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    },
+
+    formatSeconds: function(ms) {
+        if (!ms || ms <= 0) return '0s';
+        const sec = (ms / 1000).toFixed(1);
+        return `${sec.replace('.0', '')}s`;
+    },
+
     updateStats: async function() {
         const elNew = document.getElementById('anki-stat-new');
         const elRev = document.getElementById('anki-stat-rev');
         const elPendente = document.getElementById('anki-stat-pendente');
         const elTime = document.getElementById('anki-stat-time');
+        const elRemaining = document.getElementById('anki-stat-remaining');
         const elAvg = document.getElementById('anki-stat-avg');
+        const elTime7d = document.getElementById('anki-stat-time-7d');
         const elAccuracy = document.getElementById('anki-stat-accuracy');
         const elWrong = document.getElementById('anki-stat-wrong');
         const elPerformance = document.getElementById('anki-stat-performance');
@@ -210,8 +230,12 @@ window.ankiController = {
             if (elPendente) elPendente.textContent = stats.pendente || 0;
             if (elAccuracy) elAccuracy.textContent = Math.round(stats.accuracy) + '%';
             if (elWrong) elWrong.textContent = stats.wrong || 0;
-            if (elTime) elTime.textContent = Math.round(stats.timeTodayMs / 60000) + 'm';
-            if (elAvg) elAvg.textContent = Math.round(stats.avgTodayMs / 1000) + 's';
+            if (elTime) elTime.textContent = this.formatTimeDuration(stats.timeTodayMs);
+            if (elRemaining) {
+                elRemaining.textContent = stats.pendente <= 0 ? '0m' : this.formatTimeDuration(stats.estimatedRemainingMs);
+            }
+            if (elAvg) elAvg.textContent = this.formatSeconds(stats.avgTodayMs > 0 ? stats.avgTodayMs : stats.avgMs);
+            if (elTime7d) elTime7d.textContent = this.formatTimeDuration(stats.timeMs);
 
             if (elPerformance) {
                 const score = Math.round(stats.accuracy);
@@ -232,11 +256,13 @@ window.ankiController = {
                 sourceIndicator.classList.remove('hidden');
             }
 
+            // Renderizar análise detalhada de tempo e ritmo de estudo
+            this.renderTimeAnalysis(stats);
+
         } catch(e) {
             console.error("Error updating 7-day stats:", e);
 
-            // Bug 5: Indicador visual quando Anki está offline
-            const offlineEls = [elNew, elRev, elPendente, elAccuracy, elWrong, elTime, elAvg];
+            const offlineEls = [elNew, elRev, elPendente, elAccuracy, elWrong, elTime, elRemaining, elAvg, elTime7d];
             offlineEls.forEach(el => { if (el) el.textContent = '--'; });
             if (elPerformance) { elPerformance.textContent = '--'; elPerformance.className = 'text-4xl font-black relative z-10 text-gray-300'; }
 
@@ -245,6 +271,159 @@ window.ankiController = {
                 sourceIndicator.classList.remove('hidden');
             }
         }
+    },
+
+    renderTimeAnalysis: function(stats) {
+        if (!stats) return;
+
+        const elTodayVal = document.getElementById('anki-time-today-val');
+        const elTodaySub = document.getElementById('anki-time-today-sub');
+        const elRemVal = document.getElementById('anki-time-remaining-val');
+        const elRemSub = document.getElementById('anki-time-remaining-sub');
+        const elSpeedVal = document.getElementById('anki-time-speed-val');
+        const elSpeedBadge = document.getElementById('anki-time-speed-badge');
+        const elCpmVal = document.getElementById('anki-time-cpm-val');
+        const el7dVal = document.getElementById('anki-time-7d-val');
+        const el7dSub = document.getElementById('anki-time-7d-sub');
+        const elDailyAvgVal = document.getElementById('anki-time-daily-avg-val');
+        const elDailyAvgSub = document.getElementById('anki-time-daily-avg-sub');
+
+        if (elTodayVal) elTodayVal.textContent = this.formatTimeDuration(stats.timeTodayMs);
+        if (elTodaySub) elTodaySub.textContent = `${stats.actionsTodayCount || 0} cards resolvidos hoje`;
+
+        if (elRemVal) {
+            elRemVal.textContent = stats.pendente <= 0 ? '0m' : this.formatTimeDuration(stats.estimatedRemainingMs);
+        }
+        if (elRemSub) {
+            elRemSub.textContent = stats.pendente <= 0 ? 'Fila 100% zerada! 🎉' : `Para ${stats.pendente} pendências`;
+        }
+
+        const avgMsEffective = stats.avgTodayMs > 0 ? stats.avgTodayMs : stats.avgMs;
+        const avgSec = avgMsEffective / 1000;
+        if (elSpeedVal) elSpeedVal.textContent = this.formatSeconds(avgMsEffective);
+
+        if (elSpeedBadge) {
+            let badgeText = 'Equilibrado';
+            let badgeClass = 'text-blue-700 bg-blue-50 border-blue-100';
+            if (avgSec <= 0) {
+                badgeText = 'Sem revisões';
+                badgeClass = 'text-gray-500 bg-gray-50 border-gray-100';
+            } else if (avgSec <= 7) {
+                badgeText = '⚡ Ritmo Ágil';
+                badgeClass = 'text-emerald-700 bg-emerald-50 border-emerald-100';
+            } else if (avgSec <= 15) {
+                badgeText = '⚖️ Equilibrado';
+                badgeClass = 'text-blue-700 bg-blue-50 border-blue-100';
+            } else {
+                badgeText = '📖 Reflexivo';
+                badgeClass = 'text-amber-700 bg-amber-50 border-amber-100';
+            }
+            elSpeedBadge.innerHTML = `<span class="text-[9px] font-bold ${badgeClass} px-2 py-0.5 rounded-md border inline-block">${badgeText}</span>`;
+        }
+
+        const cpmEffective = stats.cardsPerMinToday > 0 ? stats.cardsPerMinToday : (stats.cardsPerMin7d || 0);
+        if (elCpmVal) elCpmVal.textContent = `${cpmEffective} c/min`;
+
+        if (el7dVal) el7dVal.textContent = this.formatTimeDuration(stats.timeMs);
+        if (el7dSub) {
+            el7dSub.textContent = stats.daysWithStudy7d > 0 ? `Em ${stats.daysWithStudy7d} dias ativos na semana` : 'Últimos 7 dias';
+        }
+
+        if (elDailyAvgVal) {
+            elDailyAvgVal.textContent = `${this.formatTimeDuration(stats.avgDailyTimeMs)}/dia`;
+        }
+        if (elDailyAvgSub) {
+            elDailyAvgSub.textContent = stats.daysWithStudy7d > 0 ? 'Média nos dias estudados' : 'Média diária';
+        }
+
+        // Renderizar Gráfico de Tempo Diário
+        const ctx = document.getElementById('chart-anki-time-history');
+        if (!ctx) return;
+
+        if (this.chartTimeHistory) {
+            this.chartTimeHistory.destroy();
+        }
+
+        const dailyList = stats.dailyTimeList || [];
+        const labels = dailyList.map(d => d.dayLabel);
+        const dataMinutes = dailyList.map(d => Math.round((d.timeMs || 0) / 60000));
+        const dataCards = dailyList.map(d => d.cardsCount || 0);
+
+        this.chartTimeHistory = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Minutos Estudados',
+                    data: dataMinutes,
+                    backgroundColor: dailyList.map((d, i) => i === dailyList.length - 1 ? '#253ee8' : '#6366f1'),
+                    hoverBackgroundColor: '#1d2eca',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barPercentage: 0.65
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: { top: 22 }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grace: '15%',
+                        grid: { color: '#f1f5f9' },
+                        ticks: {
+                            font: { size: 10, family: 'Outfit' },
+                            color: '#64748b',
+                            callback: function(val) { return val + 'm'; }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 10, family: 'Outfit' },
+                            color: '#64748b'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        padding: 12,
+                        titleFont: { size: 11, family: 'Outfit', weight: '700' },
+                        bodyFont: { size: 12, family: 'Outfit' },
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                const min = context.raw;
+                                const cards = dataCards[context.dataIndex];
+                                return ` ${min} min estudados (${cards} ${cards === 1 ? 'card' : 'cards'} resolvidos)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            return context.dataset.data[context.dataIndex] > 0;
+                        },
+                        align: 'top',
+                        anchor: 'end',
+                        offset: 3,
+                        color: '#1e293b',
+                        font: {
+                            family: 'Outfit',
+                            size: 10,
+                            weight: '700'
+                        },
+                        formatter: function(value) {
+                            return value > 0 ? value + 'm' : '';
+                        }
+                    }
+                }
+            }
+        });
     },
 
     renderHeatmap: async function() {

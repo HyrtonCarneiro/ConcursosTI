@@ -331,6 +331,26 @@ window.ankiApi = {
             let actionsTodayCount = 0;
             const startOfToday = new Date().setHours(0, 0, 0, 0);
 
+            // Inicializar mapa cronológico dos últimos 7 dias (do 6º dia atrás até hoje)
+            const daysMap = {};
+            const todayObj = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(todayObj);
+                d.setDate(todayObj.getDate() - i);
+                const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const weekday = d.toLocaleDateString('pt-BR', { weekday: 'short' });
+                const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1).replace('.', '');
+                const dateShort = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                daysMap[dateKey] = {
+                    dateKey: dateKey,
+                    dayIndex: i,
+                    dayLabel: i === 0 ? `Hoje (${dateShort})` : capitalizedWeekday,
+                    dateShort: dateShort,
+                    timeMs: 0,
+                    cardsCount: 0
+                };
+            }
+
             if (ratedLast7Days.length > 0) {
                 const reviewsMap = await this.invokeBatch('getReviewsOfCards', 6, ratedLast7Days);
                 const sevenDaysAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
@@ -352,6 +372,14 @@ window.ankiApi = {
                             // 2: Re-aprender após falha (Relearn)
                             // 3: Estudo personalizado/Cram (Cram)
                             if (rev.type === 1 || rev.type === 2) reviewsCount++;
+
+                            // Agrupar por data nos últimos 7 dias
+                            const revDate = new Date(rev.id);
+                            const revDateKey = `${revDate.getFullYear()}-${String(revDate.getMonth() + 1).padStart(2, '0')}-${String(revDate.getDate()).padStart(2, '0')}`;
+                            if (daysMap[revDateKey]) {
+                                daysMap[revDateKey].timeMs += (rev.time || 0);
+                                daysMap[revDateKey].cardsCount++;
+                            }
                         }
                         
                         if (rev.id >= startOfToday) {
@@ -363,22 +391,49 @@ window.ankiApi = {
             }
 
             const totalActions = correctCount + wrongCount;
+            const avgMs = totalActions > 0 ? timeTotalMs / totalActions : 0;
+            const avgTodayMs = actionsTodayCount > 0 ? timeTodayMs / actionsTodayCount : 0;
+
+            const dailyTimeList = Object.values(daysMap);
+            const daysWithStudyCount = dailyTimeList.filter(d => d.cardsCount > 0).length;
+            const avgDailyTimeMs = daysWithStudyCount > 0 ? (timeTotalMs / daysWithStudyCount) : 0;
+            const cardsPerMinToday = timeTodayMs > 0 ? (actionsTodayCount / (timeTodayMs / 60000)) : 0;
+            const cardsPerMin7d = timeTotalMs > 0 ? (totalStudied / (timeTotalMs / 60000)) : 0;
+
+            // Estimativa de tempo restante hoje (cards pendentes * média por card)
+            const effectiveAvgMs = avgTodayMs > 0 ? avgTodayMs : (avgMs > 0 ? avgMs : 10000);
+            const estimatedRemainingMs = currentPendente > 0 ? (currentPendente * effectiveAvgMs) : 0;
+
             return {
                 pendente: currentPendente,
                 studied7d: totalStudied,
                 new7d: introduced7dCount,
                 rev7d: totalStudied, // Inclui absolutamente todos os cards solucionados (novos, aprendizado, revisões e reaprendizagem)
                 timeMs: timeTotalMs,
-                avgMs: totalActions > 0 ? timeTotalMs / totalActions : 0,
+                avgMs: avgMs,
                 timeTodayMs: timeTodayMs,
-                avgTodayMs: actionsTodayCount > 0 ? timeTodayMs / actionsTodayCount : 0,
+                avgTodayMs: avgTodayMs,
                 correct: correctCount,
                 wrong: wrongCount,
-                accuracy: totalActions > 0 ? (correctCount / totalActions) * 100 : 0
+                accuracy: totalActions > 0 ? (correctCount / totalActions) * 100 : 0,
+                // Novas métricas detalhadas de tempo e ritmo
+                dailyTimeList: dailyTimeList,
+                daysWithStudy7d: daysWithStudyCount,
+                avgDailyTimeMs: avgDailyTimeMs,
+                cardsPerMinToday: Math.round(cardsPerMinToday * 10) / 10,
+                cardsPerMin7d: Math.round(cardsPerMin7d * 10) / 10,
+                actionsTodayCount: actionsTodayCount,
+                estimatedRemainingMs: estimatedRemainingMs
             };
         } catch (e) {
             console.warn("Could not get 7-day stats fully: ", e);
-            return { pendente: 0, studied7d: 0, new7d: 0, rev7d: 0, timeMs: 0, avgMs: 0, timeTodayMs: 0, avgTodayMs: 0, correct: 0, wrong: 0, accuracy: 0 };
+            return {
+                pendente: 0, studied7d: 0, new7d: 0, rev7d: 0,
+                timeMs: 0, avgMs: 0, timeTodayMs: 0, avgTodayMs: 0,
+                correct: 0, wrong: 0, accuracy: 0,
+                dailyTimeList: [], daysWithStudy7d: 0, avgDailyTimeMs: 0,
+                cardsPerMinToday: 0, cardsPerMin7d: 0, actionsTodayCount: 0, estimatedRemainingMs: 0
+            };
         }
     },
 
