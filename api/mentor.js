@@ -1,5 +1,5 @@
 // api/mentor.js
-// Vercel Serverless Function - Conexão Segura com a API do Google Gemini
+// Vercel Serverless Function - Conexão Resiliente com a API do Google Gemini
 
 module.exports = async (req, res) => {
     // Cabeçalhos CORS para permitir requisições seguras do frontend
@@ -32,8 +32,6 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'Mensagem do usuário é obrigatória.' });
         }
 
-        const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-
         // Prompt do Sistema especializado
         const systemInstructionText = `Você é o "Mentor Hyrtinho", um mentor e coach de elite para concursos de Tecnologia da Informação (TI).
 Seu objetivo é analisar as métricas e a rotina do estudante, orientar sobre prioridades, eliminar gargalos, incentivar constância e sugerir planos de ação claros, práticos e direto ao ponto para o dia de hoje ou para a semana.
@@ -53,8 +51,7 @@ DIRETRIZES FUNDAMENTAIS:
         const formattedContents = [];
 
         if (Array.isArray(history)) {
-            // Pegar até as últimas 8 mensagens para manter o histórico relevante sem estourar contexto
-            const recentHistory = history.slice(-8);
+            const recentHistory = history.slice(-6);
             recentHistory.forEach(item => {
                 if (item.text && item.text.trim()) {
                     formattedContents.push({
@@ -77,9 +74,6 @@ DIRETRIZES FUNDAMENTAIS:
             parts: [{ text: currentPrompt }]
         });
 
-        // Chamada à API oficial do Google Gemini v1beta
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
         const payload = {
             systemInstruction: {
                 parts: [{ text: systemInstructionText }]
@@ -93,38 +87,100 @@ DIRETRIZES FUNDAMENTAIS:
             }
         };
 
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
+        // Lista de endpoints candidatos (ordem de preferência: v1 estável -> v1beta)
+        const preferredEndpoints = [
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent`
+        ];
 
-        const data = await response.json();
+        let lastError = null;
+        let responseData = null;
+        let usedEndpoint = null;
 
-        if (!response.ok) {
-            console.error('Erro na API do Google Gemini:', data);
-            return res.status(response.status).json({
-                error: 'GEMINI_API_ERROR',
-                message: data.error?.message || 'Falha na comunicação com o Gemini.',
-                details: data.error
-            });
+        // Tentar os endpoints preferenciais
+        for (const endpoint of preferredEndpoints) {
+            try {
+                const url = `${endpoint}?key=${apiKey}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    responseData = data;
+                    usedEndpoint = endpoint;
+                    break;
+                }
+
+                // Se o erro for 404 (modelo não encontrado nessa versão de API), tentar próximo
+                if (response.status === 404) {
+                    lastError = data.error?.message || 'Model not found';
+                    continue;
+                } else {
+                    // Outro erro (ex: quota ou auth)
+                    lastError = data.error?.message || 'API error';
+                    break;
+                }
+            } catch (err) {
+                lastError = err.message;
+            }
         }
 
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        // Fallback dinâmico: Se nenhum dos preferenciais funcionou por 404, consultar ListModels
+        if (!responseData) {
+            try {
+                const listUrl = `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`;
+                const listRes = await fetch(listUrl);
+                const listData = await listRes.json();
 
-        if (!reply) {
+                if (listData.models && Array.isArray(listData.models)) {
+                    // Procurar o primeiro modelo com suporte a generateContent
+                    const availableModel = listData.models.find(m => 
+                        Array.isArray(m.supportedGenerationMethods) && 
+                        m.supportedGenerationMethods.includes('generateContent') &&
+                        m.name.includes('gemini')
+                    );
+
+                    if (availableModel) {
+                        const fallbackUrl = `https://generativelanguage.googleapis.com/v1/${availableModel.name}:generateContent?key=${apiKey}`;
+                        const fbResponse = await fetch(fallbackUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const fbData = await fbResponse.json();
+                        if (fbResponse.ok && fbData.candidates?.[0]?.content?.parts?.[0]?.text) {
+                            responseData = fbData;
+                            usedEndpoint = availableModel.name;
+                        } else {
+                            lastError = fbData.error?.message || lastError;
+                        }
+                    }
+                }
+            } catch (listErr) {
+                console.warn('Erro ao consultar ListModels:', listErr);
+            }
+        }
+
+        if (!responseData) {
             return res.status(500).json({
-                error: 'EMPTY_RESPONSE',
-                message: 'O modelo não retornou conteúdo. Tente reformular a pergunta.'
+                error: 'GEMINI_API_ERROR',
+                message: lastError || 'Não foi possível encontrar um modelo compatível com sua chave.'
             });
         }
+
+        const reply = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
 
         return res.status(200).json({
             success: true,
             reply: reply,
-            model: model,
+            endpoint: usedEndpoint,
             timestamp: Date.now()
         });
 
