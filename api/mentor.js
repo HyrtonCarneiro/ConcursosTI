@@ -87,13 +87,14 @@ DIRETRIZES FUNDAMENTAIS:
             }
         };
 
-        // Lista de endpoints candidatos (ordem de preferência: Gemini 2.0 Flash primeiro!)
+        // Lista de endpoints candidatos (família Gemini 3.x - gemini-3.8-flash é a versão atual padrão)
         const preferredEndpoints = [
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent`
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-3.7-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-3.1-pro:generateContent`
         ];
 
         let lastError = null;
@@ -106,7 +107,10 @@ DIRETRIZES FUNDAMENTAIS:
                 const url = `${endpoint}?key=${apiKey}`;
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey
+                    },
                     body: JSON.stringify(payload)
                 });
 
@@ -118,48 +122,66 @@ DIRETRIZES FUNDAMENTAIS:
                     break;
                 }
 
-                // Se o erro for 404 (modelo não encontrado nessa versão de API), tentar próximo
-                if (response.status === 404) {
-                    lastError = data.error?.message || 'Model not found';
+                const errMsg = data.error?.message || '';
+                // Se o modelo for 404 ou não estiver disponível para novos usuários, tenta o próximo
+                if (response.status === 404 || errMsg.includes('not available') || errMsg.includes('not found')) {
+                    lastError = errMsg || 'Model not available';
                     continue;
-                } else {
-                    // Outro erro (ex: quota ou auth)
-                    lastError = data.error?.message || 'API error';
+                } else if (response.status === 400 && errMsg.includes('API key not valid')) {
+                    // Chave de API inválida
+                    lastError = errMsg;
                     break;
+                } else {
+                    lastError = errMsg || 'API error';
+                    continue;
                 }
             } catch (err) {
                 lastError = err.message;
             }
         }
 
-        // Fallback dinâmico: Se nenhum dos preferenciais funcionou por 404, consultar ListModels
+        // Fallback dinâmico: Se nenhum dos preferenciais funcionou, consultar ListModels
         if (!responseData) {
             try {
-                const listUrl = `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`;
-                const listRes = await fetch(listUrl);
+                const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+                const listRes = await fetch(listUrl, {
+                    headers: { 'x-goog-api-key': apiKey }
+                });
                 const listData = await listRes.json();
 
                 if (listData.models && Array.isArray(listData.models)) {
-                    // Procurar o primeiro modelo com suporte a generateContent
-                    const availableModel = listData.models.find(m => 
+                    // Filtrar modelos compatíveis e ordenar para priorizar versões 3.x modernas
+                    const validModels = listData.models.filter(m => 
                         Array.isArray(m.supportedGenerationMethods) && 
                         m.supportedGenerationMethods.includes('generateContent') &&
                         m.name.includes('gemini')
-                    );
+                    ).sort((a, b) => {
+                        const aScore = a.name.includes('3.8') ? 100 : (a.name.includes('3.7') ? 80 : (a.name.includes('3.') ? 50 : 1));
+                        const bScore = b.name.includes('3.8') ? 100 : (b.name.includes('3.7') ? 80 : (b.name.includes('3.') ? 50 : 1));
+                        return bScore - aScore;
+                    });
 
-                    if (availableModel) {
-                        const fallbackUrl = `https://generativelanguage.googleapis.com/v1/${availableModel.name}:generateContent?key=${apiKey}`;
-                        const fbResponse = await fetch(fallbackUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        const fbData = await fbResponse.json();
-                        if (fbResponse.ok && fbData.candidates?.[0]?.content?.parts?.[0]?.text) {
-                            responseData = fbData;
-                            usedEndpoint = availableModel.name;
-                        } else {
-                            lastError = fbData.error?.message || lastError;
+                    for (const availableModel of validModels) {
+                        try {
+                            const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/${availableModel.name}:generateContent?key=${apiKey}`;
+                            const fbResponse = await fetch(fallbackUrl, {
+                                method: 'POST',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'x-goog-api-key': apiKey
+                                },
+                                body: JSON.stringify(payload)
+                            });
+                            const fbData = await fbResponse.json();
+                            if (fbResponse.ok && fbData.candidates?.[0]?.content?.parts?.[0]?.text) {
+                                responseData = fbData;
+                                usedEndpoint = availableModel.name;
+                                break;
+                            } else {
+                                lastError = fbData.error?.message || lastError;
+                            }
+                        } catch (e) {
+                            lastError = e.message;
                         }
                     }
                 }

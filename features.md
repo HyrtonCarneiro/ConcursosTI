@@ -87,7 +87,7 @@ WebApp para organizar cronogramas de estudos para TI e outros assuntos, hospedad
 - **Objetivo:** Orientador inteligente de estudos personalizado baseado no progresso real do estudante.
 - **Arquitetura:**
   - Backend Serverless na Vercel (`/api/mentor` -> `api/mentor.js`).
-  - Google Gemini API (`gemini-1.5-flash`) via `GEMINI_API_KEY` segura em variáveis de ambiente da Vercel.
+  - Google Gemini API (`gemini-3.8-flash`) via `GEMINI_API_KEY` segura em variáveis de ambiente da Vercel.
   - Injeção de Contexto em tempo real (`js/logic/mentorLogic.js`): Snapshot de metas, pendências do cronograma, flashcards do Anki pendentes hoje, horas de foco (Pomodoro), streak e editais.
   - Frontend SPA (`js/controllers/mentorController.js`): Interface com suporte a markdown, sugestões rápidas (chips), histórico em `localStorage` e métricas em tempo real no topo da aba.
 
