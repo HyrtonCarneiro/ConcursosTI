@@ -698,6 +698,7 @@ window.dashboardController = {
                         }
                     }
                 }
-            });
+            }
+        });
     }
 };
