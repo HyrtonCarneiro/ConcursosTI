@@ -437,6 +437,58 @@ window.ankiApi = {
         }
     },
 
+    async getStudyTimeHistory(days = 30) {
+        try {
+            if (this._timeHistoryCache && (Date.now() - this._timeHistoryCache.timestamp < 60000) && this._timeHistoryCache.days >= days) {
+                return this._timeHistoryCache.data;
+            }
+
+            const cardIds = await this.invoke('findCards', 6, { query: `rated:${days}` });
+            const dateMap = {}; // 'YYYY-MM-DD' -> timeMs
+
+            if (cardIds && cardIds.length > 0) {
+                const reviewsMap = await this.invokeBatch('getReviewsOfCards', 6, cardIds);
+                const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+
+                Object.values(reviewsMap).forEach(cardReviews => {
+                    if (!Array.isArray(cardReviews)) return;
+                    cardReviews.forEach(rev => {
+                        if (rev.id >= cutoff) {
+                            const d = new Date(rev.id);
+                            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            dateMap[key] = (dateMap[key] || 0) + (rev.time || 0);
+                        }
+                    });
+                });
+            }
+
+            this._timeHistoryCache = {
+                timestamp: Date.now(),
+                days: days,
+                data: dateMap
+            };
+
+            try {
+                localStorage.setItem('anki_study_time_history_cache', JSON.stringify({
+                    timestamp: Date.now(),
+                    data: dateMap
+                }));
+            } catch(e) {}
+
+            return dateMap;
+        } catch (e) {
+            console.warn(`Anki getStudyTimeHistory(${days}) failed, fallback to local cache:`, e);
+            try {
+                const cached = localStorage.getItem('anki_study_time_history_cache');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    return parsed.data || {};
+                }
+            } catch(err) {}
+            return {};
+        }
+    },
+
     async getSyllabusData() {
         try {
             // 1. Busca todos os cards ativos

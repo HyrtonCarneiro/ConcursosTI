@@ -94,6 +94,11 @@ window.mentorController = {
                     console.warn("AnkiService inacessível:", err);
                 }
             }
+            if (window.ankiApi && typeof window.ankiApi.getStudyTimeHistory === 'function') {
+                try {
+                    await window.ankiApi.getStudyTimeHistory(30);
+                } catch (e) {}
+            }
 
             const ctx = window.mentorLogic.buildStudentContext(state, ankiData);
             this.currentContext = ctx;
@@ -278,6 +283,11 @@ window.mentorController = {
                 } catch (e) {
                     console.warn("AnkiService offline ao gerar prompt:", e);
                 }
+            }
+            if (window.ankiApi && typeof window.ankiApi.getStudyTimeHistory === 'function') {
+                try {
+                    await window.ankiApi.getStudyTimeHistory(30);
+                } catch (e) {}
             }
 
             const context = window.mentorLogic.buildStudentContext(state, ankiData);

@@ -273,6 +273,65 @@
                 ? simulados.slice(-3).map(s => ({ nome: s.nome, nota: s.nota, data: s.data }))
                 : "Nenhum simulado cadastrado ou realizado até o momento.";
 
+            // 6. Métricas Consolidadas de Tempo de Estudo por Modalidade (Anki, Conteúdo e Questões)
+            let ankiMap = {};
+            if (ankiData && Array.isArray(ankiData.dailyTimeList)) {
+                ankiData.dailyTimeList.forEach(d => { ankiMap[d.dateKey] = d.timeMs; });
+            } else if (typeof localStorage !== 'undefined') {
+                try {
+                    const cached = localStorage.getItem('anki_study_time_history_cache');
+                    if (cached) ankiMap = JSON.parse(cached).data || {};
+                } catch(e) {}
+            }
+
+            const met7d = this.calculateStudyMetrics(state, ankiMap, 7);
+            const met30d = this.calculateStudyMetrics(state, ankiMap, 30);
+
+            let diagEquilibrio = "Equilíbrio em avaliação.";
+            if (met7d.totalGeralMin === 0) {
+                diagEquilibrio = "Nenhuma sessão registrada nos últimos 7 dias.";
+            } else if (met7d.totalQuestoesMin === 0) {
+                diagEquilibrio = "⚠️ CRÍTICO: Zero minutos de resolução de questões nos últimos 7 dias. Prioridade máxima inserir baterias práticas!";
+            } else if (met7d.percQuestoes < 25) {
+                diagEquilibrio = `⚠️ ALERTA: Apenas ${met7d.percQuestoes}% do tempo recente foi em questões. O ideal para aprovação é elevar para 40%-50%.`;
+            } else if (met7d.percConteudo < 25 && met7d.totalGeralMin > 60) {
+                diagEquilibrio = `⚠️ ALERTA: Apenas ${met7d.percConteudo}% do tempo em teoria/conteúdo. Certifique-se de avançar nos novos tópicos do edital.`;
+            } else {
+                diagEquilibrio = `✅ EXCELENTE EQUILÍBRIO: Rotina balanceada entre Teoria (${met7d.percConteudo}%), Questões (${met7d.percQuestoes}%) e Anki (${met7d.percAnki}%).`;
+            }
+
+            const tempoEstudoGeral = {
+                ultimos7Dias: {
+                    totalGeralHoras: (met7d.totalGeralMin / 60).toFixed(1) + 'h',
+                    totalGeralMinutos: met7d.totalGeralMin,
+                    ankiHoras: (met7d.totalAnkiMin / 60).toFixed(1) + 'h',
+                    conteudoHoras: (met7d.totalConteudoMin / 60).toFixed(1) + 'h',
+                    questoesHoras: (met7d.totalQuestoesMin / 60).toFixed(1) + 'h',
+                    distribuicaoPercentual: {
+                        anki: met7d.percAnki + '%',
+                        pomodoroConteudo: met7d.percConteudo + '%',
+                        pomodoroQuestoes: met7d.percQuestoes + '%'
+                    },
+                    mediaDiariaMinutos: met7d.mediaDiariaMin + ' min/dia',
+                    diasComEstudo: met7d.diasComEstudo
+                },
+                ultimos30Dias: {
+                    totalGeralHoras: (met30d.totalGeralMin / 60).toFixed(1) + 'h',
+                    totalGeralMinutos: met30d.totalGeralMin,
+                    ankiHoras: (met30d.totalAnkiMin / 60).toFixed(1) + 'h',
+                    conteudoHoras: (met30d.totalConteudoMin / 60).toFixed(1) + 'h',
+                    questoesHoras: (met30d.totalQuestoesMin / 60).toFixed(1) + 'h',
+                    distribuicaoPercentual: {
+                        anki: met30d.percAnki + '%',
+                        pomodoroConteudo: met30d.percConteudo + '%',
+                        pomodoroQuestoes: met30d.percQuestoes + '%'
+                    },
+                    mediaDiariaMinutos: met30d.mediaDiariaMin + ' min/dia',
+                    diasComEstudo: met30d.diasComEstudo
+                },
+                diagnosticoEquilibrio: diagEquilibrio
+            };
+
             return {
                 estudante: {
                     usuario: state.currentUser || 'Estudante',
@@ -300,8 +359,131 @@
                     analiseEspecialQuestoes: diagnosticoQuestoes,
                     ultimasSessoesRecentes: ultimasSessoesRecentes
                 },
+                tempoGeralDeEstudo: tempoEstudoGeral,
                 editaisCadastrados: editaisResumo,
                 simulados: simuladosResumo
+            };
+        },
+
+        calculateStudyMetrics: function(state, ankiTimeMap, days = 7) {
+            state = state || {};
+            const pomodoroSessoes = Array.isArray(state.pomodoroSessoes) ? state.pomodoroSessoes : [];
+            ankiTimeMap = ankiTimeMap || {};
+
+            const hoje = new Date();
+            hoje.setHours(23, 59, 59, 999);
+
+            const diasList = [];
+            const dateLookup = {};
+
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(hoje);
+                d.setDate(hoje.getDate() - i);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const dateKey = `${yyyy}-${mm}-${dd}`;
+                const dateShort = `${dd}/${mm}`;
+
+                const weekday = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+                const baseName = weekday.split('-')[0];
+                const capWeekday = baseName.charAt(0).toUpperCase() + baseName.slice(1);
+
+                // 1 semana: Nome do dia da semana (ex: Segunda, Terça, Quarta...)
+                // 1 mês: Dia e mês (ex: 09/10, 10/10...)
+                const label = (days <= 7) ? capWeekday : dateShort;
+
+                const diaObj = {
+                    dateKey: dateKey,
+                    dateShort: dateShort,
+                    weekday: capWeekday,
+                    label: label,
+                    ankiMin: 0,
+                    conteudoMin: 0,
+                    questoesMin: 0,
+                    totalMin: 0
+                };
+
+                diasList.push(diaObj);
+                dateLookup[dateKey] = diaObj;
+            }
+
+            pomodoroSessoes.forEach(sessao => {
+                if (Array.isArray(sessao.pomodorosLog) && sessao.pomodorosLog.length > 0) {
+                    sessao.pomodorosLog.forEach(log => {
+                        const completedDate = log.completedAt ? new Date(log.completedAt) : new Date(sessao.dataFim || sessao.dataInicio || 0);
+                        if (!isNaN(completedDate.getTime())) {
+                            const k = `${completedDate.getFullYear()}-${String(completedDate.getMonth() + 1).padStart(2, '0')}-${String(completedDate.getDate()).padStart(2, '0')}`;
+                            if (dateLookup[k]) {
+                                const seg = Number(log.duracaoSeg) || ((Number(log.duracaoMin) || 0) * 60) || 1500;
+                                const min = Math.round(seg / 60);
+
+                                const cat = (log.categoria || sessao.categoria || '').toLowerCase();
+                                const not = (sessao.nota || '').toLowerCase();
+                                const isQuest = cat.includes('quest') || not.includes('quest');
+
+                                if (isQuest) {
+                                    dateLookup[k].questoesMin += min;
+                                } else {
+                                    dateLookup[k].conteudoMin += min;
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    const sessaoDate = new Date(sessao.dataFim || sessao.dataInicio || 0);
+                    if (!isNaN(sessaoDate.getTime())) {
+                        const k = `${sessaoDate.getFullYear()}-${String(sessaoDate.getMonth() + 1).padStart(2, '0')}-${String(sessaoDate.getDate()).padStart(2, '0')}`;
+                        if (dateLookup[k]) {
+                            const seg = Number(sessao.tempoTotalFocoSeg) || ((Number(sessao.pomodorosConcluidos) || 0) * (Number(sessao.duracaoFoco) || 25) * 60);
+                            const min = Math.round(seg / 60);
+
+                            const cat = (sessao.categoria || '').toLowerCase();
+                            const not = (sessao.nota || '').toLowerCase();
+                            const isQuest = cat.includes('quest') || not.includes('quest');
+
+                            if (isQuest) {
+                                dateLookup[k].questoesMin += min;
+                            } else {
+                                dateLookup[k].conteudoMin += min;
+                            }
+                        }
+                    }
+                }
+            });
+
+            Object.keys(ankiTimeMap).forEach(k => {
+                if (dateLookup[k]) {
+                    const ms = ankiTimeMap[k] || 0;
+                    const min = ms > 10000 ? Math.round(ms / 60000) : Math.round(ms);
+                    dateLookup[k].ankiMin += min;
+                }
+            });
+
+            let totalAnkiMin = 0;
+            let totalConteudoMin = 0;
+            let totalQuestoesMin = 0;
+
+            diasList.forEach(d => {
+                d.totalMin = d.ankiMin + d.conteudoMin + d.questoesMin;
+                totalAnkiMin += d.ankiMin;
+                totalConteudoMin += d.conteudoMin;
+                totalQuestoesMin += d.questoesMin;
+            });
+
+            const totalGeralMin = totalAnkiMin + totalConteudoMin + totalQuestoesMin;
+
+            return {
+                dias: diasList,
+                totalGeralMin: totalGeralMin,
+                totalAnkiMin: totalAnkiMin,
+                totalConteudoMin: totalConteudoMin,
+                totalQuestoesMin: totalQuestoesMin,
+                percAnki: totalGeralMin > 0 ? Math.round((totalAnkiMin / totalGeralMin) * 100) : 0,
+                percConteudo: totalGeralMin > 0 ? Math.round((totalConteudoMin / totalGeralMin) * 100) : 0,
+                percQuestoes: totalGeralMin > 0 ? Math.round((totalQuestoesMin / totalGeralMin) * 100) : 0,
+                diasComEstudo: diasList.filter(d => d.totalMin > 0).length,
+                mediaDiariaMin: diasList.length > 0 ? Math.round(totalGeralMin / diasList.length) : 0
             };
         },
 
@@ -329,10 +511,18 @@ REGRAS DE ANÁLISE DE MÉTRICAS:
 3. Flashcards (Anki):
    - Se houver revisões pendentes no Anki, elas sempre abrem o primeiro bloco do dia para proteger a memória de longo prazo.
 
-4. Editais e Provas:
+4. TEMPO GERAL DE ESTUDO (Teoria vs Questões vs Anki):
+   - Inspecione sempre a seção 'tempoGeralDeEstudo' (tanto 'ultimos7Dias' quanto 'ultimos30Dias').
+   - Avalie o equilíbrio dos 3 pilares vitais de preparação:
+     * Pomodoro de Conteúdo (absorção teórica e leitura de PDFs)
+     * Pomodoro de Questões (fixação prática, treino de banca e velocidade)
+     * Anki (retenção espaçada ativa de longo prazo)
+   - Sempre comente sobre o volume total de horas estudadas e a divisão percentual entre essas 3 frentes quando o estudante perguntar sobre seu ritmo, progresso ou planejamento semanal/diário.
+
+5. Editais e Provas:
    - Nunca invente datas de provas. Se constar como "Data da prova ainda não definida pelo órgão", oriente o estudante considerando que é um concurso pré-edital/autorizado, onde a base teórica e a consolidação no Anki são o foco principal.
 
-5. Formato das Respostas:
+6. Formato das Respostas:
    - Responda sempre formatando em Markdown com visual limpo e hierárquico:
      * Use '## ' para Títulos Principais / Headlines (ex: '## DIAGNÓSTICO DO DIA', '## PLANO DE AÇÃO PARA HOJE').
      * Use '---' para dividir seções.

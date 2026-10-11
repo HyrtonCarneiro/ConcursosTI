@@ -1,12 +1,64 @@
 window.dashboardController = {
     chartProgresso: null,
     chartEditais: null,
+    chartTempoEstudo: null,
+    tempoPeriodo: '7d',
 
     init: function() {
         // Register datalabels plugin globally
         if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
             Chart.register(ChartDataLabels);
         }
+
+        // Binds dos botões de seleção de período (1 Semana / 1 Mês)
+        const btn7d = document.getElementById('btn-dash-tempo-7d');
+        const btn30d = document.getElementById('btn-dash-tempo-30d');
+
+        if (btn7d) {
+            btn7d.addEventListener('click', () => {
+                this.setTempoPeriodo('7d');
+            });
+        }
+
+        if (btn30d) {
+            btn30d.addEventListener('click', () => {
+                this.setTempoPeriodo('30d');
+            });
+        }
+    },
+
+    setTempoPeriodo: function(period) {
+        this.tempoPeriodo = period;
+        this.updateToggleButtonsUI(period);
+        this.renderTempoEstudoChart(period);
+    },
+
+    updateToggleButtonsUI: function(period) {
+        const btn7d = document.getElementById('btn-dash-tempo-7d');
+        const btn30d = document.getElementById('btn-dash-tempo-30d');
+        const labelIntervalo = document.getElementById('dash-tempo-intervalo-label');
+
+        const activeClass = 'bg-primary-600 text-white shadow-sm';
+        const inactiveClass = 'text-gray-500 hover:text-gray-900';
+
+        if (btn7d && btn30d) {
+            if (period === '7d') {
+                btn7d.className = `px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${activeClass}`;
+                btn30d.className = `px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${inactiveClass}`;
+                if (labelIntervalo) labelIntervalo.textContent = 'Últimos 7 dias';
+            } else {
+                btn7d.className = `px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${inactiveClass}`;
+                btn30d.className = `px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${activeClass}`;
+                if (labelIntervalo) labelIntervalo.textContent = 'Últimos 30 dias';
+            }
+        }
+    },
+
+    formatDurationMinutes: function(minutos) {
+        if (!minutos || minutos <= 0) return '0h 00m';
+        const h = Math.floor(minutos / 60);
+        const m = minutos % 60;
+        return `${h}h ${String(m).padStart(2, '0')}m`;
     },
 
     update: function() {
@@ -50,6 +102,7 @@ window.dashboardController = {
         // 6. Charts
         this.renderProgressoChart(materias, cronograma);
         this.renderEditaisChart(editais);
+        this.renderTempoEstudoChart(this.tempoPeriodo);
     },
 
     safeSetText: function(id, text) {
@@ -413,5 +466,238 @@ window.dashboardController = {
                 console.warn("Anki stats result: ", ankiResult.error);
             }
         }
+    },
+
+    renderTempoEstudoChart: async function(period) {
+        period = period || this.tempoPeriodo || '7d';
+        this.tempoPeriodo = period;
+        const days = period === '30d' ? 30 : 7;
+        this.updateToggleButtonsUI(period);
+
+        const canvas = document.getElementById('chart-dash-tempo-estudo');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        const state = window.store ? window.store.getState() : {};
+
+        // 1. Obter histórico do Anki (com fallback para cache no localStorage)
+        let ankiTimeMap = {};
+        if (window.ankiApi && typeof window.ankiApi.getStudyTimeHistory === 'function') {
+            try {
+                const ankiRes = await window.ankiApi.getStudyTimeHistory(30);
+                if (ankiRes && Array.isArray(ankiRes.dailyTimeList)) {
+                    ankiRes.dailyTimeList.forEach(item => {
+                        ankiTimeMap[item.dateKey] = item.timeMs;
+                    });
+                }
+            } catch (e) {
+                console.warn("Falha ao buscar histórico do Anki para o gráfico:", e);
+            }
+        }
+
+        if (Object.keys(ankiTimeMap).length === 0 && typeof localStorage !== 'undefined') {
+            try {
+                const cached = localStorage.getItem('anki_study_time_history_cache');
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    ankiTimeMap = parsed.data || {};
+                }
+            } catch (e) {}
+        }
+
+        // 2. Calcular Métricas Unificadas
+        let metrics = null;
+        if (window.mentorLogic && typeof window.mentorLogic.calculateStudyMetrics === 'function') {
+            metrics = window.mentorLogic.calculateStudyMetrics(state, ankiTimeMap, days);
+        } else {
+            metrics = {
+                dias: [],
+                totalGeralMin: 0,
+                totalAnkiMin: 0,
+                totalConteudoMin: 0,
+                totalQuestoesMin: 0,
+                percAnki: 0,
+                percConteudo: 0,
+                percQuestoes: 0
+            };
+        }
+
+        // 3. Atualizar Cards de Estatísticas Consolidadas
+        this.safeSetText('dash-tempo-total-val', this.formatDurationMinutes(metrics.totalGeralMin));
+        this.safeSetText('dash-tempo-anki-val', this.formatDurationMinutes(metrics.totalAnkiMin));
+        this.safeSetText('dash-tempo-anki-perc', `${metrics.percAnki}%`);
+        this.safeSetText('dash-tempo-conteudo-val', this.formatDurationMinutes(metrics.totalConteudoMin));
+        this.safeSetText('dash-tempo-conteudo-perc', `${metrics.percConteudo}%`);
+        this.safeSetText('dash-tempo-questoes-val', this.formatDurationMinutes(metrics.totalQuestoesMin));
+        this.safeSetText('dash-tempo-questoes-perc', `${metrics.percQuestoes}%`);
+
+        // 4. Exibir/Ocultar mensagem de estado vazio
+        const emptyMsg = document.getElementById('chart-dash-tempo-empty');
+        if (emptyMsg) {
+            if (metrics.totalGeralMin === 0) {
+                emptyMsg.classList.remove('hidden');
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+        }
+
+        // 5. Destruir instância anterior do gráfico se existir
+        if (this.chartTempoEstudo) {
+            this.chartTempoEstudo.destroy();
+            this.chartTempoEstudo = null;
+        }
+
+        // 6. Preparar labels e datasets empilhados (Stacked Bar Chart)
+        const labels = metrics.dias.map(d => d.label);
+        const ankiData = metrics.dias.map(d => d.ankiMin);
+        const conteudoData = metrics.dias.map(d => d.conteudoMin);
+        const questoesData = metrics.dias.map(d => d.questoesMin);
+
+        const ctx = canvas.getContext('2d');
+        this.chartTempoEstudo = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Anki',
+                        data: ankiData,
+                        backgroundColor: '#8b5cf6', // Roxo vibrante
+                        hoverBackgroundColor: '#7c3aed',
+                        borderRadius: period === '7d' ? 6 : 3,
+                        stack: 'tempoEstudo'
+                    },
+                    {
+                        label: 'Pomodoro de Conteúdo',
+                        data: conteudoData,
+                        backgroundColor: '#3b82f6', // Azul vibrante
+                        hoverBackgroundColor: '#2563eb',
+                        borderRadius: period === '7d' ? 6 : 3,
+                        stack: 'tempoEstudo'
+                    },
+                    {
+                        label: 'Pomodoro de Questões',
+                        data: questoesData,
+                        backgroundColor: '#10b981', // Verde esmeralda vibrante
+                        hoverBackgroundColor: '#059669',
+                        borderRadius: period === '7d' ? 6 : 3,
+                        stack: 'tempoEstudo'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            boxWidth: 12,
+                            boxHeight: 12,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: { size: 11, weight: 'bold', family: "'Inter', sans-serif" },
+                            color: '#4b5563',
+                            padding: 16
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        titleColor: '#ffffff',
+                        titleFont: { size: 12, weight: 'bold' },
+                        bodyFont: { size: 11, weight: 'bold' },
+                        padding: 12,
+                        cornerRadius: 12,
+                        callbacks: {
+                            title: (items) => {
+                                if (!items.length) return '';
+                                const idx = items[0].dataIndex;
+                                const dia = metrics.dias[idx];
+                                if (!dia) return items[0].label;
+                                return `${dia.weekday ? dia.weekday + ', ' : ''}${dia.dateShort}`;
+                            },
+                            label: (context) => {
+                                const val = context.raw || 0;
+                                if (val === 0) return null;
+                                const h = Math.floor(val / 60);
+                                const m = val % 60;
+                                const formatted = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                                return ` ${context.dataset.label}: ${formatted}`;
+                            },
+                            afterBody: (items) => {
+                                if (!items.length) return '';
+                                const idx = items[0].dataIndex;
+                                const dia = metrics.dias[idx];
+                                if (!dia || dia.totalMin === 0) return '';
+                                const h = Math.floor(dia.totalMin / 60);
+                                const m = dia.totalMin % 60;
+                                const formatted = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                                return `\nTotal no dia: ${formatted}`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: (context) => {
+                            const val = context.dataset.data[context.dataIndex];
+                            if (!val || val <= 0) return false;
+                            // No modo mensal de 30 dias, exibe rótulo nas fatias relevantes para não poluir
+                            if (period === '30d' && val < 20) return false;
+                            return true;
+                        },
+                        formatter: (val) => {
+                            if (!val || val <= 0) return '';
+                            if (val < 60) return `${val}m`;
+                            const h = Math.floor(val / 60);
+                            const m = val % 60;
+                            return m > 0 ? `${h}h${m}` : `${h}h`;
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: period === '7d' ? 10 : 8
+                        },
+                        color: '#ffffff',
+                        anchor: 'center',
+                        align: 'center'
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: period === '7d' ? 11 : 9,
+                                weight: 'bold'
+                            },
+                            color: '#6b7280',
+                            maxRotation: period === '30d' ? 45 : 0,
+                            autoSkip: period === '30d'
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f3f4f6'
+                        },
+                        ticks: {
+                            font: { size: 10, weight: 'bold' },
+                            color: '#9ca3af',
+                            callback: (val) => {
+                                if (val === 0) return '0';
+                                if (val < 60) return `${val}m`;
+                                const h = val / 60;
+                                return Number.isInteger(h) ? `${h}h` : `${h.toFixed(1)}h`;
+                            }
+                        }
+                    }
+                }
+            });
     }
 };
