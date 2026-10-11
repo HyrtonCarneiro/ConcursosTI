@@ -108,18 +108,21 @@ window.mentorController = {
 
             if (elCronograma) {
                 const crono = ctx.cronogramaPorSemanas;
-                if (crono.semanaAtual) {
-                    elCronograma.textContent = `${crono.semanaAtual.concluidosSemana}/${crono.semanaAtual.totalItensSemana} (${crono.semanaAtual.porcentagemSemana})`;
+                if (crono.totalSemanasPlanejadas > 0) {
+                    // Métrica principal clara: Semanas Concluídas de Planejamento Geral
+                    elCronograma.textContent = `${crono.semanasCompletadas100Porcento}/${crono.totalSemanasPlanejadas} sem. (${crono.taxaConclusaoSemanas})`;
                     if (elCronogramaSub) {
-                        if (crono.semanasAnterioresComAtrasos && crono.semanasAnterioresComAtrasos.length > 0) {
-                            elCronogramaSub.innerHTML = `<span class="text-amber-600 font-bold">⚠️ ${crono.semanasAnterioresComAtrasos.length} sem. anterior em atraso</span>`;
+                        if (crono.semanaAtual) {
+                            const atrasos = crono.semanasAnterioresComAtrasos?.length || 0;
+                            if (atrasos > 0) {
+                                elCronogramaSub.innerHTML = `<span class="text-amber-600 font-bold">⚠️ ${atrasos} sem. em atraso</span> • Atual: ${crono.semanaAtual.concluidosSemana}/${crono.semanaAtual.totalItensSemana} metas`;
+                            } else {
+                                elCronogramaSub.textContent = `Semana atual: ${crono.semanaAtual.concluidosSemana}/${crono.semanaAtual.totalItensSemana} metas (${crono.semanaAtual.porcentagemSemana})`;
+                            }
                         } else {
-                            elCronogramaSub.textContent = `Semana atual • ${crono.semanasCompletadas100Porcento}/${crono.totalSemanasPlanejadas} sem. concluídas`;
+                            elCronogramaSub.textContent = `${crono.semanasCompletadas100Porcento} semanas concluídas`;
                         }
                     }
-                } else if (crono.totalSemanasPlanejadas > 0) {
-                    elCronograma.textContent = `${crono.semanasCompletadas100Porcento}/${crono.totalSemanasPlanejadas} sem. (${crono.taxaConclusaoSemanas})`;
-                    if (elCronogramaSub) elCronogramaSub.textContent = 'Semanas 100% completas';
                 } else {
                     elCronograma.textContent = '0 semanas';
                     if (elCronogramaSub) elCronogramaSub.textContent = 'Nenhuma semana cadastrada';
@@ -208,8 +211,8 @@ window.mentorController = {
                                 ${msg.time || ''}
                             </span>
                         </div>
-                        <div class="prose-mentor space-y-1.5">
-                            ${formattedContent}
+                        <div class="${isUser ? 'text-white' : 'prose-mentor space-y-1.5'}">
+                            ${isUser ? `<p class="text-sm sm:text-[14.5px] font-semibold leading-relaxed text-white" style="color: #ffffff !important;">${this._escapeHtml(msg.text)}</p>` : formattedContent}
                         </div>
                     </div>
                 </div>
@@ -295,7 +298,17 @@ window.mentorController = {
                 })
             });
 
-            const data = await response.json();
+            const resText = await response.text();
+            let data;
+            try {
+                data = JSON.parse(resText);
+            } catch (parseErr) {
+                console.error("Resposta não-JSON de /api/mentor:", resText);
+                if (response.status === 504 || resText.includes('FUNCTION_INVOCATION_TIMEOUT') || resText.includes('Gateway Timeout')) {
+                    throw new Error('A requisição excedeu o tempo de resposta da Vercel (Timeout). O modelo demorou para responder. Tente novamente.');
+                }
+                throw new Error(`O servidor retornou uma resposta inesperada (${response.status}). Tente novamente em instantes.`);
+            }
 
             if (!response.ok) {
                 // Caso a variável de ambiente não esteja configurada na Vercel

@@ -1,11 +1,12 @@
 // api/mentor.js
 // Vercel Serverless Function - Conexão Resiliente com a API do Google Gemini
 
-module.exports = async (req, res) => {
-    // Cabeçalhos CORS para permitir requisições seguras do frontend
+const handler = async (req, res) => {
+    // Cabeçalhos CORS e JSON para permitir requisições seguras do frontend
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -120,7 +121,8 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
                         'Content-Type': 'application/json',
                         'x-goog-api-key': apiKey
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    signal: AbortSignal.timeout(25000)
                 });
 
                 const data = await response.json();
@@ -222,4 +224,9 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
             message: error.message || 'Erro interno no servidor.'
         });
     }
+};
+
+module.exports = handler;
+module.exports.config = {
+    maxDuration: 60
 };

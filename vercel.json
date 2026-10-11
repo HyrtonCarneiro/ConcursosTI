@@ -1,5 +1,10 @@
 {
   "cleanUrls": true,
+  "functions": {
+    "api/mentor.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/api/anki-sync", "destination": "/api/anki-sync.js" },
     { "source": "/api/mentor", "destination": "/api/mentor.js" }
