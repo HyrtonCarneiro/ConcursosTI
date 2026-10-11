@@ -199,16 +199,16 @@ window.mentorController = {
                     <div class="w-8 h-8 rounded-xl ${isUser ? 'bg-gray-800' : 'bg-primary-600'} flex items-center justify-center text-white shrink-0 shadow-sm text-sm">
                         <i class="ph-bold ${isUser ? 'ph-user' : 'ph-sparkle'}"></i>
                     </div>
-                    <div class="max-w-[85%] md:max-w-[75%] rounded-2xl ${isUser ? 'bg-primary-600 text-white rounded-tr-sm p-4 shadow-sm' : 'bg-white border border-gray-100 rounded-tl-sm p-5 shadow-sm text-gray-800'}">
-                        <div class="flex items-center justify-between gap-3 mb-1.5 pb-1 border-b ${isUser ? 'border-primary-500/40' : 'border-gray-100'}">
-                            <span class="text-[10px] font-black uppercase tracking-wider ${isUser ? 'text-primary-100' : 'text-primary-600'}">
-                                ${isUser ? 'Você' : 'Mentor Hyrtinho IA'}
+                    <div class="max-w-[88%] md:max-w-[85%] rounded-2xl ${isUser ? 'bg-primary-600 text-white rounded-tr-sm p-4 shadow-sm' : 'bg-white border border-gray-100 rounded-tl-sm p-5 sm:p-6 shadow-sm text-gray-800'}">
+                        <div class="flex items-center justify-between gap-3 mb-2 pb-1.5 border-b ${isUser ? 'border-primary-500/40' : 'border-gray-100'}">
+                            <span class="text-[11px] font-black uppercase tracking-wider ${isUser ? 'text-primary-100' : 'text-primary-600 flex items-center gap-1.5'}">
+                                ${isUser ? 'Você' : '<i class="ph-bold ph-sparkle text-primary-500"></i> Mentor Hyrtinho IA'}
                             </span>
-                            <span class="text-[10px] ${isUser ? 'text-primary-200' : 'text-gray-400'} font-medium">
+                            <span class="text-[11px] ${isUser ? 'text-primary-200' : 'text-gray-400'} font-medium">
                                 ${msg.time || ''}
                             </span>
                         </div>
-                        <div class="prose-mentor space-y-1">
+                        <div class="prose-mentor space-y-1.5">
                             ${formattedContent}
                         </div>
                     </div>

@@ -333,53 +333,77 @@ REGRAS DE ANÁLISE DE MÉTRICAS:
    - Nunca invente datas de provas. Se constar como "Data da prova ainda não definida pelo órgão", oriente o estudante considerando que é um concurso pré-edital/autorizado, onde a base teórica e a consolidação no Anki são o foco principal.
 
 5. Formato das Respostas:
-   - Responda sempre formatando em Markdown limpo (títulos com '###', tópicos com marcadores '-', negrito em pontos-chave).
-   - Quando perguntado "o que fazer hoje", divida a rotina em Blocos de Estudo práticos (Bloco 1: Aquecimento/Anki; Bloco 2: Cronograma Foco; Bloco 3: Questões & Fixação).
+   - Responda sempre formatando em Markdown com visual limpo e hierárquico:
+     * Use '## ' para Títulos Principais / Headlines (ex: '## DIAGNÓSTICO DO DIA', '## PLANO DE AÇÃO PARA HOJE').
+     * Use '---' para dividir seções.
+     * Use '#### ' para destacar Blocos Práticos de Estudo (ex: '#### Bloco 1: Aquecimento e Limpeza do Anki (Duração: ~30 min)').
+     * Inicie os tópicos '-' com o conceito em negrito (ex: '- **Alerta nas Questões:** ...', '- **Objetivo:** ...').
+     * Evite blocos extensos de texto; priorize itens fáceis de escanear.
    - Seja conciso, motivador e estratégico.`;
         },
 
         /**
-         * Converte Markdown básico em HTML seguro para exibição no chat.
+         * Converte Markdown em HTML seguro e de alta legibilidade para o chat do Mentor.
          */
         formatMarkdown: function(markdownText) {
             if (!markdownText) return '';
 
             // Escapar tags HTML perigosas primeiro
-            let escaped = String(markdownText)
+            let text = String(markdownText)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
 
             // Blocos de código ```linguagem\n ... ```
-            escaped = escaped.replace(/```([\s\S]*?)```/g, (match, p1) => {
-                return `<pre class="bg-gray-900 text-gray-100 rounded-xl p-3 my-2 text-xs font-mono overflow-x-auto border border-gray-800"><code>${p1.trim()}</code></pre>`;
+            text = text.replace(/```([\s\S]*?)```/g, (match, p1) => {
+                return `<pre class="bg-gray-900 text-gray-100 rounded-xl p-3.5 my-3 text-xs font-mono overflow-x-auto border border-gray-800 shadow-inner"><code>${p1.trim()}</code></pre>`;
             });
 
             // Código inline `codigo`
-            escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-gray-100 text-primary-700 px-1.5 py-0.5 rounded text-xs font-mono font-semibold">$1</code>');
+            text = text.replace(/`([^`]+)`/g, '<code class="bg-primary-50 text-primary-700 px-2 py-0.5 rounded text-xs font-mono font-bold border border-primary-100/70">$1</code>');
 
-            // Headers (h3, h4)
-            escaped = escaped.replace(/^### (.*$)/gim, '<h4 class="text-sm font-black text-gray-900 uppercase tracking-wider mt-3 mb-1.5">$1</h4>');
-            escaped = escaped.replace(/^## (.*$)/gim, '<h3 class="text-base font-black text-gray-900 tracking-tight mt-4 mb-2">$1</h3>');
-            escaped = escaped.replace(/^# (.*$)/gim, '<h2 class="text-lg font-black text-gray-900 tracking-tight mt-4 mb-2">$1</h2>');
+            // Linha divisória horizontal (--- ou ***)
+            text = text.replace(/^(?:---|—|___|\*\*\*)[ \t]*$/gm, '<div class="my-4 border-t border-slate-200/90"></div>');
+
+            // Blocos de Estudo: #### Bloco X: ...
+            text = text.replace(/^#### (.*$)/gim, '<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider bg-primary-50 text-primary-700 border border-primary-200/80 mt-4 mb-2 shadow-2xs"><i class="ph-bold ph-lightning text-primary-600"></i><span>$1</span></div>');
+
+            // Subseções: ### Título
+            text = text.replace(/^### (.*$)/gim, '<h4 class="text-sm sm:text-base font-black text-gray-900 tracking-wide mt-4 mb-2 flex items-center gap-2"><span class="w-1.5 h-3.5 bg-amber-500 rounded-full inline-block shrink-0"></span><span>$1</span></h4>');
+
+            // Seções principais: ## Título
+            text = text.replace(/^## (.*$)/gim, '<h3 class="text-base sm:text-lg font-black text-gray-900 tracking-tight mt-5 mb-2.5 flex items-center gap-2.5 border-b border-gray-100 pb-2"><span class="w-1.5 h-4.5 bg-primary-600 rounded-full inline-block shrink-0"></span><span>$1</span></h3>');
+
+            // Título geral: # Título
+            text = text.replace(/^# (.*$)/gim, '<h2 class="text-lg sm:text-xl font-black text-gray-900 tracking-tight mt-6 mb-3 flex items-center gap-2.5 border-b-2 border-primary-100 pb-2"><span class="w-2 h-5 bg-primary-600 rounded-full inline-block shrink-0"></span><span>$1</span></h2>');
+
+            // Linhas avulsas em CAIXA ALTA (ex: "DIAGNÓSTICO DO DIA: HORA DE RETOMAR A TRAÇÃO" ou "PLANO DE AÇÃO PARA HOJE")
+            text = text.replace(/^([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9 \-_:]{6,70})$/gm, (match) => {
+                const trimmed = match.trim();
+                if (trimmed.startsWith('<') || trimmed.startsWith('-')) return match;
+                return `<h3 class="text-base sm:text-lg font-black text-gray-900 tracking-tight mt-5 mb-2.5 flex items-center gap-2.5 border-b border-gray-100 pb-2"><span class="w-1.5 h-4.5 bg-primary-600 rounded-full inline-block shrink-0"></span><span>${trimmed}</span></h3>`;
+            });
+
+            // Blockquotes (> citação)
+            text = text.replace(/^> (.*$)/gim, '<div class="border-l-4 border-primary-500 bg-primary-50/60 pl-3.5 pr-3 py-2 rounded-r-xl my-2.5 text-sm text-gray-700 italic">$1</div>');
 
             // Negrito **texto**
-            escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-black text-gray-900">$1</strong>');
+            text = text.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-black text-gray-900">$1</strong>');
 
             // Itálico *texto*
-            escaped = escaped.replace(/\*([^*]+)\*/g, '<em class="italic text-gray-700">$1</em>');
+            text = text.replace(/\*([^*]+)\*/g, '<em class="italic text-gray-700">$1</em>');
 
             // Listas não ordenadas (- item ou * item)
-            escaped = escaped.replace(/^[\*\-] (.*$)/gim, '<li class="ml-4 list-disc text-gray-700 my-0.5 text-xs leading-relaxed">$1</li>');
+            text = text.replace(/^[\*\-] (.*$)/gim, '<li class="text-[13.5px] sm:text-sm text-gray-800 leading-relaxed my-1 pl-1 list-disc ml-5">$1</li>');
 
             // Listas numeradas (1. item)
-            escaped = escaped.replace(/^\d+\.\s(.*$)/gim, '<li class="ml-4 list-decimal text-gray-700 my-0.5 text-xs leading-relaxed">$1</li>');
+            text = text.replace(/^\d+\.\s(.*$)/gim, '<li class="text-[13.5px] sm:text-sm text-gray-800 leading-relaxed my-1 pl-1 list-decimal ml-5">$1</li>');
 
             // Quebras de linha normais
-            escaped = escaped.replace(/\n\n/g, '<div class="my-2"></div>');
-            escaped = escaped.replace(/\n/g, '<br>');
+            text = text.replace(/\n\n+/g, '<div class="my-2.5"></div>');
+            text = text.replace(/\n/g, '<br>');
 
-            return escaped;
+            return text;
         }
     };
 

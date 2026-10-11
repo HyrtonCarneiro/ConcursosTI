@@ -71,6 +71,13 @@ function runTests() {
     if (!html.includes('<h4')) throw new Error("Falha ao converter cabeçalho h3/h4");
     if (!html.includes('<strong class="font-black text-gray-900">Importante</strong>')) throw new Error("Falha ao converter negrito");
 
+    // Teste 4: Formatação de Headlines, Divisores e Blocos Práticos
+    const complexMd = "DIAGNÓSTICO DO DIA: HORA DE ACELERAR\n\n---\n\n#### Bloco 1: Aquecimento e Anki\n- **Objetivo:** 40 cards";
+    const complexHtml = logic.formatMarkdown(complexMd);
+    if (!complexHtml.includes('ph-lightning')) throw new Error("Falha ao converter bloco de estudo #### em badge com ícone");
+    if (!complexHtml.includes('border-t')) throw new Error("Falha ao converter divisor --- em linha horizontal");
+    if (!complexHtml.includes('<h3')) throw new Error("Falha ao converter headline em caixa alta para h3");
+
     console.log("✅ Todos os testes de mentorLogic passaram com sucesso!");
 }
 
