@@ -42,6 +42,8 @@ app.get('/api/health', (req, res) => {
 // Rotas da API (executam os mesmos handlers com 100% de performance local)
 app.all('/api/mentor', async (req, res) => {
     try {
+        require('dotenv').config({ override: true });
+        delete require.cache[require.resolve('./api/mentor.js')];
         const mentorHandler = require('./api/mentor.js');
         await mentorHandler(req, res);
     } catch (err) {
@@ -54,6 +56,8 @@ app.all('/api/mentor', async (req, res) => {
 
 app.all('/api/anki-sync', async (req, res) => {
     try {
+        require('dotenv').config({ override: true });
+        delete require.cache[require.resolve('./api/anki-sync.js')];
         const ankiSyncHandler = require('./api/anki-sync.js');
         await ankiSyncHandler(req, res);
     } catch (err) {

@@ -283,11 +283,11 @@ window.mentorController = {
             const context = window.mentorLogic.buildStudentContext(state, ankiData);
             this.currentContext = context;
 
-            // Histórico para a API (excluindo mensagens de erro e limitando aos turnos recentes para máxima velocidade)
+            // Histórico para a API (mantém até 8 turnos de contexto real no servidor local)
             const historyForApi = this.chatHistory
                 .slice(0, -1)
                 .filter(msg => msg && msg.text && !msg.text.startsWith('❌') && !msg.text.startsWith('⚠️'))
-                .slice(-2);
+                .slice(-8);
 
             const response = await fetch('/api/mentor', {
                 method: 'POST',

@@ -1,6 +1,8 @@
 // api/mentor.js
 // Vercel Serverless Function - Conexão Resiliente com a API do Google Gemini
 
+try { require('dotenv').config({ override: true }); } catch(e) {}
+
 const handler = async (req, res) => {
     // Cabeçalhos CORS e JSON para permitir requisições seguras do frontend
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,11 +21,11 @@ const handler = async (req, res) => {
     try {
         const apiKey = process.env.GEMINI_API_KEY;
 
-        // Se a chave ainda não estiver configurada na Vercel
+        // Se a chave ainda não estiver configurada no .env
         if (!apiKey) {
             return res.status(400).json({
                 error: 'CONFIG_REQUIRED',
-                message: 'A variável de ambiente GEMINI_API_KEY não foi configurada na Vercel. Siga o guia para adicionar sua chave no painel da Vercel.'
+                message: 'A variável de ambiente GEMINI_API_KEY não foi configurada no arquivo .env.'
             });
         }
 
@@ -102,20 +104,22 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
             }
         };
 
-        // Endpoints diretos para Gemini 3.8 Flash
-        const preferredEndpoints = [
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent`
+        // Modelos em ordem de prioridade (Começando por 3.8-flash, com cascata resiliente contra spikes 503)
+        const candidateModels = [
+            'gemini-3.8-flash',
+            'gemini-3.7-flash',
+            'gemini-3.5-flash',
+            'gemini-flash-latest'
         ];
 
         let lastError = null;
         let responseData = null;
         let usedEndpoint = null;
 
-        // Chamada resiliente local (sem risco de queda por timeout curto)
-        for (const endpoint of preferredEndpoints) {
+        // Chamada resiliente local
+        for (const modelName of candidateModels) {
             try {
-                const url = `${endpoint}?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 
@@ -130,19 +134,17 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
 
                 if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
                     responseData = data;
-                    usedEndpoint = endpoint;
+                    usedEndpoint = modelName;
                     break;
                 }
 
                 const errMsg = data.error?.message || '';
-                if (response.status === 404 || errMsg.includes('not available') || errMsg.includes('not found')) {
-                    lastError = errMsg || 'Model not available';
-                    continue;
-                } else if (response.status === 400 && errMsg.includes('API key not valid')) {
+                if (response.status === 400 && errMsg.includes('API key not valid')) {
                     lastError = errMsg;
                     break;
                 } else {
-                    lastError = errMsg || 'API error';
+                    // Se for 503 (alta demanda temporária), 429 ou 404, continua imediatamente para o próximo modelo
+                    lastError = errMsg || `Erro ${response.status} em ${modelName}`;
                     continue;
                 }
             } catch (err) {
