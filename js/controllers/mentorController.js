@@ -100,12 +100,30 @@ window.mentorController = {
 
             // Elementos visuais
             const elCronograma = document.getElementById('mentor-metric-cronograma');
+            const elCronogramaSub = document.getElementById('mentor-metric-cronograma-sub');
             const elAnki = document.getElementById('mentor-metric-anki');
             const elPomodoro = document.getElementById('mentor-metric-pomodoro');
             const elProva = document.getElementById('mentor-metric-prova');
+            const elProvaSub = document.getElementById('mentor-metric-prova-sub');
 
             if (elCronograma) {
-                elCronograma.textContent = `${ctx.cronograma.porcentagemGeral} (${ctx.cronograma.concluidas}/${ctx.cronograma.totalMetas})`;
+                const crono = ctx.cronogramaPorSemanas;
+                if (crono.semanaAtual) {
+                    elCronograma.textContent = `${crono.semanaAtual.concluidosSemana}/${crono.semanaAtual.totalItensSemana} (${crono.semanaAtual.porcentagemSemana})`;
+                    if (elCronogramaSub) {
+                        if (crono.semanasAnterioresComAtrasos && crono.semanasAnterioresComAtrasos.length > 0) {
+                            elCronogramaSub.innerHTML = `<span class="text-amber-600 font-bold">⚠️ ${crono.semanasAnterioresComAtrasos.length} sem. anterior em atraso</span>`;
+                        } else {
+                            elCronogramaSub.textContent = `Semana atual • ${crono.semanasCompletadas100Porcento}/${crono.totalSemanasPlanejadas} sem. concluídas`;
+                        }
+                    }
+                } else if (crono.totalSemanasPlanejadas > 0) {
+                    elCronograma.textContent = `${crono.semanasCompletadas100Porcento}/${crono.totalSemanasPlanejadas} sem. (${crono.taxaConclusaoSemanas})`;
+                    if (elCronogramaSub) elCronogramaSub.textContent = 'Semanas 100% completas';
+                } else {
+                    elCronograma.textContent = '0 semanas';
+                    if (elCronogramaSub) elCronogramaSub.textContent = 'Nenhuma semana cadastrada';
+                }
             }
 
             if (elAnki) {
@@ -116,16 +134,33 @@ window.mentorController = {
                 }
             }
 
+            const elPomodoroSub = document.getElementById('mentor-metric-pomodoro-sub');
             if (elPomodoro) {
-                elPomodoro.textContent = `${ctx.focoEPomodoro.horasHoje} hoje (${ctx.focoEPomodoro.sessoesConcluidasHoje} sessões)`;
+                const pomo = ctx.pomodoroEFoco;
+                elPomodoro.textContent = `${pomo.horasHoje} hoje (${pomo.sessoesHoje} sessões)`;
+                if (elPomodoroSub) {
+                    if (pomo.analiseEspecialQuestoes && pomo.analiseEspecialQuestoes.dataUltimaSessao) {
+                        const q = pomo.analiseEspecialQuestoes;
+                        elPomodoroSub.innerHTML = `Questões: ${q.quandoFoiUltimaVez} <span class="text-gray-300">•</span> ${q.materiaEstudadaNaUltimaSessao}`;
+                    } else {
+                        elPomodoroSub.textContent = `${pomo.horasUltimos7Dias} nos últimos 7 dias`;
+                    }
+                }
             }
 
             if (elProva) {
-                if (ctx.provasEEditais && ctx.provasEEditais.length > 0) {
-                    const maisProxima = ctx.provasEEditais[0];
-                    elProva.textContent = `${maisProxima.nome}: ${maisProxima.diasRestantes} dias`;
+                const editaisList = ctx.editaisCadastrados || [];
+                const comDataConfirmada = editaisList.find(e => typeof e.diasRestantes === 'number');
+
+                if (comDataConfirmada) {
+                    elProva.textContent = `${comDataConfirmada.concurso}: ${comDataConfirmada.diasRestantes} dias`;
+                    if (elProvaSub) elProvaSub.textContent = `Data da prova: ${comDataConfirmada.dataProva}`;
+                } else if (editaisList.length > 0) {
+                    elProva.textContent = `${editaisList[0].concurso}: A definir`;
+                    if (elProvaSub) elProvaSub.textContent = 'Edital sem data confirmada';
                 } else {
-                    elProva.textContent = 'Sem provas cadastradas';
+                    elProva.textContent = 'Nenhum edital ativo';
+                    if (elProvaSub) elProvaSub.textContent = 'Cadastre editais na aba Editais';
                 }
             }
         } catch (e) {

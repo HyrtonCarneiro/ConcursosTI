@@ -87,12 +87,12 @@ DIRETRIZES FUNDAMENTAIS:
             }
         };
 
-        // Lista de endpoints candidatos (ordem de preferência: v1 estável -> v1beta)
+        // Lista de endpoints candidatos (ordem de preferência: Gemini 2.0 Flash primeiro!)
         const preferredEndpoints = [
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent`,
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`,
             `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent`
         ];
 
