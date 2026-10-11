@@ -138,6 +138,16 @@ window.mentorController = {
         await this.updateMetricsBanner();
     },
 
+    _escapeHtml: function(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
+
     renderMessages: function() {
         const container = document.getElementById('mentor-chat-messages');
         if (!container) return;
@@ -146,7 +156,7 @@ window.mentorController = {
         this.chatHistory.forEach((msg) => {
             const isUser = msg.sender === 'user';
             const formattedContent = isUser 
-                ? `<p class="text-sm font-medium leading-relaxed">${window.utils ? window.utils.escapeHtml(msg.text) : msg.text}</p>`
+                ? `<p class="text-sm font-medium leading-relaxed">${this._escapeHtml(msg.text)}</p>`
                 : window.mentorLogic.formatMarkdown(msg.text);
 
             html += `
@@ -200,6 +210,8 @@ window.mentorController = {
 
     quickAsk: function(promptText) {
         if (this.isLoading) return;
+        const input = document.getElementById('input-mentor-msg');
+        if (input) input.value = '';
         this.sendMessage(promptText);
     },
 
@@ -284,6 +296,7 @@ window.mentorController = {
                 time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
             });
             if (window.utils) window.utils.showToast(err.message, 'error');
+            this.saveHistory();
         } finally {
             this.isLoading = false;
             this.renderMessages();

@@ -198,7 +198,7 @@
             left: 0;
             pointer-events: none;
             z-index: 999999;
-            max-width: 290px;
+            max-width: 320px;
             background: #111827;
             color: #f3f4f6;
             font-size: 11.5px;
@@ -212,7 +212,7 @@
             opacity: 0;
             transform: scale(0.96);
             transition: opacity 0.15s ease-out, transform 0.15s ease-out;
-            white-space: normal;
+            white-space: pre-line;
             text-align: left;
         }
         #global-floating-tooltip.active {
@@ -1553,19 +1553,34 @@
                             <i class="ph-bold ph-lightning text-primary-500"></i> Sugestões Rápidas:
                         </p>
                         <div class="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
-                            <button type="button" onclick="window.mentorController.quickAsk('O que devo fazer hoje com base no meu progresso atual?')" class="shrink-0 bg-primary-50/70 hover:bg-primary-600 hover:text-white text-primary-700 border border-primary-100 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                            <button type="button" 
+                                onclick="window.mentorController.quickAsk('O que devo fazer hoje com base no meu progresso atual?')" 
+                                data-tooltip="📋 O QUE ESPERAR:&#10;Plano de ação prático para o seu dia dividido em blocos de estudo (Anki, Conteúdo e Questões).&#10;&#10;💡 QUANDO USAR:&#10;No início do dia ou ao sentar para estudar, para saber exatamente o que priorizar sem perder tempo decidindo."
+                                class="shrink-0 bg-primary-50/70 hover:bg-primary-600 hover:text-white text-primary-700 border border-primary-100 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
                                 ⚡ O que devo fazer hoje?
                             </button>
-                            <button type="button" onclick="window.mentorController.quickAsk('Faça um diagnóstico das minhas principais métricas e aponte meus maiores atrasos e gargalos.')" class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                            <button type="button" 
+                                onclick="window.mentorController.quickAsk('Faça um diagnóstico das minhas principais métricas e aponte meus maiores atrasos e gargalos.')" 
+                                data-tooltip="📋 O QUE ESPERAR:&#10;Visão analítica de pendências acumuladas, matérias com menor avanço e gargalos do cronograma.&#10;&#10;💡 QUANDO USAR:&#10;Ao final da semana ou quando sentir que acumulou matérias e precisa recalibrar seu ritmo."
+                                class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
                                 📊 Diagnóstico e Atrasos
                             </button>
-                            <button type="button" onclick="window.mentorController.quickAsk('Como está meu ritmo no Anki hoje e qual a melhor estratégia para zerar as pendências de flashcards?')" class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                            <button type="button" 
+                                onclick="window.mentorController.quickAsk('Como está meu ritmo no Anki hoje e qual a melhor estratégia para zerar as pendências de flashcards?')" 
+                                data-tooltip="📋 O QUE ESPERAR:&#10;Avaliação da sua carga de revisões, estimativa de tempo e conselho sobre novos cards vs revisões.&#10;&#10;💡 QUANDO USAR:&#10;Se você tiver muitas revisões acumuladas ou quiser otimizar sua retenção de longo prazo."
+                                class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
                                 🃏 Ritmo no Anki
                             </button>
-                            <button type="button" onclick="window.mentorController.quickAsk('Monte uma rotina de estudos de alto rendimento dividida em 3 blocos equilibrados para hoje.')" class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                            <button type="button" 
+                                onclick="window.mentorController.quickAsk('Monte uma rotina de estudos de alto rendimento dividida em 3 blocos equilibrados para hoje.')" 
+                                data-tooltip="📋 O QUE ESPERAR:&#10;Divisão balanceada em 3 blocos: Bloco 1 (Aquecimento/Anki), Bloco 2 (Foco Teórico) e Bloco 3 (Questões/Fixação).&#10;&#10;💡 QUANDO USAR:&#10;Em dias com mais horas disponíveis (ex: fins de semana ou turnos livres) para foco profundo."
+                                class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
                                 🎯 Rotina em 3 Blocos
                             </button>
-                            <button type="button" onclick="window.mentorController.quickAsk('Considerando meus editais cadastrados e tempo até as provas, onde devo focar com maior urgência?')" class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                            <button type="button" 
+                                onclick="window.mentorController.quickAsk('Considerando meus editais cadastrados e tempo até as provas, onde devo focar com maior urgência?')" 
+                                data-tooltip="📋 O QUE ESPERAR:&#10;Priorização estratégica com base nos dias restantes até a prova mais próxima e peso das disciplinas.&#10;&#10;💡 QUANDO USAR:&#10;Na reta final de preparação ou para calibrar prioridades entre múltiplos editais cadastrados."
+                                class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
                                 🚩 Foco no Edital
                             </button>
                         </div>
