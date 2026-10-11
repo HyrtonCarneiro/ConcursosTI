@@ -452,10 +452,11 @@ window.store = {
             window.utils.showToast("Erro ao sincronizar com a nuvem: " + err.message, "error");
         });
         
-        // Save ONLY session to browser
+        // Salva sessão e cache local do usuário no navegador
         try { 
             localStorage.setItem('auth_session', 'true'); 
             localStorage.setItem('auth_user', this.state.currentUser);
+            localStorage.setItem('cached_state_' + normalizedUser, JSON.stringify(dataToSave));
         } catch(e) {}
     },
 
@@ -537,6 +538,17 @@ window.store = {
         this.state.displayName = localStorage.getItem('auth_display') || this.state.currentUser;
 
         if (isAuth && this.state.currentUser) {
+            // Restaura cache local imediatamente para evitar valores zerados antes do Firebase responder
+            try {
+                const cached = localStorage.getItem('cached_state_' + this.state.currentUser);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    this.state = { ...this.state, ...parsed, isAuthenticated: true };
+                    this.sortMaterias();
+                    this.sortConteudos();
+                }
+            } catch(e) {}
+
             this.initSync();
             this.syncSharedEditais(); // Start shared editais sync
         } else {
@@ -577,6 +589,9 @@ window.store = {
 
                 // Merge cloud data into state
                 this.state = { ...this.state, ...cloudData, isAuthenticated: true, hasLoadedFromCloud: true };
+                try {
+                    localStorage.setItem('cached_state_' + normalizedUser, JSON.stringify(cloudData));
+                } catch(e) {}
                 
                 // One-time purge of legacy mock categories only if account has the exact initial mock array and hasn't been migrated yet
                 if (!this.state.hasPurgedLegacyMockCats) {

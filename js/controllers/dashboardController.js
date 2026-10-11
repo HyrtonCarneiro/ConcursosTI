@@ -477,7 +477,9 @@ window.dashboardController = {
         const canvas = document.getElementById('chart-dash-tempo-estudo');
         if (!canvas || typeof Chart === 'undefined') return;
 
-        const state = window.store ? window.store.getState() : {};
+        // Token de controle para evitar que execuções assíncronas concorrentes sobrescrevam dados mais recentes
+        this._tempoRenderToken = (this._tempoRenderToken || 0) + 1;
+        const currentToken = this._tempoRenderToken;
 
         // 1. Obter histórico do Anki (com fallback para cache no localStorage)
         let ankiTimeMap = {};
@@ -488,6 +490,8 @@ window.dashboardController = {
                     ankiRes.dailyTimeList.forEach(item => {
                         ankiTimeMap[item.dateKey] = item.timeMs;
                     });
+                } else if (ankiRes && typeof ankiRes === 'object') {
+                    ankiTimeMap = ankiRes;
                 }
             } catch (e) {
                 console.warn("Falha ao buscar histórico do Anki para o gráfico:", e);
@@ -503,6 +507,14 @@ window.dashboardController = {
                 }
             } catch (e) {}
         }
+
+        // Se uma execução mais nova foi disparada durante o await do Anki, interrompe esta chamada desatualizada
+        if (this._tempoRenderToken !== currentToken) {
+            return;
+        }
+
+        // Lê o estado MAIS RECENTE do store (já com as sessões de pomodoro sincronizadas)
+        const state = window.store ? window.store.getState() : {};
 
         // 2. Calcular Métricas Unificadas
         let metrics = null;
