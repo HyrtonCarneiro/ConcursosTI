@@ -83,11 +83,13 @@ WebApp para organizar cronogramas de estudos para TI e outros assuntos, hospedad
   - Categorização simples ou listagem direta com ícones automáticos.
   - Exclusão de links.
 
-## 18. Mentor IA com Google Gemini (Serverless Vercel)
-- **Objetivo:** Orientador inteligente de estudos personalizado baseado no progresso real do estudante.
-- **Arquitetura:**
-  - Backend Serverless na Vercel (`/api/mentor` -> `api/mentor.js`).
-  - Google Gemini API (`gemini-3.8-flash`) via `GEMINI_API_KEY` segura em variáveis de ambiente da Vercel.
-  - Injeção de Contexto em tempo real (`js/logic/mentorLogic.js`): Snapshot de metas, pendências do cronograma, flashcards do Anki pendentes hoje, horas de foco (Pomodoro), streak e editais.
-  - Frontend SPA (`js/controllers/mentorController.js`): Interface com suporte a markdown, sugestões rápidas (chips), histórico em `localStorage` e métricas em tempo real no topo da aba.
+## 18. Mentor IA com Google Gemini (Servidor Local Node.js / Express)
+- **Objetivo:** Orientador inteligente de estudos personalizado baseado no progresso real do estudante, sem restrições de timeout ou caps de tokens.
+- **Arquitetura Local:**
+  - Servidor Local Node.js (`server.js`) rodando em `http://localhost:3000`.
+  - Execução direta com atalho Windows `iniciar.bat`.
+  - Google Gemini API (`gemini-3.8-flash`) via `GEMINI_API_KEY` segura no arquivo local `.env`.
+  - Conexão direta com AnkiConnect (`http://127.0.0.1:8765`) sem bloqueios de Mixed Content.
+  - Injeção de Contexto em tempo real (`js/logic/mentorLogic.js`): Snapshot de metas, pendências do cronograma por semanas, flashcards do Anki pendentes hoje, horas de foco (Pomodoro com destaque para prática de questões), streak e editais.
+  - Frontend SPA (`js/controllers/mentorController.js`): Interface com suporte a markdown, badges de blocos de estudo, histórico com memória contínua e métricas em tempo real no topo da aba.
 

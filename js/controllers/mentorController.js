@@ -314,11 +314,11 @@ window.mentorController = {
             }
 
             if (!response.ok) {
-                // Caso a variável de ambiente não esteja configurada na Vercel
+                // Caso a variável de ambiente não esteja configurada no .env
                 if (data.error === 'CONFIG_REQUIRED') {
                     this.chatHistory.push({
                         sender: 'mentor',
-                        text: `⚠️ **Atenção: Chave de API não configurada na Vercel!**\n\nPara que o Mentor IA funcione, você precisa cadastrar a variável de ambiente **\`GEMINI_API_KEY\`** no painel da Vercel.\n\n### Passo a passo rápido:\n1. Acesse [Google AI Studio](https://aistudio.google.com/) e clique em **"Get API key"** para gerar uma chave gratuita.\n2. No painel do seu projeto na Vercel, acesse **Settings > Environment Variables**.\n3. Adicione uma variável com o nome **\`GEMINI_API_KEY\`** e cole sua chave no valor.\n4. Faça um novo Deploy (Redeploy) e a IA estará ativa imediatamente!`,
+                        text: `⚠️ **Atenção: Chave de API não configurada no arquivo \`.env\`!**\n\nPara que o Mentor IA funcione localmente, basta adicionar sua chave no arquivo **\`.env\`** na raiz do projeto.\n\n### Passo a passo rápido:\n1. Acesse [Google AI Studio](https://aistudio.google.com/) e clique em **"Get API key"** para obter sua chave.\n2. Abra o arquivo **\`.env\`** na pasta do projeto e cole a chave:\n\`\`\`env\nGEMINI_API_KEY=sua_chave_aqui\n\`\`\`\n3. Salve o arquivo e envie sua mensagem novamente!`,
                         time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
                     });
                 } else {

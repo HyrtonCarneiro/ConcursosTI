@@ -57,7 +57,7 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
 3. Quando perguntado "O que devo fazer hoje?", estruture a resposta nos 3 Blocos Práticos de Estudo.
 4. Mantenha as respostas concisas, estratégicas e objetivas.`;
 
-        // Montagem do histórico para o formato do Gemini (apenas conversas limpas, sem erros)
+        // Montagem do histórico para o formato do Gemini (memória real e contínua da mentoria)
         const formattedContents = [];
 
         if (Array.isArray(history)) {
@@ -67,21 +67,20 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
                 item.text.trim() && 
                 !item.text.startsWith('❌') && 
                 !item.text.startsWith('⚠️')
-            ).slice(-2); // Últimas 2 mensagens para manter a conversa ágil
+            ).slice(-8); // Mantém até 8 turnos de conversa para contexto real
 
             cleanHistory.forEach(item => {
-                const textSnippet = item.text.length > 400 ? item.text.slice(0, 400) + '...' : item.text;
                 formattedContents.push({
                     role: (item.sender === 'user' || item.role === 'user') ? 'user' : 'model',
-                    parts: [{ text: textSnippet }]
+                    parts: [{ text: item.text }]
                 });
             });
         }
 
-        // Construção do prompt atual com a injeção do snapshot do estudante compacto
+        // Construção do prompt atual com a injeção do snapshot completo do estudante
         let currentPrompt = '';
         if (context) {
-            currentPrompt += `[SNAPSHOT DE MÉTRICAS]:\n${JSON.stringify(context)}\n\n`;
+            currentPrompt += `[SNAPSHOT DE MÉTRICAS DO ESTUDANTE]:\n${JSON.stringify(context, null, 2)}\n\n`;
         }
         currentPrompt += `PERGUNTA DO ESTUDANTE: "${message}"`;
 
@@ -96,14 +95,14 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
             },
             contents: formattedContents,
             generationConfig: {
-                temperature: 0.6,
-                topK: 30,
-                topP: 0.9,
-                maxOutputTokens: 900 // Limite ideal para responder em 2 a 3 segundos
+                temperature: 0.7,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 2500 // Capacidade total de geração aprofundada sem cortes
             }
         };
 
-        // Endpoints diretos e rápidos para Gemini 3.8 Flash
+        // Endpoints diretos para Gemini 3.8 Flash
         const preferredEndpoints = [
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
             `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent`
@@ -113,7 +112,7 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
         let responseData = null;
         let usedEndpoint = null;
 
-        // Tentar os endpoints preferenciais com timeout rígido de 7.5s (abaixo do teto da Vercel)
+        // Chamada resiliente local (sem risco de queda por timeout curto)
         for (const endpoint of preferredEndpoints) {
             try {
                 const url = `${endpoint}?key=${apiKey}`;
@@ -124,7 +123,7 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
                         'x-goog-api-key': apiKey
                     },
                     body: JSON.stringify(payload),
-                    signal: AbortSignal.timeout(7500)
+                    signal: AbortSignal.timeout(60000)
                 });
 
                 const data = await response.json();
