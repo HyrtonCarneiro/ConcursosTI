@@ -1,6 +1,7 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/anki-sync", "destination": "/api/anki-sync.js" }
+    { "source": "/api/anki-sync", "destination": "/api/anki-sync.js" },
+    { "source": "/api/mentor", "destination": "/api/mentor.js" }
   ]
 }

@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.editaisController) window.editaisController.init();
     if (window.adminController) window.adminController.init();
     if (window.linksController) window.linksController.init();
+    if (window.mentorController) window.mentorController.init();
     
     // Initial global state update
     if (window.appControllers) {

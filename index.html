@@ -334,6 +334,7 @@
                         <button onclick="window.appControllers.navigate('pomodoro')" id="nav-pomodoro" class="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-1.5 uppercase tracking-wider whitespace-nowrap"><i class="ph ph-timer"></i> Pomodoro</button>
                         <button onclick="window.appControllers.navigate('downloads')" id="nav-downloads" class="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-1.5 uppercase tracking-wider whitespace-nowrap"><i class="ph ph-download-simple"></i> Downloads</button>
                         <button onclick="window.appControllers.navigate('anki')" id="nav-anki" class="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-1.5 uppercase tracking-wider whitespace-nowrap"><i class="ph-bold ph-cards"></i> Anki</button>
+                        <button onclick="window.appControllers.navigate('mentor')" id="nav-mentor" class="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-1.5 uppercase tracking-wider whitespace-nowrap"><i class="ph-bold ph-sparkle text-primary-500"></i> Mentor IA</button>
                         <button onclick="window.appControllers.navigate('admin')" id="nav-admin" style="display: none;" class="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-primary-600 rounded-xl transition-all flex items-center gap-1.5 uppercase tracking-wider whitespace-nowrap"><i class="ph-bold ph-shield-check"></i> Gerenciamento</button>
                     </div>
                 </div>
@@ -370,6 +371,7 @@
                     <button onclick="window.appControllers.navigate('pomodoro'); document.getElementById('mobile-menu-overlay').classList.add('hidden')" data-mobile-nav="pomodoro" class="w-full text-left px-4 py-3 text-sm font-bold text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all flex items-center gap-3"><i class="ph ph-timer text-lg"></i> Pomodoro</button>
                     <button onclick="window.appControllers.navigate('downloads'); document.getElementById('mobile-menu-overlay').classList.add('hidden')" data-mobile-nav="downloads" class="w-full text-left px-4 py-3 text-sm font-bold text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all flex items-center gap-3"><i class="ph ph-download-simple text-lg"></i> Downloads</button>
                     <button onclick="window.appControllers.navigate('anki'); document.getElementById('mobile-menu-overlay').classList.add('hidden')" data-mobile-nav="anki" class="w-full text-left px-4 py-3 text-sm font-bold text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all flex items-center gap-3"><i class="ph-bold ph-cards text-lg"></i> Anki</button>
+                    <button onclick="window.appControllers.navigate('mentor'); document.getElementById('mobile-menu-overlay').classList.add('hidden')" data-mobile-nav="mentor" class="w-full text-left px-4 py-3 text-sm font-bold text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all flex items-center gap-3"><i class="ph-bold ph-sparkle text-primary-500 text-lg"></i> Mentor IA</button>
                     <button onclick="window.appControllers.navigate('admin'); document.getElementById('mobile-menu-overlay').classList.add('hidden')" data-mobile-nav="admin" style="display:none" class="w-full text-left px-4 py-3 text-sm font-bold text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all flex items-center gap-3"><i class="ph-bold ph-shield-check text-lg"></i> Gerenciamento</button>
                 </nav>
                 <div class="p-4 border-t border-gray-100">
@@ -1443,6 +1445,143 @@
 
                 </div>
             </section>
+
+            <!-- Mentor IA Page -->
+            <section id="page-mentor" class="page-section hidden page-transition">
+                <!-- Header -->
+                <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary-50 text-primary-600 border border-primary-100">
+                                <i class="ph-bold ph-sparkle text-xs"></i> Google Gemini 1.5 Flash • Vercel Serverless
+                            </span>
+                        </div>
+                        <h2 class="text-3xl font-black text-gray-900 tracking-tight">Mentor IA</h2>
+                        <p class="text-gray-400 text-sm font-medium">Seu orientador inteligente conectado em tempo real com seu progresso de estudos</p>
+                    </div>
+                    <div class="flex items-center gap-2 self-start md:self-auto">
+                        <button type="button" onclick="window.mentorController.updateMetricsBanner(); if(window.utils) window.utils.showToast('Métricas sincronizadas!', 'success');" class="bg-white border border-gray-100 hover:border-gray-200 text-gray-600 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 active:scale-95">
+                            <i class="ph-bold ph-arrows-clockwise text-primary-500"></i> Atualizar Métricas
+                        </button>
+                        <button type="button" id="btn-mentor-clear" class="bg-white border border-gray-100 hover:border-red-100 hover:text-red-600 text-gray-500 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 active:scale-95">
+                            <i class="ph-bold ph-trash"></i> Limpar Chat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Metrics Snapshot Grid -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Cronograma</span>
+                            <div class="w-8 h-8 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-base">
+                                <i class="ph-bold ph-calendar-check"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p id="mentor-metric-cronograma" class="text-base sm:text-lg font-black text-gray-900">Calculando...</p>
+                            <p class="text-[11px] text-gray-400 font-medium">Metas semanais concluídas</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Anki Flashcards</span>
+                            <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-base">
+                                <i class="ph-bold ph-cards"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p id="mentor-metric-anki" class="text-base sm:text-lg font-black text-gray-900">Verificando...</p>
+                            <p class="text-[11px] text-gray-400 font-medium">Cards pendentes para hoje</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Tempo de Foco</span>
+                            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base">
+                                <i class="ph-bold ph-timer"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p id="mentor-metric-pomodoro" class="text-base sm:text-lg font-black text-gray-900">0h hoje</p>
+                            <p class="text-[11px] text-gray-400 font-medium">Horas líquidas acumuladas</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Próxima Prova</span>
+                            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-base">
+                                <i class="ph-bold ph-flag-banner"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p id="mentor-metric-prova" class="text-base sm:text-lg font-black text-gray-900">Calculando...</p>
+                            <p class="text-[11px] text-gray-400 font-medium">Dias restantes de edital</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Container Card -->
+                <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-premium overflow-hidden flex flex-col mb-8">
+                    <!-- Chat Header Bar inside card -->
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center text-white shadow-md shadow-primary-200">
+                                <i class="ph-bold ph-brain text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-gray-900">Diálogo com o Mentor</h3>
+                                <p class="text-[11px] text-gray-400 font-medium">A IA analisa todo seu histórico para dar respostas sob medida</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Contexto Ativo
+                        </span>
+                    </div>
+
+                    <!-- Messages Stream Area -->
+                    <div id="mentor-chat-messages" class="min-h-[440px] max-h-[580px] overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar bg-slate-50/30">
+                        <!-- Mensagens renderizadas via JS -->
+                    </div>
+
+                    <!-- Quick Suggestions Bar (Prompt Chips) -->
+                    <div class="px-4 sm:px-6 py-3 border-t border-gray-100 bg-white">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1">
+                            <i class="ph-bold ph-lightning text-primary-500"></i> Sugestões Rápidas:
+                        </p>
+                        <div class="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                            <button type="button" onclick="window.mentorController.quickAsk('O que devo fazer hoje com base no meu progresso atual?')" class="shrink-0 bg-primary-50/70 hover:bg-primary-600 hover:text-white text-primary-700 border border-primary-100 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                                ⚡ O que devo fazer hoje?
+                            </button>
+                            <button type="button" onclick="window.mentorController.quickAsk('Faça um diagnóstico das minhas principais métricas e aponte meus maiores atrasos e gargalos.')" class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                                📊 Diagnóstico e Atrasos
+                            </button>
+                            <button type="button" onclick="window.mentorController.quickAsk('Como está meu ritmo no Anki hoje e qual a melhor estratégia para zerar as pendências de flashcards?')" class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                                🃏 Ritmo no Anki
+                            </button>
+                            <button type="button" onclick="window.mentorController.quickAsk('Monte uma rotina de estudos de alto rendimento dividida em 3 blocos equilibrados para hoje.')" class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                                🎯 Rotina em 3 Blocos
+                            </button>
+                            <button type="button" onclick="window.mentorController.quickAsk('Considerando meus editais cadastrados e tempo até as provas, onde devo focar com maior urgência?')" class="shrink-0 bg-gray-50 hover:bg-primary-600 hover:text-white text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                                🚩 Foco no Edital
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Input Bar -->
+                    <div class="p-4 sm:p-5 border-t border-gray-100 bg-white">
+                        <form id="form-mentor-chat" class="relative flex items-center">
+                            <input type="text" id="input-mentor-msg" class="w-full pl-5 pr-14 py-4 bg-gray-50/80 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none transition-all text-sm font-medium placeholder:text-gray-400" placeholder="Pergunte ao Mentor IA (ex: 'O que devo priorizar agora à tarde?')...">
+                            <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary-600 hover:bg-primary-700 text-white rounded-xl flex items-center justify-center transition-all shadow-md shadow-primary-200 hover:shadow-primary-300 active:scale-95">
+                                <i class="ph-bold ph-paper-plane-right text-lg"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
         </main>
 
     </div>
@@ -1458,6 +1597,7 @@
     <script src="js/logic/cronogramaLogic.js"></script>
     <script src="js/logic/spacedRepetition.js"></script>
     <script src="js/logic/pomodoro.js"></script>
+    <script src="js/logic/mentorLogic.js"></script>
     <!-- 4. Services -->
     <script src="js/services/ankiService.js"></script>
     <!-- 5. Controllers -->
@@ -1473,6 +1613,8 @@
     <script src="js/controllers/downloadsController.js"></script>
     <script src="js/logic/ankiApi.js"></script>
     <script src="js/controllers/ankiController.js"></script>
+    <script src="js/controllers/mentorController.js"></script>
     <script src="js/controllers/main.js"></script>
 </body>
 </html>
+
