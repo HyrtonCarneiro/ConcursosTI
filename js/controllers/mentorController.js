@@ -283,8 +283,11 @@ window.mentorController = {
             const context = window.mentorLogic.buildStudentContext(state, ankiData);
             this.currentContext = context;
 
-            // Histórico para a API (excluindo a mensagem atual que vai no payload)
-            const historyForApi = this.chatHistory.slice(0, -1);
+            // Histórico para a API (excluindo mensagens de erro e limitando aos turnos recentes para máxima velocidade)
+            const historyForApi = this.chatHistory
+                .slice(0, -1)
+                .filter(msg => msg && msg.text && !msg.text.startsWith('❌') && !msg.text.startsWith('⚠️'))
+                .slice(-2);
 
             const response = await fetch('/api/mentor', {
                 method: 'POST',

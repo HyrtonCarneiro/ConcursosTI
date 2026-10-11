@@ -57,25 +57,31 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
 3. Quando perguntado "O que devo fazer hoje?", estruture a resposta nos 3 Blocos Práticos de Estudo.
 4. Mantenha as respostas concisas, estratégicas e objetivas.`;
 
-        // Montagem do histórico para o formato do Gemini
+        // Montagem do histórico para o formato do Gemini (apenas conversas limpas, sem erros)
         const formattedContents = [];
 
         if (Array.isArray(history)) {
-            const recentHistory = history.slice(-6);
-            recentHistory.forEach(item => {
-                if (item.text && item.text.trim()) {
-                    formattedContents.push({
-                        role: (item.sender === 'user' || item.role === 'user') ? 'user' : 'model',
-                        parts: [{ text: item.text }]
-                    });
-                }
+            const cleanHistory = history.filter(item => 
+                item && 
+                typeof item.text === 'string' && 
+                item.text.trim() && 
+                !item.text.startsWith('❌') && 
+                !item.text.startsWith('⚠️')
+            ).slice(-2); // Últimas 2 mensagens para manter a conversa ágil
+
+            cleanHistory.forEach(item => {
+                const textSnippet = item.text.length > 400 ? item.text.slice(0, 400) + '...' : item.text;
+                formattedContents.push({
+                    role: (item.sender === 'user' || item.role === 'user') ? 'user' : 'model',
+                    parts: [{ text: textSnippet }]
+                });
             });
         }
 
-        // Construção do prompt atual com a injeção do snapshot do estudante
+        // Construção do prompt atual com a injeção do snapshot do estudante compacto
         let currentPrompt = '';
         if (context) {
-            currentPrompt += `[SNAPSHOT DE MÉTRICAS DO ESTUDANTE ATUALIZADO EM TEMPO REAL]:\n${JSON.stringify(context, null, 2)}\n\n`;
+            currentPrompt += `[SNAPSHOT DE MÉTRICAS]:\n${JSON.stringify(context)}\n\n`;
         }
         currentPrompt += `PERGUNTA DO ESTUDANTE: "${message}"`;
 
@@ -90,28 +96,24 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
             },
             contents: formattedContents,
             generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 2048
+                temperature: 0.6,
+                topK: 30,
+                topP: 0.9,
+                maxOutputTokens: 900 // Limite ideal para responder em 2 a 3 segundos
             }
         };
 
-        // Lista de endpoints candidatos (família Gemini 3.x - gemini-3.8-flash é a versão atual padrão)
+        // Endpoints diretos e rápidos para Gemini 3.8 Flash
         const preferredEndpoints = [
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-3.7-flash:generateContent`,
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-3.1-pro:generateContent`
+            `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent`
         ];
 
         let lastError = null;
         let responseData = null;
         let usedEndpoint = null;
 
-        // Tentar os endpoints preferenciais
+        // Tentar os endpoints preferenciais com timeout rígido de 7.5s (abaixo do teto da Vercel)
         for (const endpoint of preferredEndpoints) {
             try {
                 const url = `${endpoint}?key=${apiKey}`;
@@ -122,7 +124,7 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
                         'x-goog-api-key': apiKey
                     },
                     body: JSON.stringify(payload),
-                    signal: AbortSignal.timeout(25000)
+                    signal: AbortSignal.timeout(7500)
                 });
 
                 const data = await response.json();
@@ -134,12 +136,10 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
                 }
 
                 const errMsg = data.error?.message || '';
-                // Se o modelo for 404 ou não estiver disponível para novos usuários, tenta o próximo
                 if (response.status === 404 || errMsg.includes('not available') || errMsg.includes('not found')) {
                     lastError = errMsg || 'Model not available';
                     continue;
                 } else if (response.status === 400 && errMsg.includes('API key not valid')) {
-                    // Chave de API inválida
                     lastError = errMsg;
                     break;
                 } else {
@@ -227,6 +227,3 @@ DIRETRIZES FUNDAMENTAIS DE ANÁLISE:
 };
 
 module.exports = handler;
-module.exports.config = {
-    maxDuration: 60
-};
