@@ -490,24 +490,17 @@
 
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-6 sm:mb-10">
                     <!-- Stat Cards -->
-                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4">
-                        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
-                            <i class="ph-bold ph-book-open text-2xl"></i>
+                    <!-- 1. Próximo Edital -->
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-l-primary-600">
+                        <div class="w-12 h-12 bg-primary-50 rounded-2xl flex items-center justify-center text-primary-600 shrink-0">
+                            <i class="ph-bold ph-newspaper text-2xl"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Matérias</p>
-                            <p id="dash-stat-materias" class="text-xl font-black text-gray-900 truncate">0</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Próximo Edital</p>
+                            <p id="dash-stat-proximo-edital" class="text-[11px] font-black text-gray-900 truncate uppercase tracking-tighter">Nenhum</p>
                         </div>
                     </div>
-                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4">
-                        <div class="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 shrink-0">
-                            <i class="ph-bold ph-files text-2xl"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Páginas Lidas</p>
-                            <p id="dash-stat-paginas" class="text-xl font-black text-gray-900 truncate">0 / 0</p>
-                        </div>
-                    </div>
+                    <!-- 2. Semanas Ativas -->
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4">
                         <div class="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 shrink-0">
                             <i class="ph-bold ph-calendar text-2xl"></i>
@@ -517,7 +510,27 @@
                             <p id="dash-stat-semanas" class="text-xl font-black text-gray-900 truncate">0</p>
                         </div>
                     </div>
-                    <!-- Anki Integration Card -->
+                    <!-- 3. Matérias -->
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
+                            <i class="ph-bold ph-book-open text-2xl"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Matérias</p>
+                            <p id="dash-stat-materias" class="text-xl font-black text-gray-900 truncate">0</p>
+                        </div>
+                    </div>
+                    <!-- 4. Páginas Lidas -->
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4">
+                        <div class="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 shrink-0">
+                            <i class="ph-bold ph-files text-2xl"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Páginas Lidas</p>
+                            <p id="dash-stat-paginas" class="text-xl font-black text-gray-900 truncate">0 / 0</p>
+                        </div>
+                    </div>
+                    <!-- 5. Anki Integration Card (Hoje) -->
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4 relative overflow-hidden group">
                         <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 shrink-0 group-hover:scale-110 transition-transform">
                             <i class="ph-bold ph-cards text-2xl"></i>
@@ -528,15 +541,6 @@
                             <p id="dash-stat-anki-breakdown" class="text-[9px] text-gray-400 font-bold hidden mt-0.5"></p>
                         </div>
                         <div id="anki-status-dot" class="absolute top-4 right-4 w-2 h-2 rounded-full bg-gray-300 animate-pulse"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-l-primary-600">
-                        <div class="w-12 h-12 bg-primary-50 rounded-2xl flex items-center justify-center text-primary-600 shrink-0">
-                            <i class="ph-bold ph-newspaper text-2xl"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Próximo Edital</p>
-                            <p id="dash-stat-proximo-edital" class="text-[11px] font-black text-gray-900 truncate uppercase tracking-tighter">Nenhum</p>
-                        </div>
                     </div>
                 </div>
 
@@ -1158,70 +1162,100 @@
                 <div id="anki-app-container" class="hidden">
                     
                     <!-- Stats Overview (Study Time & Counts) -->
-                    <div id="anki-source-indicator" class="hidden flex justify-end mb-4 animate-fade-in">
-                        <!-- Conteúdo dinâmico via JS -->
+                    <!-- Seção 1: Fila & Ritmo de Hoje -->
+                    <div class="mb-8">
+                        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-sm font-black">
+                                    <i class="ph-bold ph-lightning"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-xs font-black uppercase tracking-wider text-gray-700">Fila & Metas de Hoje</h3>
+                                    <p class="text-[11px] text-gray-400 font-medium">Cards pendentes e estimativa para conclusão da meta diária</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                            <!-- 1. Pendente Agora -->
+                            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group hover:border-orange-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-20 h-20 bg-orange-50/60 rounded-full blur-xl group-hover:bg-orange-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Pendente (Hoje)<span class="anki-info-trigger" data-tooltip="Cards na sua fila neste momento: novos ainda não estudados + em aprendizagem + revisões vencidas. Não é o total de cards do deck, apenas os que precisam de atenção agora.">ⓘ</span></p>
+                                <p id="anki-stat-pendente" class="text-4xl font-black text-orange-600 relative z-10">0</p>
+                            </div>
+                            <!-- 2. Tempo Restante Estimado Hoje -->
+                            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group hover:border-emerald-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-20 h-20 bg-emerald-50/60 rounded-full blur-xl group-hover:bg-emerald-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1 relative z-10">Restante Est.<span class="anki-info-trigger" data-tooltip="Estimativa de tempo necessário para zerar todos os cards pendentes de hoje (Cards Pendentes × sua velocidade média de resposta).">ⓘ</span></p>
+                                <p id="anki-stat-remaining" class="text-4xl font-black text-emerald-600 relative z-10">0m</p>
+                            </div>
+                            <!-- 3. Tempo Total Hoje -->
+                            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group hover:border-blue-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-20 h-20 bg-blue-50/60 rounded-full blur-xl group-hover:bg-blue-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Tempo Hoje<span class="anki-info-trigger" data-tooltip="Tempo total que você passou revisando cards no Anki hoje, medido pelo próprio Anki desde a meia-noite.">ⓘ</span></p>
+                                <p id="anki-stat-time" class="text-4xl font-black text-blue-600 relative z-10">0m</p>
+                            </div>
+                            <!-- 4. Média por Card Hoje -->
+                            <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group hover:border-gray-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-20 h-20 bg-gray-100/60 rounded-full blur-xl group-hover:bg-gray-200 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Média / Card<span class="anki-info-trigger" data-tooltip="Tempo médio gasto por card revisado hoje. Calculado dividindo o tempo total de estudo de hoje pelo número de cards respondidos.">ⓘ</span></p>
+                                <p id="anki-stat-avg" class="text-4xl font-black text-gray-700 relative z-10">0s</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-6 sm:mb-10">
-                        <!-- Novos 7d -->
-                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-purple-50/50 rounded-full blur-xl group-hover:bg-purple-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Novos (7d)<span class="anki-info-trigger tip-right" data-tooltip="Cards que foram introduzidos pela primeira vez nos últimos 7 dias. São cards que saíram do status 'nunca visto' e entraram na fila de aprendizagem.">ⓘ</span></p>
-                            <p id="anki-stat-new" class="text-4xl font-black text-purple-600 relative z-10">0</p>
-                        </div>
-                        <!-- Revisados 7d -->
-                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-blue-50/50 rounded-full blur-xl group-hover:bg-blue-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Revisados (7d)<span class="anki-info-trigger" data-tooltip="Total de cards que você solucionou no Anki nos últimos 7 dias. Inclui absolutamente todos os cards estudados: novos em aprendizagem, revisões agendadas e reaprendizagens.">ⓘ</span></p>
-                            <p id="anki-stat-rev" class="text-4xl font-black text-blue-600 relative z-10">0</p>
-                        </div>
-                        <!-- Pendente Agora -->
-                        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-orange-50/50 rounded-full blur-xl group-hover:bg-orange-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Pendente (Total)<span class="anki-info-trigger" data-tooltip="Cards na sua fila neste momento: novos ainda não estudados + em aprendizagem + revisões vencidas. Não é o total de cards do deck, apenas os que precisam de atenção agora.">ⓘ</span></p>
-                            <p id="anki-stat-pendente" class="text-4xl font-black text-orange-600 relative z-10">0</p>
-                        </div>
-                        <!-- Taxa de Acerto 7d -->
-                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-emerald-50/50 rounded-full blur-xl group-hover:bg-emerald-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Taxa de Acerto (7d)<span class="anki-info-trigger tip-left" data-tooltip="Porcentagem de respostas corretas nos últimos 7 dias. 'Correto' = qualquer botão exceto 'Errei' (Again). Inclui Difícil, Bom e Fácil.">ⓘ</span></p>
-                            <p id="anki-stat-accuracy" class="text-4xl font-black text-emerald-600 relative z-10">0%</p>
-                        </div>
-                        <!-- Erros 7d -->
-                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-red-50/50 rounded-full blur-xl group-hover:bg-red-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Erros (7d)<span class="anki-info-trigger tip-right" data-tooltip="Total de vezes que você apertou 'Errei' (Again) nos últimos 7 dias. Inclui erros tanto em passos de aprendizagem quanto em revisões normais.">ⓘ</span></p>
-                            <p id="anki-stat-wrong" class="text-4xl font-black text-red-500 relative z-10">0</p>
-                        </div>
 
-                        <!-- Tempo Total Hoje -->
-                        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden bg-primary-600 group hover:bg-primary-700 transition-colors">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
-                            <p class="text-[10px] font-black text-white/60 uppercase tracking-widest mb-1 relative z-10">Tempo Hoje<span class="anki-info-trigger" data-tooltip="Tempo total que você passou revisando cards no Anki hoje, medido pelo próprio Anki desde a meia-noite." style="color: rgba(255,255,255,0.45);">ⓘ</span></p>
-                            <p id="anki-stat-time" class="text-4xl font-black text-white relative z-10">0m</p>
+                    <!-- Seção 2: Desempenho dos Últimos 7 Dias -->
+                    <div class="mb-6 sm:mb-10">
+                        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-black">
+                                    <i class="ph-bold ph-chart-line-up"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-xs font-black uppercase tracking-wider text-gray-700">Histórico & Desempenho (7 Dias)</h3>
+                                    <p class="text-[11px] text-gray-400 font-medium">Consolidado semanal de volume, retenção e tempo acumulado</p>
+                                </div>
+                            </div>
+                            <div id="anki-source-indicator" class="hidden flex justify-end animate-fade-in">
+                                <!-- Conteúdo dinâmico via JS -->
+                            </div>
                         </div>
-                        <!-- Tempo Restante Estimado Hoje (Novo) -->
-                        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-emerald-50/50 rounded-full blur-xl group-hover:bg-emerald-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1 relative z-10">Restante Est.<span class="anki-info-trigger" data-tooltip="Estimativa de tempo necessário para zerar todos os cards pendentes de hoje (Cards Pendentes × sua velocidade média de resposta).">ⓘ</span></p>
-                            <p id="anki-stat-remaining" class="text-4xl font-black text-emerald-600 relative z-10">0m</p>
-                        </div>
-                        <!-- Média por Card Hoje -->
-                        <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-gray-50/50 rounded-full blur-xl"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Média/Card<span class="anki-info-trigger" data-tooltip="Tempo médio gasto por card revisado hoje. Calculado dividindo o tempo total de estudo de hoje pelo número de cards respondidos.">ⓘ</span></p>
-                            <p id="anki-stat-avg" class="text-4xl font-black text-gray-700 relative z-10">0s</p>
-                        </div>
-                        <!-- Tempo Total Semanal (7d) (Novo) -->
-                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-indigo-50/50 rounded-full blur-xl group-hover:bg-indigo-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Tempo (7d)<span class="anki-info-trigger tip-left" data-tooltip="Tempo total acumulado de revisões no Anki nos últimos 7 dias.">ⓘ</span></p>
-                            <p id="anki-stat-time-7d" class="text-4xl font-black text-indigo-600 relative z-10">0m</p>
-                        </div>
-                        <!-- Desempenho Geral 7d -->
-                        <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col pt-8 relative overflow-hidden group">
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-amber-50/50 rounded-full blur-xl group-hover:bg-amber-100 transition-colors"></div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Desempenho (7d)<span class="anki-info-trigger tip-left" data-tooltip="Classificação baseada na taxa de acerto dos últimos 7 dias: Elite (≥90%) · Sólido (≥80%) · Bom (≥70%) · Regular (≥50%) · Crítico (<50%).">ⓘ</span></p>
-                            <p id="anki-stat-performance" class="text-4xl font-black text-amber-500 relative z-10">--</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5">
+                            <!-- 1. Revisados 7d -->
+                            <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-7 relative overflow-hidden group hover:border-blue-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-blue-50/50 rounded-full blur-xl group-hover:bg-blue-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Revisados (7d)<span class="anki-info-trigger" data-tooltip="Total de cards que você solucionou no Anki nos últimos 7 dias. Inclui absolutamente todos os cards estudados: novos em aprendizagem, revisões agendadas e reaprendizagens.">ⓘ</span></p>
+                                <p id="anki-stat-rev" class="text-3xl font-black text-blue-600 relative z-10">0</p>
+                            </div>
+                            <!-- 2. Novos 7d -->
+                            <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-7 relative overflow-hidden group hover:border-purple-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-purple-50/50 rounded-full blur-xl group-hover:bg-purple-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Novos (7d)<span class="anki-info-trigger tip-right" data-tooltip="Cards que foram introduzidos pela primeira vez nos últimos 7 dias. São cards que saíram do status 'nunca visto' e entraram na fila de aprendizagem.">ⓘ</span></p>
+                                <p id="anki-stat-new" class="text-3xl font-black text-purple-600 relative z-10">0</p>
+                            </div>
+                            <!-- 3. Taxa de Acerto 7d -->
+                            <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-7 relative overflow-hidden group hover:border-emerald-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-emerald-50/50 rounded-full blur-xl group-hover:bg-emerald-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Taxa de Acerto (7d)<span class="anki-info-trigger tip-left" data-tooltip="Porcentagem de respostas corretas nos últimos 7 dias. 'Correto' = qualquer botão exceto 'Errei' (Again). Inclui Difícil, Bom e Fácil.">ⓘ</span></p>
+                                <p id="anki-stat-accuracy" class="text-3xl font-black text-emerald-600 relative z-10">0%</p>
+                            </div>
+                            <!-- 4. Erros 7d -->
+                            <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-7 relative overflow-hidden group hover:border-red-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-red-50/50 rounded-full blur-xl group-hover:bg-red-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Erros (7d)<span class="anki-info-trigger tip-right" data-tooltip="Total de vezes que você apertou 'Errei' (Again) nos últimos 7 dias. Inclui erros tanto em passos de aprendizagem quanto em revisões normais.">ⓘ</span></p>
+                                <p id="anki-stat-wrong" class="text-3xl font-black text-red-500 relative z-10">0</p>
+                            </div>
+                            <!-- 5. Tempo Total Semanal (7d) -->
+                            <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-7 relative overflow-hidden group hover:border-indigo-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-indigo-50/50 rounded-full blur-xl group-hover:bg-indigo-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Tempo (7d)<span class="anki-info-trigger tip-left" data-tooltip="Tempo total acumulado de revisões no Anki nos últimos 7 dias.">ⓘ</span></p>
+                                <p id="anki-stat-time-7d" class="text-3xl font-black text-indigo-600 relative z-10">0m</p>
+                            </div>
+                            <!-- 6. Desempenho Geral 7d -->
+                            <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col pt-7 relative overflow-hidden group hover:border-amber-200 transition-all">
+                                <div class="absolute -top-4 -right-4 w-16 h-16 bg-amber-50/50 rounded-full blur-xl group-hover:bg-amber-100 transition-colors"></div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 relative z-10">Desempenho (7d)<span class="anki-info-trigger tip-left" data-tooltip="Classificação baseada na taxa de acerto dos últimos 7 dias: Elite (≥90%) · Sólido (≥80%) · Bom (≥70%) · Regular (≥50%) · Crítico (<50%).">ⓘ</span></p>
+                                <p id="anki-stat-performance" class="text-3xl font-black text-amber-500 relative z-10">--</p>
+                            </div>
                         </div>
                     </div>
 
@@ -1333,21 +1367,21 @@
 
                             <!-- Métricas Detalhadas do Heatmap (como na extensão do Anki) -->
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 mt-4 border-t border-gray-100">
-                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
-                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Média Diária<span class="anki-info-trigger" data-tooltip="Média de cartões revisados por dia em que houve estudo.">ⓘ</span></p>
-                                    <p id="anki-heatmap-daily-avg" class="text-base font-black text-gray-800 mt-1">0 cards</p>
-                                </div>
-                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
-                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dias com Estudo<span class="anki-info-trigger" data-tooltip="Porcentagem de dias do histórico em que você realizou pelo menos uma revisão.">ⓘ</span></p>
-                                    <p id="anki-heatmap-days-learned" class="text-base font-black text-gray-800 mt-1">0%</p>
+                                <div class="bg-emerald-50/50 rounded-2xl p-3 border border-emerald-100/80 text-center">
+                                    <p class="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Streak Atual<span class="anki-info-trigger" data-tooltip="Sequência atual de dias consecutivos com revisão.">ⓘ</span></p>
+                                    <p id="anki-heatmap-current-streak" class="text-base font-black text-emerald-600 mt-1">0 dias</p>
                                 </div>
                                 <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
                                     <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Maior Streak<span class="anki-info-trigger" data-tooltip="Maior sequência histórica ininterrupta de dias estudados.">ⓘ</span></p>
                                     <p id="anki-heatmap-longest-streak" class="text-base font-black text-gray-800 mt-1">0 dias</p>
                                 </div>
                                 <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
-                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Streak Atual<span class="anki-info-trigger" data-tooltip="Sequência atual de dias consecutivos com revisão.">ⓘ</span></p>
-                                    <p id="anki-heatmap-current-streak" class="text-base font-black text-emerald-600 mt-1">0 dias</p>
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dias com Estudo<span class="anki-info-trigger" data-tooltip="Porcentagem de dias do histórico em que você realizou pelo menos uma revisão.">ⓘ</span></p>
+                                    <p id="anki-heatmap-days-learned" class="text-base font-black text-gray-800 mt-1">0%</p>
+                                </div>
+                                <div class="bg-gray-50/80 rounded-2xl p-3 border border-gray-100 text-center">
+                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Média Diária<span class="anki-info-trigger" data-tooltip="Média de cartões revisados por dia em que houve estudo.">ⓘ</span></p>
+                                    <p id="anki-heatmap-daily-avg" class="text-base font-black text-gray-800 mt-1">0 cards</p>
                                 </div>
                             </div>
                         </div>

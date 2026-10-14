@@ -641,27 +641,31 @@ window.pomodoroController = {
 
                 <!-- Metric Cards -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div class="bg-gray-50/70 rounded-2xl border border-gray-100 p-5 text-center">
-                        <i class="ph-bold ph-timer text-primary-600 text-2xl mb-1.5"></i>
-                        <p class="text-2xl font-black text-gray-800 tabular-nums">${totalPomos}</p>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pomodoros (${periodLabels[period]})</p>
-                    </div>
+                    <!-- 1. Tempo de Foco -->
                     <div class="bg-gray-50/70 rounded-2xl border border-gray-100 p-5 text-center">
                         <i class="ph-bold ph-clock text-emerald-600 text-2xl mb-1.5"></i>
                         <p class="text-2xl font-black text-gray-800 tabular-nums">${totalFocoStr}</p>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tempo de Foco</p>
                     </div>
+                    <!-- 2. Pomodoros -->
+                    <div class="bg-gray-50/70 rounded-2xl border border-gray-100 p-5 text-center">
+                        <i class="ph-bold ph-timer text-primary-600 text-2xl mb-1.5"></i>
+                        <p class="text-2xl font-black text-gray-800 tabular-nums">${totalPomos}</p>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pomodoros (${periodLabels[period]})</p>
+                    </div>
+                    <!-- 3. Sessões -->
+                    <div class="bg-gray-50/70 rounded-2xl border border-gray-100 p-5 text-center">
+                        <i class="ph-bold ph-fire text-purple-600 text-2xl mb-1.5"></i>
+                        <p class="text-2xl font-black text-gray-800 tabular-nums">${totalSessoesPeriodo}</p>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sessões (${periodLabels[period]})</p>
+                    </div>
+                    <!-- 4. Matéria + Estudada -->
                     <div class="bg-gray-50/70 rounded-2xl border border-gray-100 p-5 text-center">
                         <i class="ph-bold ph-book-open text-amber-600 text-2xl mb-1.5"></i>
                         <p class="text-base font-black text-gray-800 truncate px-1" title="${sortedMaterias[0] ? sortedMaterias[0].nome : 'Nenhuma'}">
                             ${sortedMaterias[0] ? this._escapeHtml(sortedMaterias[0].nome) : '--'}
                         </p>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Matéria + Estudada</p>
-                    </div>
-                    <div class="bg-gray-50/70 rounded-2xl border border-gray-100 p-5 text-center">
-                        <i class="ph-bold ph-fire text-purple-600 text-2xl mb-1.5"></i>
-                        <p class="text-2xl font-black text-gray-800 tabular-nums">${totalSessoesPeriodo}</p>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sessões (${periodLabels[period]})</p>
                     </div>
                 </div>
 
