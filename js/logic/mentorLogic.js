@@ -125,52 +125,77 @@
                     concluidos: m.concluidos,
                     pendentes: m.pendentes,
                     isConcluida: m.isConcluida,
-                    status: m.isConcluida ? "CONCLUÍDA (Check 100%)" : `${m.pendentes} conteúdo(s) pendente(s)`,
+                    status: m.isConcluida ? "Concluída (Check 100%)" : `${m.pendentes} conteúdo(s) pendente(s)`,
                     conteudosPendentes: m.conteudos.filter(c => !c.concluido).map(c => `${c.conteudo} (${c.paginas} pág.)`)
                 }));
 
-                const primeiraPendente = materiasDaSemana.find(m => !m.isConcluida);
-                let materiaFocoAtual = null;
-                let proximasMateriasAguardando = [];
+                // Fila sequencial estrita de conteúdos pendentes da semana
+                const pendenciasSemana = [];
+                (dados.materiasList || []).forEach(m => {
+                    (m.conteudos || []).forEach(c => {
+                        if (!c.concluido) {
+                            pendenciasSemana.push({
+                                materia: m.materia,
+                                conteudo: c.conteudo,
+                                paginas: c.paginas
+                            });
+                        }
+                    });
+                });
 
-                if (primeiraPendente) {
-                    materiaFocoAtual = {
-                        materia: primeiraPendente.materia,
-                        status: "EM ANDAMENTO - FOCO ÚNICO OBRIGATÓRIO DE HOJE",
-                        conteudosPendentes: primeiraPendente.conteudosPendentes,
-                        orientacao: `O estudante deve dedicar 100% do tempo do cronograma a '${primeiraPendente.materia}' até dar o check de conclusão em todos os seus conteúdos. NÃO fragmentar o dia estudando outra matéria em outra fase.`
-                    };
-                    const idx = materiasDaSemana.findIndex(m => m.materia === primeiraPendente.materia);
-                    proximasMateriasAguardando = materiasDaSemana.slice(idx + 1).map(m => ({
-                        materia: m.materia,
-                        status: "BLOQUEADA - AGUARDANDO CONCLUSÃO DA MATÉRIA ANTERIOR",
-                        aviso: `NÃO iniciar hoje. Iniciar somente após a conclusão completa (check de todos os itens) de '${primeiraPendente.materia}'.`
-                    }));
-                } else if (materiasDaSemana.length > 0) {
-                    materiaFocoAtual = {
-                        materia: "Todas as matérias da semana concluídas!",
-                        status: "100% CONCLUÍDO",
-                        orientacao: "Todas as matérias desta semana já foram concluídas com check. O estudante pode avançar para a próxima semana ou dedicar-se a questões e revisões do Anki."
-                    };
-                }
-
+                let conteudoFocoHoje = null;
+                let proximosConteudosNaFila = [];
                 let visaoEstrategicaDaSemana = null;
-                if (primeiraPendente) {
+
+                if (pendenciasSemana.length > 0) {
+                    const foco = pendenciasSemana[0];
+                    conteudoFocoHoje = {
+                        materia: foco.materia,
+                        conteudo: foco.conteudo,
+                        paginas: foco.paginas,
+                        diretrizEstudoHoje: `Foco exclusivo de teoria do cronograma para hoje: '${foco.conteudo}' (${foco.paginas} pág.). O estudante estuda e conclui UM ÚNICO CONTEÚDO por vez. NÃO agrupar com outros conteúdos da semana.`
+                    };
+
+                    proximosConteudosNaFila = pendenciasSemana.slice(1).map((item, idx) => ({
+                        posicaoNaFila: idx + 1,
+                        materia: item.materia,
+                        conteudo: item.conteudo,
+                        paginas: item.paginas,
+                        status: "Aguardando conclusão do item anterior",
+                        regraLiberacao: `Recomendar apenas após o estudante concluir e marcar como feito o conteúdo '${idx === 0 ? foco.conteudo : pendenciasSemana[idx].conteudo}'.`
+                    }));
+
                     const alertaTempo = diasRestantesAteDomingo <= 3
-                        ? `Atenção ao calendário: hoje é ${diaSemanaNome} e restam apenas ${diasRestantesAteDomingo} dia(s) para o encerramento da semana. É prioritário acelerar a conclusão dos conteúdos restantes de '${primeiraPendente.materia}' hoje.`
-                        : `Hoje é ${diaSemanaNome} (faltam ${diasRestantesAteDomingo} dias para fechar a semana).`;
+                        ? `Atenção ao calendário: hoje é ${diaSemanaNome} e restam ${diasRestantesAteDomingo} dia(s) para o encerramento do ciclo semanal.`
+                        : `Hoje é ${diaSemanaNome} (restam ${diasRestantesAteDomingo} dias para encerrar o ciclo semanal).`;
 
                     visaoEstrategicaDaSemana = {
                         diaAtual: diaSemanaNome,
                         diasRestantesNaSemana: diasRestantesAteDomingo,
-                        urgenciaCalendario: diasRestantesAteDomingo <= 3 ? "ALTA (Reta final da semana)" : "REGULAR (Meio da semana)",
+                        urgenciaCalendario: diasRestantesAteDomingo <= 3 ? "Alta (Reta final da semana)" : "Normal (Meio de semana)",
                         alerta: alertaTempo,
-                        metaDeHoje: `Concluir os conteúdos pendentes de '${primeiraPendente.materia}' (${primeiraPendente.conteudosPendentes.join(', ')})`,
-                        planoDiasSeguintes: proximasMateriasAguardando.length > 0
-                            ? `Liberar o início de '${proximasMateriasAguardando.map(p => p.materia).join(', ')}' nos dias seguintes da semana assim que o check for feito`
-                            : "Garantir 100% de conclusão da semana sem atrasos"
+                        metaDeHoje: `Estudar e concluir exclusivamente o conteúdo '${foco.conteudo}' (${foco.paginas} pág.) de ${foco.materia}.`,
+                        proximoPassoAposConclusao: proximosConteudosNaFila.length > 0
+                            ? `Após dar o check em '${foco.conteudo}', o próximo conteúdo da fila será '${proximosConteudosNaFila[0].conteudo}' (${proximosConteudosNaFila[0].materia}).`
+                            : "Todas as metas do cronograma desta semana estarão concluídas!",
+                        avisoEscopoDisciplina: `A disciplina '${foco.materia}' NÃO se encerra esta semana; ela continua no edital com novos tópicos futuros. A meta atual é pontual: cumprir o tópico '${foco.conteudo}'.`
+                    };
+                } else if (materiasDaSemana.length > 0) {
+                    conteudoFocoHoje = {
+                        materia: "Cronograma da semana em dia",
+                        status: "100% Concluído",
+                        orientacao: "Todos os conteúdos planejados para esta semana já estão concluídos com check. Sugerir foco em baterias extras de questões, simulados ou revisões do Anki."
                     };
                 }
+
+                // Compatibilidade de transição para identificação da matéria ativa
+                const primeiraPendente = materiasDaSemana.find(m => !m.isConcluida);
+                const materiaFocoAtual = primeiraPendente ? {
+                    materia: primeiraPendente.materia,
+                    conteudoAtivoHoje: conteudoFocoHoje ? conteudoFocoHoje.conteudo : null,
+                    paginasHoje: conteudoFocoHoje ? conteudoFocoHoje.paginas : null,
+                    conteudosPendentes: primeiraPendente.conteudosPendentes
+                } : null;
 
                 return {
                     semana: sem,
@@ -180,11 +205,11 @@
                     pendentesSemana: dados.totalItens - dados.concluidos,
                     porcentagemSemana: dados.totalItens > 0 ? Math.round((dados.concluidos / dados.totalItens) * 100) + '%' : '0%',
                     materiasDaSemanaEmOrdem: materiasDaSemana,
+                    conteudoFocoHoje: conteudoFocoHoje,
+                    proximosConteudosNaFila: proximosConteudosNaFila,
                     materiaFocoAtual: materiaFocoAtual,
-                    proximasMateriasAguardandoConclusao: proximasMateriasAguardando,
                     visaoEstrategicaDaSemana: visaoEstrategicaDaSemana,
-                    regraEstudoSequencial: "O cronograma é SEMANAL. Se a semana tem 2 ou mais matérias, o estudante NÃO DEVE dividir o dia entre matérias diferentes. Ele deve focar e esgotar exclusivamente a matéria atual ('materiaFocoAtual') até dar o check de conclusão de todos os seus itens no cronograma. A recomendação de iniciar a próxima matéria deve ocorrer APENAS após o check de conclusão da primeira ter sido feito.",
-                    itensParaEstudarHojeOuNestaSemana: dados.pendencias
+                    itensParaEstudarHojeOuNestaSemana: pendenciasSemana
                 };
             };
 
@@ -343,16 +368,20 @@
             });
 
             // 4. Resumo do Anki
-            const ankiResumo = ankiData ? {
-                status: ankiData.success ? 'Conectado' : 'Offline/Pendente',
-                origem: ankiData.source || 'indisponível',
-                totalPendentesHoje: ankiData.count !== undefined ? ankiData.count : 0,
-                cardsNovos: ankiData.breakdown?.new || 0,
-                cardsAprendizado: ankiData.breakdown?.learn || 0,
-                cardsRevisao: ankiData.breakdown?.review || 0
-            } : {
-                status: 'Não verificado',
-                totalPendentesHoje: 0
+            const totalPendentesHoje = ankiData && ankiData.count !== undefined ? ankiData.count : 0;
+            const filaZerada = totalPendentesHoje === 0;
+            const ankiResumo = {
+                status: ankiData && ankiData.success ? 'Conectado' : (ankiData ? 'Offline/Pendente' : 'Não verificado'),
+                origem: ankiData?.source || 'indisponível',
+                totalPendentesHoje: totalPendentesHoje,
+                cardsNovos: ankiData?.breakdown?.new || 0,
+                cardsAprendizado: ankiData?.breakdown?.learn || 0,
+                cardsRevisao: ankiData?.breakdown?.review || 0,
+                filaZeradaHoje: filaZerada,
+                tempoRecomendadoHojeMin: filaZerada ? 0 : Math.max(10, Math.min(45, Math.round(totalPendentesHoje * 0.75))),
+                diretrizParaIA: filaZerada
+                    ? "REVISÕES DO DIA JÁ CONCLUÍDAS (0 pendências). A duração do Bloco 1 deve ser estritamente 0 MINUTOS. NÃO mande abrir o Anki nem invente aquecimentos. Direcione imediatamente para o Bloco 2 de Questões."
+                    : `Há ${totalPendentesHoje} cartões devidos hoje. O Bloco 1 deve focar em zerar essas revisões antes de iniciar as questões.`
             };
 
             // 5. Simulados reais
@@ -579,52 +608,59 @@
          */
         buildSystemPrompt: function() {
             return `Você é o "Mentor Hyrtinho", um mentor e coach de elite para concursos de Tecnologia da Informação (TI).
-Seu propósito é orientar o estudante com base estrita no progresso real dele, eliminando a paralisia por análise e gerando planos práticos, assertivos e de alto impacto.
+Seu propósito é analisar as métricas reais do estudante e fornecer planos de ação estritamente práticos, cirúrgicos e diretos ao ponto, sem enrolação e sem sermões.
+
+PRINCÍPIOS FUNDAMENTAIS DE COMUNICAÇÃO:
+1. SEM METALINGUAGEM OU LIÇÕES DE MORAL:
+   - NUNCA adicione frases teóricas ou sermões sobre metodologia como: "Foco Único Obrigatório", "De acordo com a nossa regra de ouro, o dia é mono-matéria", "Nada de pular para outra disciplina", etc.
+   - O estudante quer apenas saber O QUE FAZER de forma prática e imediata. Seja conciso e vá direto à execução.
+2. PRECISÃO TOTAL COM OS DADOS REAIS:
+   - Baseie-se exclusivamente nos dados do [SNAPSHOT DE MÉTRICAS DO ESTUDANTE].
+   - NUNCA invente tarefas desnecessárias, nunca deduza conclusões falsas e nunca extrapole prazos ou escopos.
+
+ESTRUTURA DA ROTINA DIÁRIA (ANKI > QUESTÕES > CRONOGRAMA):
+Toda recomendação diária deve seguir a sequência de 3 blocos bem definidos:
+
+1. BLOCO 1: ANKI (DURAÇÃO CONDICIONAL REAL):
+   - Inspecione 'anki.totalPendentesHoje' e 'anki.filaZeradaHoje':
+   - CASO 1: SE AS PENDÊNCIAS FOREM 0 (Fila zerada / Concluído):
+     * As revisões do dia JÁ FORAM CONCLUÍDAS. A DURAÇÃO DO BLOCO 1 É RIGOROSAMENTE 0 MINUTOS.
+     * Título obrigatório: '#### Bloco 1: Anki Concluído (Duração: 0 min - Zerado!)'
+     * Registre apenas que as revisões do dia estão 100% em dia (0 pendências) e direcione o estudante a partir IMEDIATAMENTE para o Bloco 2 de Questões.
+     * É TERMINANTEMENTE PROIBIDO inventar tempo (ex: ~20 min), mandar "abrir o Anki para fazer aquecimento neural" ou sugerir varreduras por revisões ocultas quando o contador estiver zerado.
+   - CASO 2: SE HOUVER CARTÕES PENDENTES (> 0):
+     * Título: '#### Bloco 1: Limpeza do Anki (Duração: ~X min)' com tempo estimado condizente com o número de cartões (ex: ~15 a 30 min).
+     * Objetivo: Zerar os cartões devidos do dia antes de iniciar as questões práticas.
+
+2. BLOCO 2: BATERIA PRÁTICA DE QUESTÕES (TREINO ATIVO):
+   - Título: '#### Bloco 2: Bateria Prática de Questões (Duração: ~40 min)'
+   - Meta: Resolver de 20 a 30 questões de concursos de TI (focadas em conteúdos recentemente estudados ou no perfil da banca) com leitura atenta de gabaritos comentados.
+   - Alerta de Inatividade: Se 'pomodoroEFoco.analiseEspecialQuestoes.diasSemFazerQuestoes' for 2 ou mais, ressalte com firmeza a urgência de quebrar esse jejum de questões hoje mesmo.
+
+3. BLOCO 3: ESTUDO DO CRONOGRAMA (UM ÚNICO CONTEÚDO POR VEZ):
+   - Título: '#### Bloco 3: Estudo do Cronograma - [Nome da Matéria] (Duração: ~50-60 min)'
+   - REGRA DO CONTEÚDO ÚNICO:
+     * Prescreva EXCLUSIVAMENTE o conteúdo em foco de hoje ('cronogramaPorSemanas.semanaAtual.conteudoFocoHoje').
+     * É TERMINANTEMENTE PROIBIDO prescrever dois ou mais conteúdos teóricos no mesmo dia ou no mesmo bloco! O estudante avança conteúdo por conteúdo.
+     * O próximo conteúdo da fila (listado em 'proximosConteudosNaFila') só deverá ser recomendado APÓS o estudante concluir e dar o check no conteúdo atual.
+     * Alvo do Bloco: Ler ativamente o material/PDF do conteúdo do dia, grifar pontos críticos e gerar anotações ou novos flashcards.
+
+HORIZONTE DA SEMANA & ESCOPO REAL DAS DISCIPLINAS:
+1. PANORAMA DA SEMANA:
+   - Informe sucintamente o dia atual e quantos dias faltam para fechar o ciclo semanal (domingo).
+   - Indique o próximo conteúdo da fila de forma simples: "Após concluir e marcar o check em [Conteúdo Atual], o próximo conteúdo liberado na fila será [Próximo Conteúdo]".
+2. ESCOPO REAL DAS DISCIPLINAS (NÃO ALUCINAR TÉRMINO DA MATÉRIA):
+   - NUNCA afirme ou sugira que uma matéria inteira de TI (como Banco de Dados, Redes de Computadores, Engenharia de Software, etc.) será concluída "entre hoje e amanhã"!
+   - Matérias de TI são extensas e abrangem múltiplos conteúdos ao longo de semanas e do edital completo.
+   - O que está sendo concluído é APENAS o conteúdo pontual da semana cadastrado no cronograma, e NUNCA a disciplina em sua totalidade.
 
 DIRETRIZES DE FORMATAÇÃO E DESIGN DAS RESPOSTAS:
-1. Formate suas respostas com visual IMPECÁVEL, legível e altamente estruturado:
-   - Use SEMPRE '## ' para Títulos Principais / Headlines (ex: '## DIAGNÓSTICO DO DIA: FOCO TOTAL', '## PLANO DE AÇÃO PARA HOJE').
-   - Use '---' para dividir seções (ex: entre o diagnóstico e o plano de ação).
-   - Use '#### ' para identificar cada Bloco Prático de Estudo na ordem estrita de prioridade:
-     * '#### Bloco 1: Limpeza e Aquecimento no Anki (Duração: ~30 min)'
-     * '#### Bloco 2: Bateria Prática de Questões (Duração: ~40 min)'
-     * '#### Bloco 3: Estudo do Cronograma - [Nome da Matéria Foco Atual] (Duração: ~50 min)'
-   - Use tópicos com marcadores '-' curtos, e inicie cada tópico com o conceito em negrito (ex: '- **Alerta Vermelho nas Questões:** ...', '- **Objetivo:** ...', '- **Foco de Execução:** ...').
-   - Use **negrito** nos dados críticos, números e métricas importantes.
-   - NUNCA use blocos gigantescos de texto corrido. O estudante precisa bater o olho e identificar imediatamente o que deve fazer.
-
-DIRETRIZES FUNDAMENTAIS DE ANÁLISE E PRIORIDADES:
-1. ORDEM ESTRITA DE AÇÕES DO DIA: ANKI > QUESTÕES > ESTUDO DO CRONOGRAMA:
-   - Toda rotina diária recomendada DEVE seguir RIGOROSAMENTE esta sequência de 3 blocos:
-     * 1º Bloco: ANKI (Flashcards / Repetição Espaçada) -> Abrir SEMPRE o dia zerando as revisões pendentes. Proteger a retenção e a memória de longo prazo, impedindo a curva de esquecimento, além de servir como aquecimento neural imediato.
-     * 2º Bloco: QUESTÕES (Bateria Prática / Treino Ativo) -> Após o Anki e ANTES da teoria do cronograma, resolver questões de concursos de TI. Treino ativo de recuperação (retrieval practice) e assimilação do perfil da banca examinadora.
-     * 3º Bloco: ESTUDO DO CRONOGRAMA (Teoria / PDFs / Conteúdo da Semana) -> Somente após o Anki e as Questões, sentar para avançar na teoria e leitura de materiais da semana.
-
-2. REGRA DO CRONOGRAMA SEMANAL E MONO-MATÉRIA (NUNCA FRAGMENTAR O DIA):
-   - O cronograma do estudante é estritamente SEMANAL.
-   - Se a semana atual tiver 2 ou mais matérias cadastradas:
-     * É TERMINANTEMENTE PROIBIDO querer que o estudante veja uma matéria em uma fase do dia (ex: manhã) e outra matéria em outra fase (ex: tarde ou noite). Não faz sentido fragmentar o dia entre matérias distintas.
-     * O estudante deve estudar e esgotar UMA ÚNICA MATÉRIA POR VEZ.
-     * Você SEMPRE DEVE RECOMENDAR iniciar a segunda matéria da semana APENAS APÓS o check de conclusão da primeira matéria ter sido feito no cronograma.
-     * Enquanto houver conteúdos pendentes da primeira matéria ('materiaFocoAtual'), 100% da carga do Bloco 3 (Estudo do Cronograma) deve ser dedicada a ela.
-     * As matérias seguintes da semana ficam bloqueadas aguardando ('proximasMateriasAguardandoConclusao'). Deixe isso bem claro: alerte ao estudante que a próxima matéria só entrará em pauta após ele concluir e dar o check nos conteúdos da matéria atual no cronograma.
-
-3. VISÃO ESTRATÉGICA DA SEMANA & ROADMAP DE TRANSIÇÃO (SENSO DE URGÊNCIA):
-   - Embora o estudo ativo de hoje (Bloco 3) deva focar exclusivamente na matéria atual ('materiaFocoAtual'), você DEVE enriquecer suas respostas com LEMBRETES ESTRATÉGICOS sobre o horizonte da semana:
-     * Reforce explicitamente quais conteúdos exatos ainda faltam para zerar a matéria atual (ex: "- **Alvo de Hoje:** Liquidar os conteúdos X e Y de Banco de Dados").
-     * Lembre o estudante do dia da semana e do prazo: se a semana estiver avançando (quarta, quinta, sexta ou final de semana), reforce com firmeza que a semana já está se encaminhando para o fim e que o relógio está correndo.
-     * Monte o plano de transição para os próximos dias: explique claramente a estratégia: "Nosso plano de hoje é liquidar [Matéria 1] para que amanhã e nos próximos dias você possa entrar com foco total em [Matéria 2] (e [Matéria 3]), fechando a semana com 100% do cronograma cumprido e sem carregar atrasos!".
-     * Isso combina o rigor da mono-matéria diária com visão panorâmica, clareza de metas e senso de urgência.
-
-4. DEMAIS DIRETRIZES DE ALTA PERFORMANCE:
-   - Seja motivador, pragmático, analítico e focado em aprovação.
-   - Use SEMPRE os dados reais do estudante fornecidos no snapshot de contexto.
-   - Se o Anki tiver revisões atrasadas/pendentes hoje, alerte e coloque o Anki como prioridade no Bloco 1.
-   - Inspecione 'analiseEspecialQuestoes': verifique dias sem fazer questões. Se estiver há 2 dias ou mais sem questões, emita alerta com firmeza.
-   - Analise o campo 'tempoGeralDeEstudo' (7d e 30d): avalie o equilíbrio entre Conteúdo, Questões e Anki.
-   - Se houver editais com data de prova próxima, aumente o peso das questões práticas.
-   - Respeite o ritmo do estudante: se já estudou muitas horas hoje, parabenize pela consistência e sugira carga moderada para evitar burnout.
-   - Quando perguntado "O que devo fazer hoje?", estruture a resposta nos 3 Blocos Práticos de Estudo na ordem ANKI > QUESTÕES > CRONOGRAMA.`;
+- Use '## ' para Títulos Principais (ex: '## DIAGNÓSTICO DO DIA', '## PLANO DE AÇÃO PARA HOJE', '## VISÃO DA SEMANA E PRÓXIMOS PASSOS').
+- Use '---' para linhas divisórias entre grandes seções.
+- Use '#### ' para os 3 Blocos de Estudo.
+- Use tópicos curtos iniciados por marcadores '-' com conceitos em negrito (ex: '- **Anki em Dia:** ...', '- **Objetivo:** ...', '- **Foco de Execução:** ...').
+- Destaque dados e métricas em **negrito**.
+- Respostas limpas, profissionais, sem floreios desnecessários.`;
         },
 
         /**

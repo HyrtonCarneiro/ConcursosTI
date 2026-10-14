@@ -76,9 +76,38 @@ function runTests() {
     const complexHtml = logic.formatMarkdown(complexMd);
     if (!complexHtml.includes('ph-lightning')) throw new Error("Falha ao converter bloco de estudo #### em badge com ícone");
     if (!complexHtml.includes('border-t')) throw new Error("Falha ao converter divisor --- em linha horizontal");
-    if (!complexHtml.includes('<h3')) throw new Error("Falha ao converter headline em caixa alta para h3");
+    // Teste 5: Fila Sequencial de Conteúdos e Anki Zerado
+    const mockState2 = {
+        currentUser: 'Hyrton',
+        materias: [{ id: 'm1', nome: 'Banco de Dados' }],
+        conteudos: [
+            { id: 'c1', materiaId: 'm1', nome: 'TI04 - SQL (DDL)', paginas: 55 },
+            { id: 'c2', materiaId: 'm1', nome: 'TI05 - SQL (DCL e DTL)', paginas: 37 }
+        ],
+        cronograma: [
+            { id: 'i1', semana: '2026-10-12', materiaId: 'm1', conteudoId: 'c1', concluido: false },
+            { id: 'i2', semana: '2026-10-12', materiaId: 'm1', conteudoId: 'c2', concluido: false }
+        ]
+    };
+    const ctxZerado = logic.buildStudentContext(mockState2, { count: 0, success: true });
+    if (ctxZerado.anki.totalPendentesHoje !== 0) throw new Error("Anki deveria ter 0 pendentes");
+    if (ctxZerado.anki.filaZeradaHoje !== true) throw new Error("filaZeradaHoje deveria ser true");
+    if (ctxZerado.anki.tempoRecomendadoHojeMin !== 0) throw new Error("tempoRecomendadoHojeMin deveria ser 0");
+
+    const semAtual = ctxZerado.cronogramaPorSemanas.semanaAtual;
+    if (!semAtual) throw new Error("Deveria conter semanaAtual");
+    if (!semAtual.conteudoFocoHoje || semAtual.conteudoFocoHoje.conteudo !== 'TI04 - SQL (DDL)') {
+        throw new Error("conteudoFocoHoje deveria ser exclusivamente o 1º item: TI04 - SQL (DDL)");
+    }
+    if (semAtual.proximosConteudosNaFila.length !== 1 || semAtual.proximosConteudosNaFila[0].conteudo !== 'TI05 - SQL (DCL e DTL)') {
+        throw new Error("TI05 deveria estar em proximosConteudosNaFila aguardando conclusão do 1º item");
+    }
+    if (!semAtual.visaoEstrategicaDaSemana.avisoEscopoDisciplina.includes("NÃO se encerra esta semana")) {
+        throw new Error("Deveria conter aviso de que a disciplina não termina esta semana");
+    }
 
     console.log("✅ Todos os testes de mentorLogic passaram com sucesso!");
 }
 
 runTests();
+
