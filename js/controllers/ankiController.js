@@ -356,8 +356,8 @@ window.ankiController = {
                 datasets: [{
                     label: 'Minutos Estudados',
                     data: dataMinutes,
-                    backgroundColor: dailyList.map((d, i) => i === dailyList.length - 1 ? '#253ee8' : '#6366f1'),
-                    hoverBackgroundColor: '#1d2eca',
+                    backgroundColor: dailyList.map((d, i) => i === dailyList.length - 1 ? '#059669' : '#10b981'),
+                    hoverBackgroundColor: '#047857',
                     borderRadius: 6,
                     borderSkipped: false,
                     barPercentage: 0.65
@@ -739,8 +739,8 @@ window.ankiController = {
                 datasets: [{
                     label: 'Revisões Devidas',
                     data: data,
-                    backgroundColor: forecastData.map((d, i) => i === 0 ? '#253ee8' : '#3b5df5'),
-                    hoverBackgroundColor: '#1d2eca',
+                    backgroundColor: forecastData.map((d, i) => i === 0 ? '#059669' : '#10b981'),
+                    hoverBackgroundColor: '#047857',
                     borderRadius: 5,
                     borderSkipped: false,
                     barPercentage: 0.8

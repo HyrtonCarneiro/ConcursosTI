@@ -573,8 +573,8 @@ window.dashboardController = {
                     {
                         label: 'Anki',
                         data: ankiData,
-                        backgroundColor: '#8b5cf6', // Roxo vibrante
-                        hoverBackgroundColor: '#7c3aed',
+                        backgroundColor: '#10b981', // Verde esmeralda vibrante
+                        hoverBackgroundColor: '#059669',
                         borderRadius: period === '7d' ? 6 : 3,
                         stack: 'tempoEstudo'
                     },
@@ -589,8 +589,8 @@ window.dashboardController = {
                     {
                         label: 'Pomodoro de Questões',
                         data: questoesData,
-                        backgroundColor: '#10b981', // Verde esmeralda vibrante
-                        hoverBackgroundColor: '#059669',
+                        backgroundColor: '#f97316', // Laranja vibrante
+                        hoverBackgroundColor: '#ea580c',
                         borderRadius: period === '7d' ? 6 : 3,
                         stack: 'tempoEstudo'
                     }
