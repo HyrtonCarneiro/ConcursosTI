@@ -375,6 +375,72 @@ window.pomodoroLogic = {
         this._clearPersistedSession();
     },
 
+    // Reinicia o timer atual para o início da fase (foco ou pausa), descartando o tempo decorrido da tentativa atual
+    restartCurrentPhase: function() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.isActive = false;
+        this.isPaused = false;
+        this.targetEndTime = null;
+
+        if (this.mode === 'focus') {
+            this.totalTime = this.config.duracaoFoco * 60;
+            this.timeLeft = this.totalTime;
+            // Descarta o tempo de foco decorrido desta tentativa interrompida
+            this.totalFocusSeconds = this.accumulatedFocusBeforePhase || 0;
+        } else if (this.mode === 'shortBreak' || this.mode === 'longBreak' || this.mode === 'break') {
+            this.totalTime = (this.config.pausaCurta || this.config.duracaoPausa || 5) * 60;
+            this.timeLeft = this.totalTime;
+        } else {
+            this.timeLeft = this.totalTime;
+        }
+
+        this._updateTitle();
+        this._notifyStateChange();
+        this._persistActiveSession();
+
+        if (this.onTick) {
+            const perc = this.totalTime > 0 ? (this.timeLeft / this.totalTime) * 100 : 0;
+            this.onTick(this.formatTime(this.timeLeft), perc, this.timeLeft);
+        }
+    },
+
+    restartTimer: function() {
+        return this.restartCurrentPhase();
+    },
+
+    // Cancela o pomodoro atual descartando o tempo decorrido desta tentativa
+    cancelCurrentPomodoro: function() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.isActive = false;
+        this.isPaused = false;
+        this.targetEndTime = null;
+
+        // Descarta o tempo decorrido deste pomodoro em andamento
+        this.totalFocusSeconds = this.accumulatedFocusBeforePhase || 0;
+
+        if (this.pomodorosCompleted === 0) {
+            // Nenhum pomodoro anterior concluído: reseta a sessão completamente
+            this.reset();
+            return { cancelled: true, sessionReset: true };
+        } else {
+            // Pomodoros anteriores já foram concluídos: encerra sem somar o atual
+            this.stop();
+            this.mode = 'idle';
+            this._persistActiveSession();
+            return { cancelled: true, sessionReset: false, pomodorosCompleted: this.pomodorosCompleted };
+        }
+    },
+
+    cancelPomodoro: function() {
+        return this.cancelCurrentPomodoro();
+    },
+
     skip: function() {
         if (this.timer) {
             clearInterval(this.timer);

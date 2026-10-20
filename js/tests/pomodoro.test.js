@@ -157,6 +157,67 @@ async function runTests() {
     if (logic.totalTime !== 5 * 60) throw new Error(`Após pomo 2, duração da pausa DEVE ser 5 min (300s), mas foi ${logic.totalTime}s! Pausa longa foi indevidamente acionada.`);
     if (logic.getModeLabel() !== 'Pausa') throw new Error(`getModeLabel após pomo 2 deveria ser 'Pausa', retornou ${logic.getModeLabel()}`);
 
+    // Test 6: Restart current timer during focus
+    logic.stop();
+    logic.initSession(4, { duracaoFoco: 25, pausaCurta: 5, autoStart: false }, { categoria: 'Test' });
+    logic.startNextPhase(); // Starts focus (25:00 = 1500s)
+    
+    // Simulate 300s (5 minutes) elapsed
+    logic.timeLeft = 1200;
+    logic.totalFocusSeconds = 300;
+    
+    logic.restartCurrentPhase();
+    if (logic.timeLeft !== 25 * 60) throw new Error(`Após reiniciar foco, timeLeft deveria ser 1500s (25:00), mas é ${logic.timeLeft}s`);
+    if (logic.isActive) throw new Error(`Após reiniciar foco, timer não deve estar rodando automaticamente`);
+    if (logic.totalFocusSeconds !== 0) throw new Error(`Após reiniciar foco, tempo decorrido da tentativa deve ser descartado (0s), mas é ${logic.totalFocusSeconds}s`);
+
+    // Test 7: Restart current timer during break
+    logic.stop();
+    logic.initSession(4, { duracaoFoco: 25, pausaCurta: 5, autoStart: false }, { categoria: 'Test' });
+    logic.startNextPhase(); // Start focus
+    logic.timeLeft = 0;
+    logic._phaseComplete(); // Completes focus -> enters short break (300s)
+    if (logic.mode !== 'shortBreak') throw new Error(`Mode deveria ser shortBreak, mas é ${logic.mode}`);
+    logic.startCurrentPhase(); // Start break countdown
+    logic.timeLeft = 180; // 2 minutes elapsed
+
+    logic.restartCurrentPhase();
+    if (logic.timeLeft !== 5 * 60) throw new Error(`Após reiniciar pausa, timeLeft deveria ser 300s (05:00), mas é ${logic.timeLeft}s`);
+    if (logic.isActive) throw new Error(`Após reiniciar pausa, timer deve aguardar clique de início`);
+
+    // Test 8: Cancel current pomodoro when pomodorosCompleted === 0 (full reset)
+    logic.stop();
+    logic.initSession(4, { duracaoFoco: 25, pausaCurta: 5 }, { categoria: 'Test' });
+    logic.startNextPhase();
+    logic.timeLeft = 1000;
+    logic.totalFocusSeconds = 500;
+
+    const cancelResult1 = logic.cancelCurrentPomodoro();
+    if (!cancelResult1.sessionReset) throw new Error(`Cancelar no 1º pomodoro deveria resetar a sessão completamente`);
+    if (logic.mode !== 'idle') throw new Error(`Após cancelar 1º pomodoro, modo deve ser 'idle'`);
+    if (logic.totalFocusSeconds !== 0) throw new Error(`Após cancelar 1º pomodoro, totalFocusSeconds deve ser 0`);
+
+    // Test 9: Cancel current pomodoro when pomodorosCompleted > 0 (partial retention)
+    logic.stop();
+    logic.initSession(4, { duracaoFoco: 25, pausaCurta: 5 }, { categoria: 'Test' });
+    logic.startNextPhase();
+    logic.timeLeft = 0;
+    logic._phaseComplete(); // Completes pomo 1 (25 min = 1500s focus recorded)
+
+    if (logic.pomodorosCompleted !== 1) throw new Error(`Deveria ter 1 pomodoro concluído`);
+    if (logic.totalFocusSeconds !== 1500) throw new Error(`totalFocusSeconds deveria ser 1500s`);
+
+    // Start pomo 2
+    logic.startNextPhase(); // mode is now focus, pomo 2
+    logic.timeLeft = 1200; // 300s into pomo 2
+    logic.totalFocusSeconds = 1800; // 1500 + 300
+
+    const cancelResult2 = logic.cancelCurrentPomodoro();
+    if (cancelResult2.sessionReset) throw new Error(`Cancelar pomodoro 2 NÃO deve resetar os pomodoros já concluídos anteriormente`);
+    if (cancelResult2.pomodorosCompleted !== 1) throw new Error(`Deveria manter 1 pomodoro concluído`);
+    if (logic.totalFocusSeconds !== 1500) throw new Error(`Após cancelar pomo 2, totalFocusSeconds deve voltar para 1500s (descartando os 300s do pomo 2), mas é ${logic.totalFocusSeconds}s`);
+    if (logic.currentSessionLogs.length !== 1) throw new Error(`Logs devem conter apenas o 1º pomodoro`);
+
     // Restore Date.now and stop timer
     logic.stop();
     Date.now = originalDateNow;

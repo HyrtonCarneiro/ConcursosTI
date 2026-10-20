@@ -409,16 +409,24 @@ window.pomodoroController = {
                         </button>
                     `}
 
-                    <button type="button" onclick="window.pomodoroController.skipPhase()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-black px-6 py-4 rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2" title="Pular fase atual">
+                    <button type="button" onclick="window.pomodoroController.restartTimer()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-black px-5 py-4 rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2" title="Reiniciar o timer atual do início">
+                        <i class="ph-bold ph-arrows-counter-clockwise text-lg text-primary-600"></i> Reiniciar
+                    </button>
+
+                    <button type="button" onclick="window.pomodoroController.cancelCurrentPomodoro()" class="bg-amber-50 hover:bg-amber-100 text-amber-700 font-black px-5 py-4 rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2" title="Cancelar pomodoro atual">
+                        <i class="ph-bold ph-x-circle text-lg text-amber-600"></i> Cancelar Pomodoro
+                    </button>
+
+                    <button type="button" onclick="window.pomodoroController.skipPhase()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-black px-5 py-4 rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2" title="Pular fase atual">
                         <i class="ph-bold ph-skip-forward text-lg"></i> Pular
                     </button>
 
-                    <button type="button" onclick="window.pomodoroController.addMore()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-black px-6 py-4 rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2" title="Adicionar mais 1 pomodoro ao ciclo">
+                    <button type="button" onclick="window.pomodoroController.addMore()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-black px-5 py-4 rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2" title="Adicionar mais 1 pomodoro ao ciclo">
                         <i class="ph-bold ph-plus-circle text-lg"></i> +1 Pomo
                     </button>
 
-                    <button type="button" onclick="window.pomodoroController.cancelSession()" class="bg-red-50 hover:bg-red-100 text-red-600 font-black px-6 py-4 rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2" title="Finalizar e salvar agora">
-                        <i class="ph-bold ph-stop text-lg"></i> Encerrar
+                    <button type="button" onclick="window.pomodoroController.cancelSession()" class="bg-red-50 hover:bg-red-100 text-red-600 font-black px-5 py-4 rounded-2xl transition-all active:scale-95 uppercase tracking-widest text-xs flex items-center gap-2" title="Finalizar sessão salvando o tempo estudado">
+                        <i class="ph-bold ph-stop text-lg"></i> Encerrar Sessão
                     </button>
                 </div>
 
@@ -511,6 +519,9 @@ window.pomodoroController = {
                     </button>
                     <button type="button" onclick="window.pomodoroController.addMoreAndContinue()" class="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-black py-4 rounded-2xl transition-all shadow-lg active:scale-95 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
                         <i class="ph-bold ph-plus-circle text-lg"></i> Continuar Estudando (+4)
+                    </button>
+                    <button type="button" onclick="window.pomodoroController.discardAndReset()" class="px-5 py-4 rounded-2xl font-black text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all uppercase tracking-widest text-xs flex items-center justify-center gap-2" title="Descartar esta sessão sem salvar no histórico">
+                        <i class="ph-bold ph-trash text-lg"></i> Descartar
                     </button>
                 </div>
             </div>
@@ -1529,6 +1540,58 @@ window.pomodoroController = {
             logic.startCurrentPhase();
         }
         this.renderActive();
+    },
+
+    restartTimer: function() {
+        const logic = window.pomodoroLogic;
+        if (!logic) return;
+
+        const elapsed = logic.totalTime - logic.timeLeft;
+        if (elapsed > 5) {
+            if (!confirm(`Deseja reiniciar o timer atual? O tempo decorrido desta etapa (${logic.formatTime(elapsed)}) será descartado e o cronômetro voltará ao início.`)) {
+                return;
+            }
+        }
+
+        logic.restartCurrentPhase();
+        this.renderActive();
+        window.utils.showToast(`Timer reiniciado para ${logic.formatTime(logic.totalTime)}!`, 'info');
+    },
+
+    cancelCurrentPomodoro: function() {
+        const logic = window.pomodoroLogic;
+        if (!logic) return;
+
+        if (logic.pomodorosCompleted === 0) {
+            if (!confirm('Deseja cancelar o pomodoro atual? A sessão será cancelada e nenhum tempo será computado.')) return;
+            logic.cancelCurrentPomodoro();
+            this.view = 'setup';
+            this.render(true);
+            window.utils.showToast('Pomodoro cancelado com sucesso.', 'info');
+            return;
+        }
+
+        const confirmFinish = confirm(
+            `Deseja cancelar o pomodoro atual em andamento?\n\n` +
+            `• O tempo desta etapa será descartado.\n` +
+            `• A sessão será encerrada computando apenas os ${logic.pomodorosCompleted} pomodoro(s) já concluído(s).\n\n` +
+            `Deseja prosseguir?`
+        );
+
+        if (!confirmFinish) return;
+
+        logic.cancelCurrentPomodoro();
+        this._onSessionComplete();
+        window.utils.showToast('Pomodoro atual cancelado. Sessão finalizada.', 'info');
+    },
+
+    discardAndReset: function() {
+        if (!confirm('Deseja realmente descartar esta sessão sem salvar no histórico?')) return;
+        const logic = window.pomodoroLogic;
+        if (logic) logic.reset();
+        this.view = 'setup';
+        this.render(true);
+        window.utils.showToast('Sessão descartada.', 'info');
     },
 
     skipPhase: function() {
