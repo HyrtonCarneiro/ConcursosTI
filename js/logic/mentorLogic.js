@@ -23,11 +23,13 @@
             const conteudoMap = {};
             conteudos.forEach(c => { conteudoMap[c.id] = c.nome; });
 
+            // Dia de estudo: o dia só vira 4h após a meia-noite (estilo Anki)
             const hoje = new Date();
-            const hojeISO = hoje.toISOString().split('T')[0];
+            const hojeEstudo = new Date(hoje.getTime() - 4 * 3600000);
+            const hojeISO = `${hojeEstudo.getFullYear()}-${String(hojeEstudo.getMonth() + 1).padStart(2, '0')}-${String(hojeEstudo.getDate()).padStart(2, '0')}`;
 
             const diasSemanaNome = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-            const diaSemanaIndex = hoje.getDay();
+            const diaSemanaIndex = hojeEstudo.getDay();
             const diaSemanaNome = diasSemanaNome[diaSemanaIndex];
             const diasRestantesAteDomingo = diaSemanaIndex === 0 ? 0 : 7 - diaSemanaIndex;
 
@@ -486,7 +488,13 @@
             const pomodoroSessoes = Array.isArray(state.pomodoroSessoes) ? state.pomodoroSessoes : [];
             ankiTimeMap = ankiTimeMap || {};
 
-            const hoje = new Date();
+            // Dia de estudo: o dia só vira 4h após a meia-noite (estilo Anki)
+            const STUDY_OFFSET_MS = 4 * 3600000;
+            const studyKey = (dt) => {
+                const s = new Date(dt.getTime() - STUDY_OFFSET_MS);
+                return `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
+            };
+            const hoje = new Date(Date.now() - STUDY_OFFSET_MS);
             hoje.setHours(23, 59, 59, 999);
 
             const diasList = [];
@@ -529,7 +537,7 @@
                     sessao.pomodorosLog.forEach(log => {
                         const completedDate = log.completedAt ? new Date(log.completedAt) : new Date(sessao.dataFim || sessao.dataInicio || 0);
                         if (!isNaN(completedDate.getTime())) {
-                            const k = `${completedDate.getFullYear()}-${String(completedDate.getMonth() + 1).padStart(2, '0')}-${String(completedDate.getDate()).padStart(2, '0')}`;
+                            const k = studyKey(completedDate);
                             if (dateLookup[k]) {
                                 const seg = Number(log.duracaoSeg) || ((Number(log.duracaoMin) || 0) * 60) || 1500;
                                 const min = Math.round(seg / 60);
@@ -549,7 +557,7 @@
                 } else {
                     const sessaoDate = new Date(sessao.dataFim || sessao.dataInicio || 0);
                     if (!isNaN(sessaoDate.getTime())) {
-                        const k = `${sessaoDate.getFullYear()}-${String(sessaoDate.getMonth() + 1).padStart(2, '0')}-${String(sessaoDate.getDate()).padStart(2, '0')}`;
+                        const k = studyKey(sessaoDate);
                         if (dateLookup[k]) {
                             const seg = Number(sessao.tempoTotalFocoSeg) || ((Number(sessao.pomodorosConcluidos) || 0) * (Number(sessao.duracaoFoco) || 25) * 60);
                             const min = Math.round(seg / 60);

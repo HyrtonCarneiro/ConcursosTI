@@ -210,14 +210,18 @@ window.store = {
     },
 
     updateStreak: function() {
-        const hoje = new Date().toISOString().split('T')[0];
+        // Dia de estudo: atividades até 4h após a meia-noite contam como do dia anterior
+        const keyOf = function(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        };
+        const hojeDate = new Date(Date.now() - 4 * 3600000);
+        const hoje = keyOf(hojeDate);
         const ultima = this.state.estatisticas.ultimaDataEstudo;
         
         if (ultima === hoje) return;
 
-        const ontem = new Date();
-        ontem.setDate(ontem.getDate() - 1);
-        const ontemStr = ontem.toISOString().split('T')[0];
+        const ontem = new Date(hojeDate.getFullYear(), hojeDate.getMonth(), hojeDate.getDate() - 1);
+        const ontemStr = keyOf(ontem);
 
         if (ultima === ontemStr) {
             this.state.estatisticas.streak += 1;

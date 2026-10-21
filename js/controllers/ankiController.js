@@ -490,7 +490,8 @@ window.ankiController = {
         });
 
         // Current Streak calculation
-        const today = new Date();
+        // Dia de estudo: o dia só vira 4h após a meia-noite (estilo Anki)
+        const today = new Date(Date.now() - 4 * 3600000);
         let curStreak = 0;
         let checkDate = new Date(today);
         

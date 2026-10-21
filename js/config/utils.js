@@ -38,8 +38,31 @@ window.utils = {
         }, 3000);
     },
 
+    // "Dia de estudo" (estilo Anki): o dia só vira N horas após a meia-noite.
+    // Atividades feitas entre 00:00 e 03:59 contam como do dia anterior.
+    STUDY_DAY_OFFSET_HOURS: 4,
+
+    // Retorna um Date deslocado cujos campos LOCAIS (getFullYear/getMonth/getDate/getDay)
+    // representam o dia de estudo do instante informado (padrão: agora).
+    studyDate: function(input) {
+        const d = input === undefined || input === null ? new Date() : new Date(input);
+        return new Date(d.getTime() - this.STUDY_DAY_OFFSET_HOURS * 3600000);
+    },
+
+    // Chave 'YYYY-MM-DD' do dia de estudo do instante informado.
+    studyDateKey: function(input) {
+        const d = this.studyDate(input);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+
+    // Instante real (Date) em que o dia de estudo atual começou (ex.: 04:00 locais).
+    studyDayStart: function(input) {
+        const s = this.studyDate(input);
+        return new Date(s.getFullYear(), s.getMonth(), s.getDate(), this.STUDY_DAY_OFFSET_HOURS, 0, 0, 0);
+    },
+
     getWeekMonday: function(dateInput) {
-        if (!dateInput) return new Date().toISOString().split('T')[0];
+        if (!dateInput) return this.studyDateKey();
         
         // Parse manually to avoid timezone shift (UTC vs Local)
         const [y, m, d] = dateInput.split('-').map(Number);

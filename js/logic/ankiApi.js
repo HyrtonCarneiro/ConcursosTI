@@ -252,11 +252,25 @@ window.ankiApi = {
         }
     },
 
+    // Dia de estudo (estilo Anki): o dia vira 4h após a meia-noite.
+    _STUDY_OFFSET_MS: 4 * 3600000,
+    _studyNow() {
+        return new Date(Date.now() - this._STUDY_OFFSET_MS);
+    },
+    _studyDateKey(ts) {
+        const d = new Date(new Date(ts).getTime() - this._STUDY_OFFSET_MS);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+    _studyDayStartMs() {
+        const s = this._studyNow();
+        return new Date(s.getFullYear(), s.getMonth(), s.getDate(), 4, 0, 0, 0).getTime();
+    },
+
     async getWorkloadForecast(days = 30) {
         try {
             const forecast = [];
             const labels = [];
-            const todayObj = new Date();
+            const todayObj = this._studyNow();
 
             for (let i = 0; i < days; i++) {
                 // No Anki, cartões devidos hoje e pendências anteriores correspondem a prop:due<=0.
@@ -329,11 +343,11 @@ window.ankiApi = {
             
             let timeTodayMs = 0;
             let actionsTodayCount = 0;
-            const startOfToday = new Date().setHours(0, 0, 0, 0);
+            const startOfToday = this._studyDayStartMs();
 
             // Inicializar mapa cronológico dos últimos 7 dias (do 6º dia atrás até hoje)
             const daysMap = {};
-            const todayObj = new Date();
+            const todayObj = this._studyNow();
             for (let i = 6; i >= 0; i--) {
                 const d = new Date(todayObj);
                 d.setDate(todayObj.getDate() - i);
@@ -374,8 +388,7 @@ window.ankiApi = {
                             if (rev.type === 1 || rev.type === 2) reviewsCount++;
 
                             // Agrupar por data nos últimos 7 dias
-                            const revDate = new Date(rev.id);
-                            const revDateKey = `${revDate.getFullYear()}-${String(revDate.getMonth() + 1).padStart(2, '0')}-${String(revDate.getDate()).padStart(2, '0')}`;
+                            const revDateKey = this._studyDateKey(rev.id);
                             if (daysMap[revDateKey]) {
                                 daysMap[revDateKey].timeMs += (rev.time || 0);
                                 daysMap[revDateKey].cardsCount++;
@@ -454,8 +467,7 @@ window.ankiApi = {
                     if (!Array.isArray(cardReviews)) return;
                     cardReviews.forEach(rev => {
                         if (rev.id >= cutoff) {
-                            const d = new Date(rev.id);
-                            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            const key = this._studyDateKey(rev.id);
                             dateMap[key] = (dateMap[key] || 0) + (rev.time || 0);
                         }
                     });

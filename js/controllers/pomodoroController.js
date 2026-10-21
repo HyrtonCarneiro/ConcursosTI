@@ -575,7 +575,8 @@ window.pomodoroController = {
         // 7-day rolling chart: uses ALL logs to guarantee stability regardless of which period tab is active
         const allLogs = this._extractLogsForPeriod('geral');
         const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-        const now = new Date();
+        // Dia de estudo: o dia só vira 4h após a meia-noite (estilo Anki)
+        const now = new Date(Date.now() - 4 * 3600000);
 
         // Build 7 rolling calendar days ending on today (chronological order: past -> today)
         const rollingDays = [];
@@ -596,7 +597,8 @@ window.pomodoroController = {
             if (!dateVal) return;
             const d = new Date(dateVal);
             if (isNaN(d.getTime())) return;
-            const logKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const sd = new Date(d.getTime() - 4 * 3600000);
+            const logKey = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}-${String(sd.getDate()).padStart(2, '0')}`;
             const target = rollingDays.find(rd => rd.key === logKey);
             if (target) {
                 target.totalSec += (l.duracaoSeg || (l.duracaoMin * 60) || 0);
@@ -798,13 +800,15 @@ window.pomodoroController = {
         const filterMat = this.historyFilterMateria;
         const filterPeriod = this.historyFilterPeriod;
 
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        // Dia de estudo: o dia começa 4h após a meia-noite (estilo Anki)
+        const OFFSET_H = 4;
+        const now = new Date(Date.now() - OFFSET_H * 3600000);
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), OFFSET_H, 0, 0, 0);
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, OFFSET_H, 0, 0, 0 - 1);
         const currentDay = now.getDay();
         const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, OFFSET_H, 0, 0, 0);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, OFFSET_H, 0, 0, 0);
 
         const filtered = sessoes.filter(s => {
             const sDate = new Date(s.dataInicio);
@@ -1699,19 +1703,21 @@ window.pomodoroController = {
     // --- INTERNAL HELPERS & METRICS ---
     _extractLogsForPeriod: function(period) {
         const sessoes = (window.store ? window.store.getState().pomodoroSessoes : []) || [];
-        const now = new Date();
+        // Dia de estudo: o dia começa 4h após a meia-noite (estilo Anki)
+        const OFFSET_H = 4;
+        const now = new Date(Date.now() - OFFSET_H * 3600000);
 
         // Local boundaries to prevent UTC offset shifts (e.g. 21h+ in UTC-3)
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), OFFSET_H, 0, 0, 0);
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, OFFSET_H, 0, 0, 0 - 1);
 
         // Start of week (Monday)
         const currentDay = now.getDay();
         const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
-        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, OFFSET_H, 0, 0, 0);
 
         // Start of month
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, OFFSET_H, 0, 0, 0);
 
         const logs = [];
         sessoes.forEach(s => {
