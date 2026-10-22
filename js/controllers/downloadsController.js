@@ -92,10 +92,16 @@ def get_anki_data():
         if not col:
             return None
 
-        # 1. Contagens básicas
-        new_cnt = len(col.find_cards("is:new"))
-        learn_cnt = len(col.find_cards("is:learn"))
-        review_cnt = len(col.find_cards("is:review is:due"))
+        # 1. Contagens reais da fila de hoje (respeitando limites diários do Anki)
+        try:
+            tree = col.sched.deck_due_tree()
+            new_cnt = sum(c.new_count for c in tree.children)
+            learn_cnt = sum(c.learn_count for c in tree.children)
+            review_cnt = sum(c.review_count for c in tree.children)
+        except Exception:
+            new_cnt = 0
+            learn_cnt = len(col.find_cards("is:learn"))
+            review_cnt = len(col.find_cards("is:review is:due"))
         
         # 2. Heatmap (últimos 365 dias)
         heatmap = col.db.all("""

@@ -7,16 +7,40 @@ window.ankiService = {
     getDueCardsCount: async function() {
         try {
             // 1. Tentar Conexão Local (Real-time)
-            // Usamos invoke diretamente via window.ankiApi que já resolve o melhor IP
-            const [newRes, learnRes, reviewRes] = await Promise.all([
-                window.ankiApi.invoke("findCards", 6, { query: "is:new" }),
-                window.ankiApi.invoke("findCards", 6, { query: "is:learn" }),
-                window.ankiApi.invoke("findCards", 6, { query: "is:review is:due" })
-            ]);
+            let newCount = 0;
+            let learnCount = 0;
+            let reviewCount = 0;
+            let calculated = false;
 
-            const newCount = (newRes && Array.isArray(newRes)) ? newRes.length : 0;
-            const learnCount = (learnRes && Array.isArray(learnRes)) ? learnRes.length : 0;
-            const reviewCount = (reviewRes && Array.isArray(reviewRes)) ? reviewRes.length : 0;
+            try {
+                const deckNames = await window.ankiApi.invoke("deckNames", 6);
+                if (Array.isArray(deckNames) && deckNames.length > 0) {
+                    const topLevelDecks = deckNames.filter(name => !deckNames.some(other => other !== name && name.startsWith(other + '::')));
+                    const deckStats = await window.ankiApi.invoke("getDeckStats", 6, { decks: topLevelDecks });
+                    if (deckStats && typeof deckStats === 'object') {
+                        Object.values(deckStats).forEach(ds => {
+                            if (ds) {
+                                newCount += (ds.new_count || 0);
+                                learnCount += (ds.learn_count || 0);
+                                reviewCount += (ds.review_count || 0);
+                            }
+                        });
+                        calculated = true;
+                    }
+                }
+            } catch (errDeck) {
+                console.warn("Falha no getDeckStats em ankiService, tentando busca direta:", errDeck);
+            }
+
+            if (!calculated) {
+                const [learnRes, reviewRes] = await Promise.all([
+                    window.ankiApi.invoke("findCards", 6, { query: "is:learn" }).catch(() => []),
+                    window.ankiApi.invoke("findCards", 6, { query: "is:review is:due" }).catch(() => [])
+                ]);
+                learnCount = (learnRes && Array.isArray(learnRes)) ? learnRes.length : 0;
+                reviewCount = (reviewRes && Array.isArray(reviewRes)) ? reviewRes.length : 0;
+                newCount = 0;
+            }
 
             return { 
                 success: true, 

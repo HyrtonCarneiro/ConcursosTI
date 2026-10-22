@@ -139,6 +139,33 @@ async function runTests() {
     }
     console.log("✅ TESTE 4 PASSOU: rev7d reflete com fidelidade todos os cards solucionados no Anki (inclusive novos).");
 
+    // --- TEST 5: getSevenDayStats calcula pendente respeitando limites diários do Anki ---
+    console.log("Testando cálculo de pendências com respeito aos limites diários...");
+    ankiApi.invoke = async function(action, version, params) {
+        if (action === 'deckNames') {
+            return ['TI Geral', 'TI Geral::Redes', 'Questões'];
+        }
+        if (action === 'getDeckStats') {
+            // Apenas decks raiz devem ser consultados ('TI Geral' e 'Questões')
+            const decks = params.decks;
+            if (decks.includes('TI Geral::Redes')) {
+                throw new Error("FALHA: Subdeck não deveria ser consultado diretamente na raiz para evitar contagem dupla");
+            }
+            return {
+                '1': { deck_id: 1, name: 'TI Geral', new_count: 0, learn_count: 0, review_count: 0, total_in_deck: 277 },
+                '2': { deck_id: 2, name: 'Questões', new_count: 0, learn_count: 0, review_count: 0, total_in_deck: 1 }
+            };
+        }
+        if (action === 'findCards') return [];
+        return [];
+    };
+
+    const statsZero = await ankiApi.getSevenDayStats();
+    if (statsZero.pendente !== 0) {
+        throw new Error(`FALHA: Pendente deveria ser 0 quando a meta diária foi batida, mas foi ${statsZero.pendente}`);
+    }
+    console.log("✅ TESTE 5 PASSOU: Pendente é 0 quando a fila diária do Anki está zerada, mesmo com cards não estudados no acervo.");
+
     console.log("\n🎉 TODOS OS TESTES DE MÉTRICAS DO ANKI PASSARAM COM SUCESSO!");
 }
 

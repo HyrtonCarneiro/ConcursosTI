@@ -321,12 +321,42 @@ window.ankiApi = {
     async getSevenDayStats() {
         try {
             // 1. Current Queue (what is pending NOW)
-            const [newRes, learnRes, reviewRes] = await Promise.all([
-                this.invoke('findCards', 6, { query: 'is:new -is:suspended' }),
-                this.invoke('findCards', 6, { query: 'is:learn' }),
-                this.invoke('findCards', 6, { query: 'is:review is:due' })
-            ]);
-            const currentPendente = newRes.length + learnRes.length + reviewRes.length;
+            // Obtém as pendências reais do dia respeitando os limites diários do Anki
+            let currentPendente = 0;
+            let queueResolved = false;
+
+            try {
+                const deckNames = await this.invoke('deckNames', 6);
+                if (Array.isArray(deckNames) && deckNames.length > 0) {
+                    // Considera apenas decks raiz para não duplicar contagens de subdecks já agregados
+                    const topLevelDecks = deckNames.filter(name => !deckNames.some(other => other !== name && name.startsWith(other + '::')));
+                    const deckStats = await this.invoke('getDeckStats', 6, { decks: topLevelDecks });
+                    if (deckStats && typeof deckStats === 'object') {
+                        let totalDeckDue = 0;
+                        Object.values(deckStats).forEach(ds => {
+                            if (ds) {
+                                totalDeckDue += (ds.new_count || 0) + (ds.learn_count || 0) + (ds.review_count || 0);
+                            }
+                        });
+                        currentPendente = totalDeckDue;
+                        queueResolved = true;
+                    }
+                }
+            } catch (deckErr) {
+                console.warn("getDeckStats falhou, usando fallback de busca:", deckErr);
+            }
+
+            if (!queueResolved) {
+                // Fallback seguro: cards em aprendizagem e revisões vencidas hoje
+                // (Evita 'is:new' direto, pois is:new traria todo o acervo não estudado ignorando limites diários)
+                const [learnRes, reviewRes] = await Promise.all([
+                    this.invoke('findCards', 6, { query: 'is:learn' }).catch(() => []),
+                    this.invoke('findCards', 6, { query: 'is:review is:due' }).catch(() => [])
+                ]);
+                const learnCount = Array.isArray(learnRes) ? learnRes.length : 0;
+                const reviewCount = Array.isArray(reviewRes) ? reviewRes.length : 0;
+                currentPendente = learnCount + reviewCount;
+            }
             
             // Novos adicionados nos ultimos 7 dias
             const introducedRes = await this.invoke('findCards', 6, { query: 'introduced:7' });
