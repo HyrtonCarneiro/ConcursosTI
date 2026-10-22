@@ -65,7 +65,9 @@ window.ankiService = {
                         source: 'cloud',
                         updatedAt: cloudData.updatedAt,
                         count: (cloudData.counts.new || 0) + (cloudData.counts.learn || 0) + (cloudData.counts.review || 0),
-                        breakdown: cloudData.counts
+                        breakdown: cloudData.counts,
+                        tagLapses: cloudData.tagLapses || {},
+                        forecast: cloudData.forecast || []
                     };
                 }
             } catch (cloudErr) {

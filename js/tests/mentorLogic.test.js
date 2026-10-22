@@ -102,9 +102,113 @@ function runTests() {
     if (semAtual.proximosConteudosNaFila.length !== 1 || semAtual.proximosConteudosNaFila[0].conteudo !== 'TI05 - SQL (DCL e DTL)') {
         throw new Error("TI05 deveria estar em proximosConteudosNaFila aguardando conclusão do 1º item");
     }
-    if (!semAtual.visaoEstrategicaDaSemana.avisoEscopoDisciplina.includes("NÃO se encerra esta semana")) {
-        throw new Error("Deveria conter aviso de que a disciplina não termina esta semana");
+    if (semAtual.visaoEstrategicaDaSemana !== undefined) {
+        throw new Error("visaoEstrategicaDaSemana (textos genéricos) não deveria mais existir");
     }
+    if (semAtual.conteudoFocoHoje.diretrizEstudoHoje !== undefined) {
+        throw new Error("diretrizEstudoHoje (texto fixo) não deveria mais existir");
+    }
+
+    // Teste 6: Diagnóstico por pilar, progresso semanal e próximos passos com dados reais
+    const DAY = 86400000;
+    const agora = Date.now();
+    const keyOf = (ms) => {
+        const s = new Date(ms - 4 * 3600000);
+        return `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
+    };
+    const mondayOf = (ms) => {
+        const s = new Date(ms - 4 * 3600000);
+        const day = s.getDay();
+        s.setDate(s.getDate() - day + (day === 0 ? -6 : 1));
+        return keyOf(s.getTime() + 4 * 3600000);
+    };
+    const semAtualKey = mondayOf(agora);
+    const proxSemKey = mondayOf(agora + 7 * DAY);
+    const mockState3 = {
+        materias: [{ id: 'm1', nome: 'Banco de Dados' }],
+        conteudos: [
+            { id: 'c1', materiaId: 'm1', nome: 'TI05 - SQL DCL' },
+            { id: 'c2', materiaId: 'm1', nome: 'TI06 - BI' },
+            { id: 'c3', materiaId: 'm1', nome: 'TI07 - NoSQL' },
+            { id: 'c4', materiaId: 'm1', nome: 'TI08 - Big Data' }
+        ],
+        cronograma: [
+            { id: 'a', semana: semAtualKey, materiaId: 'm1', conteudoId: 'c1', paginas: 40, concluido: true, dataConclusao: new Date(agora - 2 * DAY).toISOString() },
+            { id: 'b', semana: semAtualKey, materiaId: 'm1', conteudoId: 'c2', paginas: 84, concluido: false },
+            { id: 'c', semana: proxSemKey, materiaId: 'm1', conteudoId: 'c3', paginas: 50, concluido: false }
+        ],
+        pomodoroSessoes: [
+            { dataInicio: new Date(agora - 5 * DAY).toISOString(), categoria: 'Questões', materia: 'Banco de Dados', tempoTotalFocoSeg: 2400, nota: '30 questões, 80%' },
+            { dataInicio: new Date(agora - 3 * DAY).toISOString(), categoria: 'Teoria', materia: 'Banco de Dados', tempoTotalFocoSeg: 3600 }
+        ]
+    };
+    const ctx3 = logic.buildStudentContext(mockState3, { count: 0, success: true });
+    const pil = ctx3.diagnosticoPilares;
+    if (!pil || !pil.anki || !pil.questoes || !pil.conteudo) throw new Error("diagnosticoPilares deveria conter os 3 pilares");
+    
+    // Foco do Pilar Questões: Consistência, Último dia realizado e Tempo dedicado 7d
+    if (pil.questoes.diasDesdeUltimaAtividade !== 5) throw new Error(`Questões: dias desde última atividade deveria ser 5, foi ${pil.questoes.diasDesdeUltimaAtividade}`);
+    if (!pil.questoes.status.startsWith('Parado há 5')) throw new Error(`Status de questões incorreto: ${pil.questoes.status}`);
+    if (pil.questoes.minutosUltimos7Dias !== 40) throw new Error(`Minutos 7d de questões deveria ser 40, foi ${pil.questoes.minutosUltimos7Dias}`);
+    if (pil.questoes.materiaUltimaSessao !== 'Banco de Dados') throw new Error("Matéria da última sessão de questões incorreta");
+    if (!pil.questoes.quandoFoiUltimaVez.includes('5 dias')) throw new Error("quandoFoiUltimaVez de questões incorreto");
+
+    // Validação de que GAPs de estudo e taxa de acerto/anotações foram removidos
+    if (pil.questoes.conteudosConcluidosAindaSemQuestoes !== undefined) {
+        throw new Error("conteudosConcluidosAindaSemQuestoes (gaps de estudo) deve ser removido");
+    }
+    if (pil.questoes.taxaAcertoRegistrada7d !== undefined) {
+        throw new Error("taxaAcertoRegistrada7d deve ser removido");
+    }
+
+    // Foco do Pilar Conteúdo: Consistência, Último dia concluído e Tempo dedicado 7d
+    if (pil.conteudo.paginasConcluidas7d !== 40) throw new Error("Páginas concluídas 7d deveriam ser 40");
+    if (pil.conteudo.minutosUltimos7Dias !== 60) throw new Error("Minutos 7d de conteúdo deveriam ser 60");
+    if (!pil.conteudo.quandoFoiUltimaConclusao.includes('2 dia')) throw new Error("quandoFoiUltimaConclusao de conteúdo incorreto");
+
+    // Validação de que comparação com semana anterior e cálculo de min/pág foram removidos
+    if (pil.conteudo.conteudosConcluidosSemanaAnterior !== undefined) {
+        throw new Error("conteudosConcluidosSemanaAnterior deve ser removido");
+    }
+    if (pil.conteudo.minutosPorPaginaMedio7d !== undefined) {
+        throw new Error("minutosPorPaginaMedio7d deve ser removido");
+    }
+
+    // Foco do Pilar Anki: Consistência, Último dia e Tempo dedicado 7d
+    if (pil.anki.status !== 'Parado (nenhum registro em 14 dias)') throw new Error(`Status Anki sem dados incorreto: ${pil.anki.status}`);
+    if (pil.anki.filaHoje !== 'Zerada (0 pendentes)') throw new Error("Fila hoje do Anki incorreta");
+
+    // Validação de que métricas de cards/taxa de acerto/tempo médio por card do Anki foram removidas
+    if (pil.anki.cardsRespondidos7d !== undefined || pil.anki.taxaAcerto7d !== undefined || pil.anki.segundosPorCard !== undefined) {
+        throw new Error("Métricas de cards 7d / acerto / segundos por card do Anki devem ser removidas");
+    }
+
+    const foco3 = ctx3.cronogramaPorSemanas.semanaAtual.conteudoFocoHoje;
+    if (foco3.conteudo !== 'TI06 - BI') throw new Error("Foco deveria ser TI06 - BI");
+    if (foco3.tempoEstimadoPeloSeuRitmo !== undefined) {
+        throw new Error("tempoEstimadoPeloSeuRitmo deve ser removido");
+    }
+
+    const prog = ctx3.progressoSemanal;
+    if (!prog || prog.metasConcluidas !== '1/2' || prog.paginasRestantes !== 84) throw new Error("progressoSemanal incorreto");
+    if (!prog.projecao || !/pág/.test(prog.projecao)) throw new Error("Projeção semanal deveria ser numérica");
+    
+    const pp = ctx3.proximosPassos;
+    if (!pp.proximaSemana || pp.proximaSemana.totalPaginas !== 50) throw new Error("proximaSemana deveria ter 50 páginas");
+    if (pp.coberturaDaMateriaEmFoco.topicosConcluidosNoCronograma !== '1/3') throw new Error("Cobertura da matéria deveria ser 1/3");
+    if (!pp.coberturaDaMateriaEmFoco.proximoTopicoDaMateriaEmSemanasFuturas.includes('TI07')) throw new Error("Próximo tópico futuro deveria ser TI07");
+    if (pp.coberturaDaMateriaEmFoco.topicosCadastradosSemAgendamento !== 1) throw new Error("Deveria haver 1 tópico (TI08) sem agendamento");
+
+    // Validação de que cruzamento de cronograma com prova mais próxima foi removido
+    if (pp.provaMaisProxima !== undefined) {
+        throw new Error("proximosPassos.provaMaisProxima (cruzamento de edital) deve ser removido");
+    }
+
+    // Teste 7: Prompt não deve conter instruções que geram frases genéricas
+    const prompt = logic.buildSystemPrompt();
+    if (!prompt.includes('ZERO CONTEÚDO GENÉRICO')) throw new Error("Prompt deveria conter a regra anti-genérico");
+    if (prompt.includes('Informe sucintamente o dia atual')) throw new Error("Prompt não deveria mais pedir o dia da semana isolado");
+    if (prompt.includes('Ler ativamente o material/PDF')) throw new Error("Prompt não deveria mais conter instrução genérica de leitura");
 
     console.log("✅ Todos os testes de mentorLogic passaram com sucesso!");
 }

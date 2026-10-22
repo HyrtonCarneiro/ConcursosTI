@@ -81,24 +81,39 @@ window.mentorController = {
     },
 
     /**
+     * Coleta os dados do Anki usados pelo Mentor. Métricas de 7 dias e previsão só são
+     * anexadas com conexão local (offline, getSevenDayStats devolve zeros que distorceriam o diagnóstico).
+     */
+    _collectAnkiData: async function() {
+        let ankiData = null;
+        if (window.ankiService && typeof window.ankiService.getDueCardsCount === 'function') {
+            try {
+                ankiData = await window.ankiService.getDueCardsCount();
+            } catch (err) {
+                console.warn("AnkiService inacessível:", err);
+            }
+        }
+        if (window.ankiApi && typeof window.ankiApi.getStudyTimeHistory === 'function') {
+            try {
+                await window.ankiApi.getStudyTimeHistory(30);
+            } catch (e) {}
+        }
+        if (ankiData && ankiData.success && ankiData.source === 'local' && window.ankiApi) {
+            try {
+                const forecast = await window.ankiApi.getWorkloadForecast(4);
+                if (Array.isArray(forecast)) ankiData.forecast = forecast;
+            } catch (e) {}
+        }
+        return ankiData;
+    },
+
+    /**
      * Atualiza as métricas em tempo real no topo da página do Mentor
      */
     updateMetricsBanner: async function() {
         try {
             const state = window.store.getState();
-            let ankiData = null;
-            if (window.ankiService && typeof window.ankiService.getDueCardsCount === 'function') {
-                try {
-                    ankiData = await window.ankiService.getDueCardsCount();
-                } catch (err) {
-                    console.warn("AnkiService inacessível:", err);
-                }
-            }
-            if (window.ankiApi && typeof window.ankiApi.getStudyTimeHistory === 'function') {
-                try {
-                    await window.ankiApi.getStudyTimeHistory(30);
-                } catch (e) {}
-            }
+            const ankiData = await this._collectAnkiData();
 
             const ctx = window.mentorLogic.buildStudentContext(state, ankiData);
             this.currentContext = ctx;
@@ -276,19 +291,7 @@ window.mentorController = {
         try {
             // Atualiza e obtém snapshot de métricas
             const state = window.store.getState();
-            let ankiData = null;
-            if (window.ankiService && typeof window.ankiService.getDueCardsCount === 'function') {
-                try {
-                    ankiData = await window.ankiService.getDueCardsCount();
-                } catch (e) {
-                    console.warn("AnkiService offline ao gerar prompt:", e);
-                }
-            }
-            if (window.ankiApi && typeof window.ankiApi.getStudyTimeHistory === 'function') {
-                try {
-                    await window.ankiApi.getStudyTimeHistory(30);
-                } catch (e) {}
-            }
+            const ankiData = await this._collectAnkiData();
 
             const context = window.mentorLogic.buildStudentContext(state, ankiData);
             this.currentContext = context;

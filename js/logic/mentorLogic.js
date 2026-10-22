@@ -2,6 +2,65 @@
 // Logic for student context assembly, prompt engineering, and markdown formatting
 
 (function() {
+    const SYSTEM_PROMPT = `Você é o "Mentor Hyrtinho", mentor de elite para concursos de Tecnologia da Informação (TI).
+Seu trabalho é transformar as métricas reais do estudante em diagnóstico e plano de ação específicos para HOJE.
+
+REGRA Nº 1 — ZERO CONTEÚDO GENÉRICO (prioridade máxima):
+- Toda linha da resposta deve (a) citar pelo menos um dado concreto do [SNAPSHOT DE MÉTRICAS DO ESTUDANTE] (número, data, nome de conteúdo, tendência) E (b) ser uma conclusão que mudaria se esses dados mudassem.
+- Antes de escrever cada linha, aplique o teste: "Esta frase seria igual se o estudante consultasse em outro dia, com outras métricas?" Se sim, APAGUE a linha.
+- Frases PROIBIDAS (e qualquer variação delas):
+  * "Mantenha o bom ritmo", "continue assim", "siga firme".
+  * "Analise os gabaritos comentados", "fixe as pegadinhas", "conceitos mais cobrados pelas bancas".
+  * "Faça a leitura ativa", "grife os pontos críticos", "extraia anotações ou flashcards", "destacando os pilares de...".
+  * "Regra do Conteúdo Único", "execute exclusivamente este tópico", "um conteúdo por vez".
+  * "Escopo Real da Disciplina", "a disciplina continua no edital", "novos tópicos nos ciclos seguintes".
+  * "Hoje é [dia da semana]" ou "restam X dias para fechar a semana" como informação isolada (só é permitido se vier acompanhado de páginas/conteúdos restantes e do ritmo necessário).
+  * "Sem tempo a perder", "avance imediatamente".
+- Não explique metodologia, não dê lição de moral. Se faltar um dado, diga em poucas palavras qual dado falta (ex: "acerto não registrado nas anotações do Pomodoro") em vez de preencher com conselho genérico.
+- Use somente dados do snapshot. Nunca invente números.
+
+REGRAS INTERNAS (aplique, mas NUNCA as cite ou explique na resposta):
+- Ordem do dia: Anki > Questões > Conteúdo.
+- Apenas UM conteúdo teórico por dia: 'cronogramaPorSemanas.semanaAtual.conteudoFocoHoje'. O próximo da fila só é recomendado após o check do atual.
+- Nunca diga que uma disciplina inteira termina; o que termina é um tópico ou a semana do cronograma.
+
+ESTRUTURA para pedidos de rotina/plano ("O que devo fazer hoje?", "Rotina em 3 blocos" e similares):
+
+## DIAGNÓSTICO DO DIA
+Exatamente 3 bullets, um por pilar, com foco estrito em: (1) CONSISTÊNCIA, (2) ÚLTIMO DIA EM QUE FOI CONCLUÍDO/REALIZADO, e (3) TEMPO DEDICADO NOS ÚLTIMOS 7 DIAS:
+- **Anki — [status]:** consistência (dias ativos/7, sequência), último dia realizado (se feito hoje ou há quantos dias), tempo dedicado nos últimos 7 dias (horas/minutos) e status da fila de hoje (se zerada ou com pendências).
+- **Questões — [status]:** consistência (dias ativos/7), última sessão realizada (quando foi e matéria estudada), e tempo dedicado nos últimos 7 dias (horas/minutos e matérias treinadas).
+- **Conteúdo — [status]:** consistência (dias ativos/7 na teoria), última conclusão/sessão de teoria (quando foi), e tempo dedicado nos últimos 7 dias (horas/minutos e páginas lidas).
+Opcional, 4º bullet **Ritmo da Semana:** apenas com 'progressoSemanal' (metas X/Y, páginas restantes, páginas/dia necessárias vs ritmo recente, 'projecao').
+
+---
+## PLANO DE AÇÃO PARA HOJE
+#### Bloco 1: Anki
+- Se 'anki.filaZeradaHoje' = true: título '#### Bloco 1: Anki Concluído (0 min)' e UMA linha informando que a fila do dia está 100% zerada (0 pendências). Proibido inventar tempo ou mandar abrir o Anki.
+- Se houver pendências: título '#### Bloco 1: Anki (~X min)' com X = 'anki.tempoRecomendadoHojeMin' e o total de pendências.
+#### Bloco 2: Questões — [matéria/tópico] (~X min)
+- Tópico-alvo alinhado à matéria em foco do dia ou conteúdos recentes.
+- Duração calibrada pela consistência: se questões estiverem em baixa frequência ou parada há 2+ dias, reforce com ~40-50 min; se consistente, use a média de minutos como base.
+#### Bloco 3: Conteúdo — [matéria] (~50-60 min)
+- Conteúdo e páginas de 'conteudoFocoHoje'.
+- Relacione com 'progressoSemanal' (metas concluídas da semana e páginas restantes para o fechamento).
+- Se 'conteudoFocoHoje.status' = '100% Concluído', proponha adiantar o próximo conteúdo do cronograma ou reforçar questões.
+
+---
+## VISÃO DA SEMANA E PRÓXIMOS PASSOS
+Use 'progressoSemanal' e 'proximosPassos':
+- **Fechamento da Semana:** 'projecao' numérica com páginas restantes e ritmo necessário.
+- **Depois deste tópico:** 'proximoConteudoNaFila'; se for o último, resuma 'proximaSemana' (nº de conteúdos e páginas).
+- **[Matéria em foco] no cronograma:** 'coberturaDaMateriaEmFoco' (X/Y tópicos concluídos, próximo tópico futuro e semana, tópicos cadastrados sem agendamento se > 0).
+- **Atrasos / Editais:** apenas se houver 'semanasEmAtraso' ou editais cadastrados com dias restantes até a prova.
+
+Para outras perguntas: responda diretamente o que foi perguntado, com a mesma Regra Nº 1, sem forçar a estrutura acima.
+
+FORMATAÇÃO:
+- '## ' para títulos principais, '---' entre seções, '#### ' para os 3 blocos.
+- Bullets curtos com '-' e rótulo em negrito; métricas em **negrito**.
+- Sem floreios.`;
+
     const mentorLogic = {
         /**
          * Formata o estado global da aplicação em um snapshot consistente estruturado
@@ -147,15 +206,13 @@
 
                 let conteudoFocoHoje = null;
                 let proximosConteudosNaFila = [];
-                let visaoEstrategicaDaSemana = null;
 
                 if (pendenciasSemana.length > 0) {
                     const foco = pendenciasSemana[0];
                     conteudoFocoHoje = {
                         materia: foco.materia,
                         conteudo: foco.conteudo,
-                        paginas: foco.paginas,
-                        diretrizEstudoHoje: `Foco exclusivo de teoria do cronograma para hoje: '${foco.conteudo}' (${foco.paginas} pág.). O estudante estuda e conclui UM ÚNICO CONTEÚDO por vez. NÃO agrupar com outros conteúdos da semana.`
+                        paginas: foco.paginas
                     };
 
                     proximosConteudosNaFila = pendenciasSemana.slice(1).map((item, idx) => ({
@@ -163,30 +220,13 @@
                         materia: item.materia,
                         conteudo: item.conteudo,
                         paginas: item.paginas,
-                        status: "Aguardando conclusão do item anterior",
-                        regraLiberacao: `Recomendar apenas após o estudante concluir e marcar como feito o conteúdo '${idx === 0 ? foco.conteudo : pendenciasSemana[idx].conteudo}'.`
+                        liberadoApos: idx === 0 ? foco.conteudo : pendenciasSemana[idx].conteudo
                     }));
-
-                    const alertaTempo = diasRestantesAteDomingo <= 3
-                        ? `Atenção ao calendário: hoje é ${diaSemanaNome} e restam ${diasRestantesAteDomingo} dia(s) para o encerramento do ciclo semanal.`
-                        : `Hoje é ${diaSemanaNome} (restam ${diasRestantesAteDomingo} dias para encerrar o ciclo semanal).`;
-
-                    visaoEstrategicaDaSemana = {
-                        diaAtual: diaSemanaNome,
-                        diasRestantesNaSemana: diasRestantesAteDomingo,
-                        urgenciaCalendario: diasRestantesAteDomingo <= 3 ? "Alta (Reta final da semana)" : "Normal (Meio de semana)",
-                        alerta: alertaTempo,
-                        metaDeHoje: `Estudar e concluir exclusivamente o conteúdo '${foco.conteudo}' (${foco.paginas} pág.) de ${foco.materia}.`,
-                        proximoPassoAposConclusao: proximosConteudosNaFila.length > 0
-                            ? `Após dar o check em '${foco.conteudo}', o próximo conteúdo da fila será '${proximosConteudosNaFila[0].conteudo}' (${proximosConteudosNaFila[0].materia}).`
-                            : "Todas as metas do cronograma desta semana estarão concluídas!",
-                        avisoEscopoDisciplina: `A disciplina '${foco.materia}' NÃO se encerra esta semana; ela continua no edital com novos tópicos futuros. A meta atual é pontual: cumprir o tópico '${foco.conteudo}'.`
-                    };
                 } else if (materiasDaSemana.length > 0) {
                     conteudoFocoHoje = {
                         materia: "Cronograma da semana em dia",
                         status: "100% Concluído",
-                        orientacao: "Todos os conteúdos planejados para esta semana já estão concluídos com check. Sugerir foco em baterias extras de questões, simulados ou revisões do Anki."
+                        orientacao: "Todos os conteúdos planejados para esta semana já estão concluídos. Usar 'proximosPassos.proximaSemana' e 'diagnosticoPilares.questoes' para decidir entre adiantar conteúdo ou reforçar questões."
                     };
                 }
 
@@ -210,7 +250,6 @@
                     conteudoFocoHoje: conteudoFocoHoje,
                     proximosConteudosNaFila: proximosConteudosNaFila,
                     materiaFocoAtual: materiaFocoAtual,
-                    visaoEstrategicaDaSemana: visaoEstrategicaDaSemana,
                     itensParaEstudarHojeOuNestaSemana: pendenciasSemana
                 };
             };
@@ -450,6 +489,170 @@
                 diagnosticoEquilibrio: diagEquilibrio
             };
 
+            // 7. Diagnóstico por Pilar (Anki, Questões, Conteúdo) com dados reais dos últimos 14 dias
+            const met14d = this.calculateStudyMetrics(state, ankiMap, 14);
+            const dias7 = met14d.dias.slice(-7);
+            const inicio7Key = dias7[0].dateKey;
+            const inicio14Key = met14d.dias[0].dateKey;
+            const studyKey = (dt) => this._studyKey(dt);
+            const fmtKey = (k) => { const p = String(k).split('-'); return `${p[2]}/${p[1]}`; };
+            const diasEntre = (kA, kB) => Math.round((Date.parse(kB + 'T00:00:00') - Date.parse(kA + 'T00:00:00')) / 86400000);
+            const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+            // --- Pilar Anki ---
+            const pilarAnki = this._pillarActivity(met14d.dias, 'ankiMin');
+            pilarAnki.filaHoje = filaZerada ? 'Zerada (0 pendentes)' : `${totalPendentesHoje} cartões devidos`;
+
+            // --- Conclusões de conteúdo com data (base para Conteúdo) ---
+            const conclusoes = cronograma.filter(i => i.concluido && i.dataConclusao).map(i => {
+                const dt = new Date(i.dataConclusao);
+                return {
+                    materia: (materiaMap[i.materiaId] || 'Matéria Geral').trim(),
+                    conteudo: (conteudoMap[i.conteudoId] || 'Conteúdo').trim(),
+                    paginas: Number(i.paginas) || 0,
+                    dataObj: dt,
+                    dateKey: isNaN(dt.getTime()) ? null : studyKey(dt)
+                };
+            }).filter(c => c.dateKey).sort((a, b) => b.dataObj - a.dataObj);
+            const concl7d = conclusoes.filter(c => c.dateKey >= inicio7Key);
+
+            // --- Pilar Questões ---
+            const pilarQuestoes = this._pillarActivity(met14d.dias, 'questoesMin');
+            const questSess7d = sessoesQuestoes.filter(s => studyKey(s.dataCompleta) >= inicio7Key);
+            const minPorMateriaQuest = {};
+            questSess7d.forEach(s => {
+                minPorMateriaQuest[s.materia] = (minPorMateriaQuest[s.materia] || 0) + s.duracaoMinutos;
+            });
+            pilarQuestoes.sessoesUltimos7Dias = questSess7d.length;
+            pilarQuestoes.minutosPorMateria7d = Object.entries(minPorMateriaQuest).map(([m, min]) => `${m}: ${min} min`).join(' | ') || 'Nenhuma';
+            if (sessoesQuestoes[0]) {
+                const u = sessoesQuestoes[0];
+                const diffDias = Math.floor((hoje - u.dataCompleta) / (1000 * 60 * 60 * 24));
+                pilarQuestoes.quandoFoiUltimaVez = diffDias === 0 ? 'Hoje' : (diffDias === 1 ? 'Ontem' : `Há ${diffDias} dias atrás`);
+                pilarQuestoes.materiaUltimaSessao = u.materia;
+            } else {
+                pilarQuestoes.quandoFoiUltimaVez = 'Nenhuma sessão registrada';
+                pilarQuestoes.materiaUltimaSessao = 'Nenhuma';
+            }
+
+            // --- Pilar Conteúdo ---
+            const pilarConteudo = this._pillarActivity(met14d.dias, 'conteudoMin');
+            const pag7d = concl7d.reduce((s, c) => s + c.paginas, 0);
+            pilarConteudo.conteudosConcluidos7d = concl7d.length;
+            pilarConteudo.paginasConcluidas7d = pag7d;
+            if (conclusoes[0]) {
+                const diffDias = diasEntre(conclusoes[0].dateKey, hojeISO);
+                pilarConteudo.quandoFoiUltimaConclusao = diffDias === 0 ? 'Hoje' : (diffDias === 1 ? 'Ontem' : `Há ${diffDias} dia(s) atrás`);
+                pilarConteudo.conteudoUltimaConclusao = `${conclusoes[0].conteudo} (${conclusoes[0].materia})`;
+            } else {
+                pilarConteudo.quandoFoiUltimaConclusao = 'Nenhum conteúdo com data de conclusão';
+            }
+
+            // 8. Progresso real da semana com projeção
+            let progressoSemanal = null;
+            if (semanaAtualDetalhe && semanasMap[semanaAtualDetalhe.semana]) {
+                const semKey = semanaAtualDetalhe.semana;
+                const dadosSem = semanasMap[semKey];
+                const ehSemanaCorrente = semKey === semanaAtualMonday;
+                const diasDisp = ehSemanaCorrente ? diasRestantesAteDomingo + 1 : null;
+                const pagRest = dadosSem.totalPaginas - dadosSem.paginasLidas;
+                const itensRest = dadosSem.totalItens - dadosSem.concluidos;
+                const ritmoPagDia = +(pag7d / 7).toFixed(1);
+                const pagDiaNec = diasDisp && pagRest > 0 ? Math.ceil(pagRest / diasDisp) : 0;
+
+                let projecao;
+                if (itensRest === 0) {
+                    projecao = 'Todas as metas da semana já concluídas.';
+                } else if (!ehSemanaCorrente) {
+                    projecao = semKey < semanaAtualMonday
+                        ? `Semana ${semKey} ainda aberta (atrasada) com ${itensRest} conteúdo(s) e ${pagRest} pág. restantes.`
+                        : `Semana ${semKey} é futura: estudante está adiantado; restam ${itensRest} conteúdo(s) e ${pagRest} pág.`;
+                } else if (ritmoPagDia === 0) {
+                    projecao = `Nenhuma página concluída nos últimos 7 dias; para fechar a semana são necessárias ${pagDiaNec} pág./dia em ${diasDisp} dia(s).`;
+                } else {
+                    const projetado = Math.round(ritmoPagDia * diasDisp);
+                    projecao = projetado >= pagRest
+                        ? `No ritmo recente (${ritmoPagDia} pág./dia) a semana fecha com folga de ~${projetado - pagRest} pág.`
+                        : `No ritmo recente (${ritmoPagDia} pág./dia) faltarão ~${pagRest - projetado} pág. no domingo; é preciso subir para ${pagDiaNec} pág./dia.`;
+                }
+
+                progressoSemanal = {
+                    semana: semKey,
+                    ehSemanaDoCalendarioAtual: ehSemanaCorrente,
+                    metasConcluidas: `${dadosSem.concluidos}/${dadosSem.totalItens}`,
+                    paginasLidas: `${dadosSem.paginasLidas}/${dadosSem.totalPaginas}`,
+                    paginasRestantes: pagRest,
+                    conteudosRestantes: itensRest,
+                    conteudosConcluidosDesdeSegunda: conclusoes.filter(c => c.dateKey >= semanaAtualMonday).length,
+                    diasDisponiveisIncluindoHoje: diasDisp,
+                    paginasPorDiaNecessarias: pagDiaNec,
+                    ritmoRecentePaginasPorDia: ritmoPagDia,
+                    projecao: projecao
+                };
+            }
+
+            // 9. Próximos passos concretos (fila, próxima semana, cobertura da matéria, prova)
+            const proximosPassos = {};
+            if (semanaAtualDetalhe) {
+                const semKey = semanaAtualDetalhe.semana;
+                const prox = semanaAtualDetalhe.proximosConteudosNaFila[0];
+                proximosPassos.proximoConteudoNaFila = prox
+                    ? `${prox.conteudo} (${prox.materia}, ${prox.paginas} pág.)`
+                    : 'Nenhum: o conteúdo em foco é o último da semana';
+
+                const idxSem = todasSemanas.indexOf(semKey);
+                const proxSemKey = idxSem >= 0 ? todasSemanas[idxSem + 1] : null;
+                if (proxSemKey) {
+                    const d = semanasMap[proxSemKey];
+                    proximosPassos.proximaSemana = {
+                        semana: proxSemKey,
+                        totalConteudos: d.totalItens,
+                        totalPaginas: d.totalPaginas,
+                        conteudos: d.materiasList.flatMap(m => m.conteudos.map(c => `${c.conteudo} (${m.materia}, ${c.paginas} pág.)`))
+                    };
+                } else {
+                    proximosPassos.proximaSemana = 'Nenhuma semana cadastrada após esta no cronograma';
+                }
+
+                const foco = semanaAtualDetalhe.conteudoFocoHoje;
+                if (foco && foco.conteudo) {
+                    const matIds = materias.filter(m => (m.nome || '').trim() === foco.materia).map(m => m.id);
+                    const itensMat = cronograma.filter(i => matIds.includes(i.materiaId));
+                    const futuros = itensMat
+                        .filter(i => !i.concluido && (i.semana || '') > semKey)
+                        .sort((a, b) => String(a.semana || '').localeCompare(String(b.semana || '')));
+                    const idsNoCrono = new Set(cronograma.map(i => i.conteudoId));
+                    const foraCrono = conteudos.filter(c => matIds.includes(c.materiaId) && !idsNoCrono.has(c.id));
+                    proximosPassos.coberturaDaMateriaEmFoco = {
+                        materia: foco.materia,
+                        topicosConcluidosNoCronograma: `${itensMat.filter(i => i.concluido).length}/${itensMat.length}`,
+                        proximoTopicoDaMateriaEmSemanasFuturas: futuros[0]
+                            ? `${conteudoMap[futuros[0].conteudoId] || 'Conteúdo'} (semana ${futuros[0].semana})`
+                            : 'Nenhum agendado nas próximas semanas',
+                        topicosCadastradosSemAgendamento: foraCrono.length
+                    };
+                }
+            }
+            proximosPassos.semanasEmAtraso = semanasAtrasadas.length
+                ? semanasAtrasadas.map(s => `${s.semana}: ${s.itensPendentes} pendente(s)`)
+                : 'Nenhuma';
+
+            if (ankiData && Array.isArray(ankiData.forecast) && ankiData.forecast.length > 1) {
+                proximosPassos.revisoesAnkiPrevistas = ankiData.forecast.slice(1, 4)
+                    .map(f => `${f.dateShort || f.day}: ${f.count}`).join(' | ');
+            }
+
+            // Revisões teóricas agendadas no site (Spaced Repetition de conteúdos concluídos D+1, D+7, D+30, D+90)
+            const revisoesPlat = Array.isArray(state.revisoes) ? state.revisoes : [];
+            const revsPendentesHoje = revisoesPlat.filter(r => {
+                const d = r.dataRevisao ? r.dataRevisao.split('T')[0] : null;
+                return d && d <= hojeISO && r.status === 'pendente';
+            });
+            if (revsPendentesHoje.length > 0) {
+                const nomes = revsPendentesHoje.map(r => conteudoMap[r.conteudoId] || 'Conteúdo').slice(0, 3);
+                proximosPassos.revisoesTeoricasPlataformaHoje = `${revsPendentesHoje.length} revisão(ões) pendente(s) no site (${nomes.join(', ')})`;
+            }
+
             return {
                 estudante: {
                     usuario: state.currentUser || 'Estudante',
@@ -475,9 +678,17 @@
                     sessoesHoje: sessoesHoje,
                     distribuicaoPorCategoriaUltimos7Dias: distribuicaoCategoriasSemana,
                     analiseEspecialQuestoes: diagnosticoQuestoes,
-                    ultimasSessoesRecentes: ultimasSessoesRecentes
+                    ultimasSessoesRecentes: ultimasSessoesRecentes,
+                    configuracaoPomodoro: `${state.pomodoroConfig?.duracaoFoco || 25} min foco / ${state.pomodoroConfig?.duracaoPausa || 5} min pausa`
                 },
                 tempoGeralDeEstudo: tempoEstudoGeral,
+                diagnosticoPilares: {
+                    anki: pilarAnki,
+                    questoes: pilarQuestoes,
+                    conteudo: pilarConteudo
+                },
+                progressoSemanal: progressoSemanal,
+                proximosPassos: proximosPassos,
                 editaisCadastrados: editaisResumo,
                 simulados: simuladosResumo
             };
@@ -611,64 +822,58 @@
             };
         },
 
+        /** Chave YYYY-MM-DD do dia de estudo (vira às 4h, estilo Anki). */
+        _studyKey: function(dt) {
+            const s = new Date(dt.getTime() - 4 * 3600000);
+            return `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
+        },
+
+        /**
+         * Analisa a atividade de um pilar a partir de 14 dias cronológicos (último = hoje).
+         * Compara os últimos 7 dias com os 7 anteriores e calcula frequência/sequência.
+         */
+        _pillarActivity: function(dias14, field) {
+            const vals = dias14.map(d => d[field] || 0);
+            const ult = dias14.slice(-7);
+            const ant = dias14.slice(0, -7);
+            const sum = arr => arr.reduce((s, d) => s + (d[field] || 0), 0);
+            const min7 = sum(ult);
+            const minAnt = sum(ant);
+            const diasAtivos = ult.filter(d => (d[field] || 0) > 0).length;
+
+            const last = vals.length - 1;
+            const feitoHoje = vals[last] > 0;
+            let i = feitoHoje ? last : last - 1;
+            let seq = 0;
+            while (i >= 0 && vals[i] > 0) { seq++; i--; }
+            let ultimoIdx = -1;
+            for (let j = last; j >= 0; j--) { if (vals[j] > 0) { ultimoIdx = j; break; } }
+            const diasDesde = ultimoIdx === -1 ? null : last - ultimoIdx;
+
+            let status;
+            if (diasDesde === null) status = 'Parado (nenhum registro em 14 dias)';
+            else if (diasDesde >= 3) status = `Parado há ${diasDesde} dias`;
+            else if (diasAtivos >= 5) status = 'Consistente';
+            else if (diasAtivos >= 3) status = 'Irregular';
+            else status = 'Baixa frequência';
+
+            return {
+                status: status,
+                feitoHoje: feitoHoje,
+                diasAtivosUltimos7: `${diasAtivos}/7`,
+                diasConsecutivos: seq,
+                diasDesdeUltimaAtividade: diasDesde,
+                minutosUltimos7Dias: min7,
+                horasUltimos7Dias: +(min7 / 60).toFixed(1) + 'h',
+                minutosPorDia7d: ult.map(d => `${(d.weekday || '').slice(0, 3)} ${d.dateShort}: ${d[field] || 0}`).join(' | ')
+            };
+        },
+
         /**
          * Gera o System Instruction especializado para o Mentor de Concursos TI.
          */
         buildSystemPrompt: function() {
-            return `Você é o "Mentor Hyrtinho", um mentor e coach de elite para concursos de Tecnologia da Informação (TI).
-Seu propósito é analisar as métricas reais do estudante e fornecer planos de ação estritamente práticos, cirúrgicos e diretos ao ponto, sem enrolação e sem sermões.
-
-PRINCÍPIOS FUNDAMENTAIS DE COMUNICAÇÃO:
-1. SEM METALINGUAGEM OU LIÇÕES DE MORAL:
-   - NUNCA adicione frases teóricas ou sermões sobre metodologia como: "Foco Único Obrigatório", "De acordo com a nossa regra de ouro, o dia é mono-matéria", "Nada de pular para outra disciplina", etc.
-   - O estudante quer apenas saber O QUE FAZER de forma prática e imediata. Seja conciso e vá direto à execução.
-2. PRECISÃO TOTAL COM OS DADOS REAIS:
-   - Baseie-se exclusivamente nos dados do [SNAPSHOT DE MÉTRICAS DO ESTUDANTE].
-   - NUNCA invente tarefas desnecessárias, nunca deduza conclusões falsas e nunca extrapole prazos ou escopos.
-
-ESTRUTURA DA ROTINA DIÁRIA (ANKI > QUESTÕES > CRONOGRAMA):
-Toda recomendação diária deve seguir a sequência de 3 blocos bem definidos:
-
-1. BLOCO 1: ANKI (DURAÇÃO CONDICIONAL REAL):
-   - Inspecione 'anki.totalPendentesHoje' e 'anki.filaZeradaHoje':
-   - CASO 1: SE AS PENDÊNCIAS FOREM 0 (Fila zerada / Concluído):
-     * As revisões do dia JÁ FORAM CONCLUÍDAS. A DURAÇÃO DO BLOCO 1 É RIGOROSAMENTE 0 MINUTOS.
-     * Título obrigatório: '#### Bloco 1: Anki Concluído (Duração: 0 min - Zerado!)'
-     * Registre apenas que as revisões do dia estão 100% em dia (0 pendências) e direcione o estudante a partir IMEDIATAMENTE para o Bloco 2 de Questões.
-     * É TERMINANTEMENTE PROIBIDO inventar tempo (ex: ~20 min), mandar "abrir o Anki para fazer aquecimento neural" ou sugerir varreduras por revisões ocultas quando o contador estiver zerado.
-   - CASO 2: SE HOUVER CARTÕES PENDENTES (> 0):
-     * Título: '#### Bloco 1: Limpeza do Anki (Duração: ~X min)' com tempo estimado condizente com o número de cartões (ex: ~15 a 30 min).
-     * Objetivo: Zerar os cartões devidos do dia antes de iniciar as questões práticas.
-
-2. BLOCO 2: BATERIA PRÁTICA DE QUESTÕES (TREINO ATIVO):
-   - Título: '#### Bloco 2: Bateria Prática de Questões (Duração: ~40 min)'
-   - Meta: Resolver de 20 a 30 questões de concursos de TI (focadas em conteúdos recentemente estudados ou no perfil da banca) com leitura atenta de gabaritos comentados.
-   - Alerta de Inatividade: Se 'pomodoroEFoco.analiseEspecialQuestoes.diasSemFazerQuestoes' for 2 ou mais, ressalte com firmeza a urgência de quebrar esse jejum de questões hoje mesmo.
-
-3. BLOCO 3: ESTUDO DO CRONOGRAMA (UM ÚNICO CONTEÚDO POR VEZ):
-   - Título: '#### Bloco 3: Estudo do Cronograma - [Nome da Matéria] (Duração: ~50-60 min)'
-   - REGRA DO CONTEÚDO ÚNICO:
-     * Prescreva EXCLUSIVAMENTE o conteúdo em foco de hoje ('cronogramaPorSemanas.semanaAtual.conteudoFocoHoje').
-     * É TERMINANTEMENTE PROIBIDO prescrever dois ou mais conteúdos teóricos no mesmo dia ou no mesmo bloco! O estudante avança conteúdo por conteúdo.
-     * O próximo conteúdo da fila (listado em 'proximosConteudosNaFila') só deverá ser recomendado APÓS o estudante concluir e dar o check no conteúdo atual.
-     * Alvo do Bloco: Ler ativamente o material/PDF do conteúdo do dia, grifar pontos críticos e gerar anotações ou novos flashcards.
-
-HORIZONTE DA SEMANA & ESCOPO REAL DAS DISCIPLINAS:
-1. PANORAMA DA SEMANA:
-   - Informe sucintamente o dia atual e quantos dias faltam para fechar o ciclo semanal (domingo).
-   - Indique o próximo conteúdo da fila de forma simples: "Após concluir e marcar o check em [Conteúdo Atual], o próximo conteúdo liberado na fila será [Próximo Conteúdo]".
-2. ESCOPO REAL DAS DISCIPLINAS (NÃO ALUCINAR TÉRMINO DA MATÉRIA):
-   - NUNCA afirme ou sugira que uma matéria inteira de TI (como Banco de Dados, Redes de Computadores, Engenharia de Software, etc.) será concluída "entre hoje e amanhã"!
-   - Matérias de TI são extensas e abrangem múltiplos conteúdos ao longo de semanas e do edital completo.
-   - O que está sendo concluído é APENAS o conteúdo pontual da semana cadastrado no cronograma, e NUNCA a disciplina em sua totalidade.
-
-DIRETRIZES DE FORMATAÇÃO E DESIGN DAS RESPOSTAS:
-- Use '## ' para Títulos Principais (ex: '## DIAGNÓSTICO DO DIA', '## PLANO DE AÇÃO PARA HOJE', '## VISÃO DA SEMANA E PRÓXIMOS PASSOS').
-- Use '---' para linhas divisórias entre grandes seções.
-- Use '#### ' para os 3 Blocos de Estudo.
-- Use tópicos curtos iniciados por marcadores '-' com conceitos em negrito (ex: '- **Anki em Dia:** ...', '- **Objetivo:** ...', '- **Foco de Execução:** ...').
-- Destaque dados e métricas em **negrito**.
-- Respostas limpas, profissionais, sem floreios desnecessários.`;
+            return SYSTEM_PROMPT;
         },
 
         /**
